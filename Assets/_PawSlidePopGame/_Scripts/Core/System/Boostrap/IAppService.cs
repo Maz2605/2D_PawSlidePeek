@@ -1,4 +1,4 @@
-﻿namespace ArrowGame.Interface
+﻿namespace _PawSlidePopGame._Scripts.Core.Boostrap
 {
     public interface IAppService
     {
