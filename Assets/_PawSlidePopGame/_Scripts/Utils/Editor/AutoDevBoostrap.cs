@@ -1,5 +1,6 @@
 ﻿#if UNITY_EDITOR
 using _PawSlidePopGame._Scripts.Core.Boostrap;
+using _PawSlidePopGame._Scripts.Core.System.Boostrap;
 using UnityEngine;
 
 namespace _PawSlidePopGame._Scripts.Utils.Editor

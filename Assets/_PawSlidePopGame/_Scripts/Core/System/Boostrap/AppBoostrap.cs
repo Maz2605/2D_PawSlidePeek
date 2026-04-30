@@ -1,12 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using _PawSlidePopGame._Scripts.Core.SceneManagement;
+using _PawSlidePopGame._Scripts.Core.Boostrap;
+using _PawSlidePopGame._Scripts.Core.System.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 // Namespace chứa LoadingSceneVisual
 
-namespace _PawSlidePopGame._Scripts.Core.Boostrap
+namespace _PawSlidePopGame._Scripts.Core.System.Boostrap
 {
     public class AppBootstrap : MonoBehaviour
     {

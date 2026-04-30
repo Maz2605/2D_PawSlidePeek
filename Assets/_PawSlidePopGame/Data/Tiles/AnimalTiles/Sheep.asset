@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2edfbbe15702466b85bf2697595f0c1b, type: 3}
+  m_Name: Sheep
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Match3.Data.NormalAnimalTileDefinitionSO
+  tileId: 107
+  canSpawnOnRefill: 1
+  spawnWeight: 1
+  tileViewPrefab: {fileID: 4179922587793579366, guid: 80e73afa7f029fd49b910a7ff37e1740, type: 3}
+  icon: {fileID: 21300000, guid: 4ea209d97fde147a997a36699ce6bba9, type: 3}
+  animalId: 18

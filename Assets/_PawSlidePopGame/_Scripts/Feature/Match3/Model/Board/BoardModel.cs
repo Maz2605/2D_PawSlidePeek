@@ -1,0 +1,247 @@
+using System;
+using System.Collections.Generic;
+using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
+using _PawSlidePopGame._Scripts.Feature.Match3.Data;
+using _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities;
+
+namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
+{
+    public class BoardModel
+    {
+        public int Width { get; }
+        public int Height { get; }
+        public int CurrentScore { get; private set; }
+        public int RemainingMoves { get; private set; }
+
+        private readonly CellModel[,] _grid;
+        private int _tileInstanceCounter;
+
+        public BoardModel(Match3LevelData levelData)
+        {
+            if (levelData == null)
+            {
+                throw new ArgumentNullException(nameof(levelData));
+            }
+
+            Width = levelData.width;
+            Height = levelData.height;
+            RemainingMoves = levelData.movesLimit;
+            _grid = new CellModel[Width, Height];
+
+            for (int x = 0; x < Width; x++)
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    _grid[x, y] = new CellModel(x, y, levelData.IsPlayableCell(x, y));
+                }
+            }
+        }
+
+        public void PopulateBoard(int[] gridLayout, Match3TileDatabaseSO tileDatabase)
+        {
+            if (gridLayout == null)
+            {
+                return;
+            }
+
+            for (int y = 0; y < Height; y++)
+            {
+                for (int x = 0; x < Width; x++)
+                {
+                    int index = (y * Width) + x;
+                    if (index >= gridLayout.Length)
+                    {
+                        continue;
+                    }
+
+                    CellModel cell = _grid[x, y];
+                    if (!cell.IsPlayable)
+                    {
+                        cell.ClearTile();
+                        continue;
+                    }
+
+                    SetTileFromDefinitionId(cell, gridLayout[index], tileDatabase);
+                }
+            }
+        }
+
+        public CellModel GetCell(int x, int y)
+        {
+            if (x < 0 || x >= Width || y < 0 || y >= Height)
+            {
+                return null;
+            }
+
+            return _grid[x, y];
+        }
+
+        public IEnumerable<CellModel> GetAllCells()
+        {
+            for (int y = 0; y < Height; y++)
+            {
+                for (int x = 0; x < Width; x++)
+                {
+                    yield return _grid[x, y];
+                }
+            }
+        }
+
+        public List<CellModel> GetPlayableCellsInRow(int rowIndex)
+        {
+            List<CellModel> cells = new List<CellModel>();
+            if (rowIndex < 0 || rowIndex >= Height)
+            {
+                return cells;
+            }
+
+            for (int x = 0; x < Width; x++)
+            {
+                CellModel cell = _grid[x, rowIndex];
+                if (cell.IsPlayable)
+                {
+                    cells.Add(cell);
+                }
+            }
+
+            return cells;
+        }
+
+        public List<CellModel> GetPlayableCellsInColumn(int columnIndex)
+        {
+            List<CellModel> cells = new List<CellModel>();
+            if (columnIndex < 0 || columnIndex >= Width)
+            {
+                return cells;
+            }
+
+            for (int y = 0; y < Height; y++)
+            {
+                CellModel cell = _grid[columnIndex, y];
+                if (cell.IsPlayable)
+                {
+                    cells.Add(cell);
+                }
+            }
+
+            return cells;
+        }
+
+        public List<CellModel> GetPlayableCellsForMove(MoveAxis axis, int lineIndex)
+        {
+            return axis == MoveAxis.Row
+                ? GetPlayableCellsInRow(lineIndex)
+                : GetPlayableCellsInColumn(lineIndex);
+        }
+
+        public void RotateTiles(IReadOnlyList<CellModel> cells, int step)
+        {
+            if (cells == null || cells.Count <= 1)
+            {
+                return;
+            }
+
+            int normalizedStep = step % cells.Count;
+            if (normalizedStep < 0)
+            {
+                normalizedStep += cells.Count;
+            }
+
+            if (normalizedStep == 0)
+            {
+                return;
+            }
+
+            TileModel[] snapshot = new TileModel[cells.Count];
+            for (int i = 0; i < cells.Count; i++)
+            {
+                snapshot[i] = cells[i].CurrentTile;
+            }
+
+            for (int i = 0; i < cells.Count; i++)
+            {
+                int sourceIndex = (i - normalizedStep + cells.Count) % cells.Count;
+                cells[i].SetTile(snapshot[sourceIndex]);
+            }
+        }
+
+        public TileModel CreateTileFromDefinitionId(int tileId, Match3TileDatabaseSO tileDatabase)
+        {
+            if (tileId == 0 || tileDatabase == null)
+            {
+                return null;
+            }
+
+            TileDefinitionSO definition = tileDatabase.GetTileDefinition(tileId);
+            if (definition == null)
+            {
+                return null;
+            }
+
+            _tileInstanceCounter++;
+            return new TileModel(_tileInstanceCounter, definition);
+        }
+
+        public void SetTileFromDefinitionId(CellModel cell, int tileId, Match3TileDatabaseSO tileDatabase)
+        {
+            if (cell == null)
+            {
+                return;
+            }
+
+            TileModel tile = CreateTileFromDefinitionId(tileId, tileDatabase);
+            cell.SetTile(tile);
+        }
+
+        public void SetTile(CellModel cell, TileModel tile)
+        {
+            cell?.SetTile(tile);
+        }
+
+        public void ClearCell(CellModel cell)
+        {
+            cell?.ClearTile();
+        }
+
+        public List<CellModel> GetNeighbors(int x, int y, int radius = 1)
+        {
+            List<CellModel> neighbors = new List<CellModel>();
+            for (int i = x - radius; i <= x + radius; i++)
+            {
+                for (int j = y - radius; j <= y + radius; j++)
+                {
+                    if (i == x && j == y)
+                    {
+                        continue;
+                    }
+
+                    CellModel cell = GetCell(i, j);
+                    if (cell != null && cell.IsPlayable)
+                    {
+                        neighbors.Add(cell);
+                    }
+                }
+            }
+
+            return neighbors;
+        }
+
+        public void AddScore(int amount)
+        {
+            CurrentScore += amount;
+        }
+
+        public bool CanConsumeMove()
+        {
+            return RemainingMoves > 0;
+        }
+
+        public void ConsumeMove()
+        {
+            if (RemainingMoves > 0)
+            {
+                RemainingMoves--;
+            }
+        }
+    }
+}

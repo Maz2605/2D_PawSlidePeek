@@ -1,0 +1,44 @@
+using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
+using _PawSlidePopGame._Scripts.Feature.Match3.View;
+using UnityEngine;
+
+namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
+{
+    public abstract class TileDefinitionSO : ScriptableObject
+    {
+        [Header("Identity")]
+        [Min(1)]
+        [SerializeField] private int tileId = 1;
+
+        [Header("Gameplay")]
+        [SerializeField] private bool canSpawnOnRefill = true;
+        [Min(0)]
+        [SerializeField] private int spawnWeight = 1;
+
+        [Header("View")]
+        [SerializeField] private Match3TileView tileViewPrefab;
+        [SerializeField] private Sprite icon;
+
+        public int TileId => tileId;
+        public bool CanSpawnOnRefill => canSpawnOnRefill;
+        public int SpawnWeight => spawnWeight;
+        public Match3TileView TileViewPrefab => tileViewPrefab;
+        public Sprite Icon => icon;
+        public virtual int DefaultHP => 1;
+        public abstract TileKind TileKind { get; }
+        public abstract TileLogicType LogicType { get; }
+
+        protected virtual void OnValidate()
+        {
+            if (tileId < 1)
+            {
+                tileId = 1;
+            }
+
+            if (spawnWeight < 0)
+            {
+                spawnWeight = 0;
+            }
+        }
+    }
+}

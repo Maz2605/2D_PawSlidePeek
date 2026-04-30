@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2edfbbe15702466b85bf2697595f0c1b, type: 3}
+  m_Name: Koala
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Match3.Data.NormalAnimalTileDefinitionSO
+  tileId: 106
+  canSpawnOnRefill: 1
+  spawnWeight: 1
+  tileViewPrefab: {fileID: 1272781581909263176, guid: 2fc8961ff246209408f02c60ba0f404a, type: 3}
+  icon: {fileID: 21300000, guid: 6e2656180d1fe431ca600c89cf038c4f, type: 3}
+  animalId: 19

@@ -5,7 +5,7 @@ using _PawSlidePopGame.Scripts.DesignPattern.Singleton;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace _PawSlidePopGame._Scripts.Core.SceneManagement
+namespace _PawSlidePopGame._Scripts.Core.System.SceneManagement
 {
     public class SceneLoaderManager : Singleton<SceneLoaderManager>
     {

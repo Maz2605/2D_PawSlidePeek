@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3465e2760168bf447b1deaf3a5c11ad6, type: 3}
+  m_Name: Match3LevelDefinition
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Match3.Data.Match3LevelDefinitionSO
+  levelData:
+    levelID: Level_0
+    width: 8
+    height: 8
+    movesLimit: 30
+    gridLayout: 
+    playableMask: 
+    spawnableTileIds: 65000000660000006700000068000000690000006a000000
