@@ -7,12 +7,22 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move
         public MoveAxis Axis { get; }
         public int LineIndex { get; }
         public LineSlideDirection Direction { get; }
+        public int SourceX { get; }
+        public int SourceY { get; }
+        public bool HasSource => SourceX >= 0 && SourceY >= 0;
 
         public BoardMoveRequest(MoveAxis axis, int lineIndex, LineSlideDirection direction)
+            : this(axis, lineIndex, direction, -1, -1)
+        {
+        }
+
+        public BoardMoveRequest(MoveAxis axis, int lineIndex, LineSlideDirection direction, int sourceX, int sourceY)
         {
             Axis = axis;
             LineIndex = lineIndex;
             Direction = direction;
+            SourceX = sourceX;
+            SourceY = sourceY;
         }
 
         public bool IsValid()

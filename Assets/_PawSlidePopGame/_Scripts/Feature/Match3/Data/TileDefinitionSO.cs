@@ -1,6 +1,7 @@
 using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
 using _PawSlidePopGame._Scripts.Feature.Match3.View;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
 {
@@ -16,13 +17,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
         [SerializeField] private int spawnWeight = 1;
 
         [Header("View")]
-        [SerializeField] private Match3TileView tileViewPrefab;
+        [FormerlySerializedAs("tileViewPrefab")]
+        [SerializeField, HideInInspector] private Match3TileView legacyTileViewPrefab;
         [SerializeField] private Sprite icon;
 
         public int TileId => tileId;
         public bool CanSpawnOnRefill => canSpawnOnRefill;
         public int SpawnWeight => spawnWeight;
-        public Match3TileView TileViewPrefab => tileViewPrefab;
+        public virtual Match3TileView TileViewPrefab => legacyTileViewPrefab;
         public Sprite Icon => icon;
         public virtual int DefaultHP => 1;
         public abstract TileKind TileKind { get; }
@@ -38,6 +40,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
             if (spawnWeight < 0)
             {
                 spawnWeight = 0;
+            }
+        }
+
+        protected void MigrateLegacyTileViewPrefab<TView>(ref TView typedPrefab) where TView : Match3TileView
+        {
+            if (typedPrefab == null && legacyTileViewPrefab is TView typedLegacyPrefab)
+            {
+                typedPrefab = typedLegacyPrefab;
             }
         }
     }

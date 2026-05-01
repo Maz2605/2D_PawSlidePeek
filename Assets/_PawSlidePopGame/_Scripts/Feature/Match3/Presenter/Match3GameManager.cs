@@ -117,5 +117,31 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         {
             return ExecuteMove(request).IsAccepted;
         }
+
+        public BoardMoveExecutionResult ExecuteTileActivation(int x, int y)
+        {
+            if (!_isInitialized)
+            {
+                Debug.LogWarning("[Match3GameManager] Game is not initialized.");
+                return new BoardMoveExecutionResult();
+            }
+
+            _lastExecutionResult = BoardResolutionService.ExecuteTileActivation(
+                _board,
+                x,
+                y,
+                levelDefinition.LevelData,
+                tileDatabase,
+                _random,
+                _ruleSet);
+
+            _lastMoveResult = _lastExecutionResult.ResolutionResult;
+            if (_lastExecutionResult.IsApplied)
+            {
+                OnMoveExecuted?.Invoke(_lastExecutionResult);
+            }
+
+            return _lastExecutionResult;
+        }
     }
 }

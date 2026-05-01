@@ -15,6 +15,7 @@ MonoBehaviour:
   tileId: 102
   canSpawnOnRefill: 1
   spawnWeight: 1
-  tileViewPrefab: {fileID: 153578512945075106, guid: 4b355284821cf984fb25fc927f76a814, type: 3}
+  legacyTileViewPrefab: {fileID: 153578512945075106, guid: 4b355284821cf984fb25fc927f76a814, type: 3}
   icon: {fileID: 21300000, guid: 9391ba558865a49afb8d886828d9c3b4, type: 3}
+  tileViewPrefab: {fileID: -9155689795604472122, guid: 4b355284821cf984fb25fc927f76a814, type: 3}
   animalId: 4

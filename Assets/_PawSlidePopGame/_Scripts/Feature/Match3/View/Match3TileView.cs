@@ -13,18 +13,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         [SerializeField] private SpriteRenderer shadowRenderer;
 
         [Header("Sprites")]
-        [SerializeField] private Sprite openSprite;
-        [SerializeField] private Sprite closedSprite;
         [SerializeField] private bool useDefinitionIconAsFallback = true;
 
         [Header("Shadow")]
         [SerializeField] private Color previewShadowColor = new Color(1f, 1f, 1f, 0.6f);
         [SerializeField] private Color activeShadowColor = new Color(1f, 1f, 1f, 0.9f);
-
-        [Header("Idle Blink")]
-        [SerializeField] private bool enableIdleBlink = true;
-        [SerializeField] private Vector2 blinkIntervalRange = new Vector2(2.5f, 5f);
-        [SerializeField] private float closedEyesDuration = 0.08f;
 
         [Header("DOTween Idle")]
         [SerializeField] private bool enableIdlePulse;
@@ -36,6 +29,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         [SerializeField] private float clearDuration = 0.2f;
         [SerializeField] private float damageDuration = 0.18f;
         [SerializeField] private float landingDuration = 0.16f;
+        [SerializeField] private float targetPulseDuration = 0.18f;
+        [SerializeField] private float specialCreateDuration = 0.22f;
         [SerializeField] private float clearScale = 0.75f;
         [SerializeField] private float damagePunchScale = 0.1f;
         [SerializeField] private float landingPunchScale = 0.08f;
@@ -52,6 +47,26 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
         public int TileInstanceId => _tile != null ? _tile.InstanceId : 0;
         public TileModel Tile => _tile;
+        protected TileDefinitionSO Definition => _definition;
+        protected SpriteRenderer BodyRenderer => bodyRenderer;
+        protected SpriteRenderer ShadowRenderer => shadowRenderer;
+        protected Vector3 InitialScale => _initialScale;
+        protected Color BodyBaseColor => _bodyBaseColor;
+        protected Color ShadowBaseColor => _shadowBaseColor;
+        protected float DamageDuration => damageDuration;
+        protected float TargetPulseDuration => targetPulseDuration;
+        protected float SpecialCreateDuration => specialCreateDuration;
+        protected float ClearDuration => clearDuration;
+        protected float DamagePunchScale => damagePunchScale;
+        protected float LandingDuration => landingDuration;
+        protected float LandingPunchScale => landingPunchScale;
+        protected float ClearScale => clearScale;
+        protected TileShadowState ShadowState => _shadowState;
+        protected virtual bool EnableIdleBlink => false;
+        protected virtual Vector2 BlinkIntervalRange => new Vector2(2.5f, 5f);
+        protected virtual float ClosedEyesDuration => 0.08f;
+        protected virtual Sprite OpenSprite => null;
+        protected virtual Sprite ClosedSprite => null;
 
         protected virtual void Awake()
         {
@@ -92,41 +107,40 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             _tile = tile;
             _definition = definition;
 
-            if (bodyRenderer != null)
-            {
-                bodyRenderer.color = _bodyBaseColor;
-            }
-
-            if (shadowRenderer != null)
-            {
-                shadowRenderer.color = _shadowBaseColor;
-            }
-
+            RestoreBodyColor();
+            RestoreShadowColor();
             ApplyOpenSprite();
             SetShadowState(TileShadowState.Off);
         }
 
-        public IEnumerator PlayActivateAsync()
+        public virtual IEnumerator PlayActivateAsync()
         {
-            StopIdle();
-            SetShadowState(TileShadowState.Active);
-            KillMotionTweens();
+            yield return PlayPulseTintAsync(
+                Mathf.Max(0.05f, damageDuration),
+                damagePunchScale * 1.25f,
+                new Color(1f, 0.95f, 0.7f, 1f),
+                TileShadowState.Active,
+                false);
+        }
 
-            float duration = Mathf.Max(0.05f, damageDuration);
-            Sequence sequence = DOTween.Sequence().SetLink(gameObject);
-            sequence.Join(transform.DOPunchScale(Vector3.one * (damagePunchScale * 1.25f), duration, 4, 0.7f));
+        public virtual IEnumerator PlayTargetSelectionAsync()
+        {
+            yield return PlayPulseTintAsync(
+                Mathf.Max(0.05f, targetPulseDuration),
+                damagePunchScale * 1.5f,
+                new Color(1f, 0.9f, 0.65f, 1f),
+                TileShadowState.Active,
+                true);
+        }
 
-            if (bodyRenderer != null)
-            {
-                sequence.Join(bodyRenderer.DOColor(new Color(1f, 0.95f, 0.7f, 1f), duration * 0.5f).SetLoops(2, LoopType.Yoyo));
-            }
-
-            yield return sequence.WaitForCompletion();
-
-            if (bodyRenderer != null)
-            {
-                bodyRenderer.color = _bodyBaseColor;
-            }
+        public virtual IEnumerator PlaySpecialCreateAsync()
+        {
+            yield return PlayPulseTintAsync(
+                Mathf.Max(0.05f, specialCreateDuration),
+                damagePunchScale * 1.35f,
+                new Color(1f, 0.98f, 0.8f, 1f),
+                TileShadowState.Active,
+                false);
         }
 
         public void SnapToLocalPosition(Vector3 localPosition)
@@ -149,10 +163,16 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             StartIdleLoop();
         }
 
-        public void SetShadowState(TileShadowState state)
+        public virtual void SetShadowState(TileShadowState state)
         {
             _shadowState = state;
-            if (shadowRenderer == null || shadowRenderer.sprite == null)
+            if (shadowRenderer == null)
+            {
+                return;
+            }
+
+            SyncShadowSpriteIfNeeded();
+            if (shadowRenderer.sprite == null)
             {
                 return;
             }
@@ -174,7 +194,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             }
         }
 
-        public IEnumerator PlayClearAsync()
+        public virtual IEnumerator PlayClearAsync()
         {
             StopIdle();
             SetShadowState(TileShadowState.Off);
@@ -196,33 +216,21 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             yield return sequence.WaitForCompletion();
         }
 
-        public IEnumerator PlayDamageAsync(int currentHp, int previousHp)
+        public virtual IEnumerator PlayDamageAsync(int currentHp, int previousHp)
         {
-            StopIdle();
-            SetShadowState(TileShadowState.Active);
-            KillMotionTweens();
+            Color flashColor = previousHp > currentHp
+                ? new Color(1f, 0.75f, 0.75f, 1f)
+                : new Color(1f, 1f, 1f, 1f);
 
-            float duration = Mathf.Max(0.05f, damageDuration);
-            Sequence sequence = DOTween.Sequence().SetLink(gameObject);
-            sequence.Join(transform.DOPunchScale(Vector3.one * damagePunchScale, duration, 4, 0.8f));
-
-            if (bodyRenderer != null)
-            {
-                Color flashColor = previousHp > currentHp ? new Color(1f, 0.75f, 0.75f, 1f) : new Color(1f, 1f, 1f, 1f);
-                sequence.Join(bodyRenderer.DOColor(flashColor, duration * 0.5f).SetLoops(2, LoopType.Yoyo));
-            }
-
-            yield return sequence.WaitForCompletion();
-
-            if (bodyRenderer != null)
-            {
-                bodyRenderer.color = _bodyBaseColor;
-            }
-
-            SetShadowState(TileShadowState.Off);
+            yield return PlayPulseTintAsync(
+                Mathf.Max(0.05f, damageDuration),
+                damagePunchScale,
+                flashColor,
+                TileShadowState.Active,
+                true);
         }
 
-        public IEnumerator PlayMoveAsync(Vector3 targetLocalPosition, float duration)
+        public virtual IEnumerator PlayMoveAsync(Vector3 targetLocalPosition, float duration)
         {
             StopIdle();
             SetShadowState(TileShadowState.Active);
@@ -236,7 +244,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             yield return moveTween.WaitForCompletion();
         }
 
-        public IEnumerator PlaySpawnFallAsync(Vector3 startLocalPosition, Vector3 targetLocalPosition, float duration)
+        public virtual IEnumerator PlaySpawnFallAsync(Vector3 startLocalPosition, Vector3 targetLocalPosition, float duration)
         {
             StopIdle();
             KillMotionTweens();
@@ -261,7 +269,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             yield return sequence.WaitForCompletion();
         }
 
-        public IEnumerator PlayLandAsync(float intensity = 1f)
+        public virtual IEnumerator PlayLandAsync(float intensity = 1f)
         {
             StopIdle();
             float duration = Mathf.Max(0.05f, landingDuration);
@@ -277,40 +285,183 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             SetShadowState(_shadowState == TileShadowState.Preview ? TileShadowState.Preview : TileShadowState.Off);
         }
 
-        private void ResetVisualState()
+        protected IEnumerator PlayPulseTintAsync(
+            float duration,
+            float punchAmount,
+            Color flashColor,
+            TileShadowState shadowState = TileShadowState.Active,
+            bool resetShadowOff = false,
+            int vibrato = 4,
+            float elasticity = 0.75f)
+        {
+            StopIdle();
+            SetShadowState(shadowState);
+            KillMotionTweens();
+
+            Sequence sequence = DOTween.Sequence().SetLink(gameObject);
+            sequence.Join(transform.DOPunchScale(Vector3.one * punchAmount, duration, vibrato, elasticity));
+
+            if (bodyRenderer != null)
+            {
+                sequence.Join(bodyRenderer.DOColor(flashColor, duration * 0.5f).SetLoops(2, LoopType.Yoyo));
+            }
+
+            yield return sequence.WaitForCompletion();
+            RestoreBodyColor();
+
+            if (resetShadowOff)
+            {
+                SetShadowState(TileShadowState.Off);
+            }
+        }
+
+        protected void ApplyBodyColor(Color color)
+        {
+            if (bodyRenderer != null)
+            {
+                bodyRenderer.color = color;
+            }
+        }
+
+        protected void RestoreBodyColor()
         {
             if (bodyRenderer != null)
             {
                 bodyRenderer.color = _bodyBaseColor;
             }
+        }
 
+        protected void RestoreShadowColor()
+        {
             if (shadowRenderer != null)
             {
                 shadowRenderer.color = _shadowBaseColor;
             }
+        }
 
+        protected void StopIdleForFx()
+        {
+            StopIdle();
+        }
+
+        protected void KillMotionTweensForFx()
+        {
+            KillMotionTweens();
+        }
+
+        protected void ApplyOpenSprite()
+        {
+            if (bodyRenderer == null)
+            {
+                return;
+            }
+
+            Sprite spriteToUse = OpenSprite;
+            if (spriteToUse == null && useDefinitionIconAsFallback && _definition != null)
+            {
+                spriteToUse = _definition.Icon;
+            }
+
+            bodyRenderer.sprite = spriteToUse;
+            SyncShadowSpriteIfNeeded();
+        }
+
+        protected void ResetVisualState()
+        {
+            RestoreBodyColor();
+            RestoreShadowColor();
             transform.localScale = _initialScale;
             SetShadowState(TileShadowState.Off);
         }
 
-        private void StopIdle()
+        protected void StopIdle()
         {
             _isIdleEnabled = false;
             StopBlinkLoop();
             KillPulseTween();
         }
 
-        private void StartIdleLoop()
+        protected void StartIdleLoop()
         {
             StopBlinkLoop();
             StartIdlePulse();
 
-            if (!_isIdleEnabled || !enableIdleBlink || bodyRenderer == null || closedSprite == null)
+            if (!_isIdleEnabled || !EnableIdleBlink || bodyRenderer == null || ClosedSprite == null)
             {
                 return;
             }
 
             _blinkRoutine = StartCoroutine(BlinkLoop());
+        }
+
+        protected void KillMotionTweens()
+        {
+            DOTween.Kill(transform, false);
+
+            if (bodyRenderer != null)
+            {
+                DOTween.Kill(bodyRenderer, false);
+            }
+
+            if (shadowRenderer != null)
+            {
+                DOTween.Kill(shadowRenderer, false);
+            }
+
+            _pulseTween = null;
+        }
+
+        protected virtual void OnValidate()
+        {
+            if (pulseScale < 1f)
+            {
+                pulseScale = 1f;
+            }
+
+            if (pulseDuration < 0.05f)
+            {
+                pulseDuration = 0.05f;
+            }
+
+            if (pulseLoopDelay < 0f)
+            {
+                pulseLoopDelay = 0f;
+            }
+
+            if (clearDuration < 0.05f)
+            {
+                clearDuration = 0.05f;
+            }
+
+            if (damageDuration < 0.05f)
+            {
+                damageDuration = 0.05f;
+            }
+
+            if (landingDuration < 0.05f)
+            {
+                landingDuration = 0.05f;
+            }
+
+            if (targetPulseDuration < 0.05f)
+            {
+                targetPulseDuration = 0.05f;
+            }
+
+            if (specialCreateDuration < 0.05f)
+            {
+                specialCreateDuration = 0.05f;
+            }
+
+            if (bodyRenderer == null)
+            {
+                bodyRenderer = GetComponent<SpriteRenderer>();
+            }
+
+            if (shadowRenderer != null)
+            {
+                shadowRenderer.enabled = false;
+            }
         }
 
         private void StopBlinkLoop()
@@ -337,8 +488,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                     yield break;
                 }
 
-                bodyRenderer.sprite = closedSprite;
-                yield return new WaitForSeconds(Mathf.Max(0.02f, closedEyesDuration));
+                bodyRenderer.sprite = ClosedSprite;
+                SyncShadowSpriteIfNeeded();
+                yield return new WaitForSeconds(Mathf.Max(0.02f, ClosedEyesDuration));
 
                 if (bodyRenderer == null)
                 {
@@ -349,26 +501,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             }
         }
 
-        private void ApplyOpenSprite()
-        {
-            if (bodyRenderer == null)
-            {
-                return;
-            }
-
-            Sprite spriteToUse = openSprite;
-            if (spriteToUse == null && useDefinitionIconAsFallback && _definition != null)
-            {
-                spriteToUse = _definition.Icon;
-            }
-
-            bodyRenderer.sprite = spriteToUse;
-        }
-
         private float GetNextBlinkDelay()
         {
-            float min = Mathf.Max(0.25f, blinkIntervalRange.x);
-            float max = Mathf.Max(min, blinkIntervalRange.y);
+            float min = Mathf.Max(0.25f, BlinkIntervalRange.x);
+            float max = Mathf.Max(min, BlinkIntervalRange.y);
             return Random.Range(min, max);
         }
 
@@ -405,85 +541,20 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             transform.localScale = _initialScale;
         }
 
-        private void KillMotionTweens()
-        {
-            DOTween.Kill(transform, false);
-
-            if (bodyRenderer != null)
-            {
-                DOTween.Kill(bodyRenderer, false);
-            }
-
-            if (shadowRenderer != null)
-            {
-                DOTween.Kill(shadowRenderer, false);
-            }
-
-            _pulseTween = null;
-        }
-
         private void KillAllTweens()
         {
             KillMotionTweens();
             KillPulseTween();
         }
 
-        protected virtual void OnValidate()
+        private void SyncShadowSpriteIfNeeded()
         {
-            if (blinkIntervalRange.x < 0.25f)
+            if (shadowRenderer == null || shadowRenderer.sprite != null || bodyRenderer == null)
             {
-                blinkIntervalRange.x = 0.25f;
+                return;
             }
 
-            if (blinkIntervalRange.y < blinkIntervalRange.x)
-            {
-                blinkIntervalRange.y = blinkIntervalRange.x;
-            }
-
-            if (closedEyesDuration < 0.02f)
-            {
-                closedEyesDuration = 0.02f;
-            }
-
-            if (pulseScale < 1f)
-            {
-                pulseScale = 1f;
-            }
-
-            if (pulseDuration < 0.05f)
-            {
-                pulseDuration = 0.05f;
-            }
-
-            if (pulseLoopDelay < 0f)
-            {
-                pulseLoopDelay = 0f;
-            }
-
-            if (clearDuration < 0.05f)
-            {
-                clearDuration = 0.05f;
-            }
-
-            if (damageDuration < 0.05f)
-            {
-                damageDuration = 0.05f;
-            }
-
-            if (landingDuration < 0.05f)
-            {
-                landingDuration = 0.05f;
-            }
-
-            if (bodyRenderer == null)
-            {
-                bodyRenderer = GetComponent<SpriteRenderer>();
-            }
-
-            if (shadowRenderer != null)
-            {
-                shadowRenderer.enabled = false;
-            }
+            shadowRenderer.sprite = bodyRenderer.sprite;
         }
     }
 }

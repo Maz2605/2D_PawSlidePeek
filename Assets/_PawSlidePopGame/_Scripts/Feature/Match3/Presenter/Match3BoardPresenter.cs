@@ -1,5 +1,6 @@
 using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Board;
+using _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presentation;
 using _PawSlidePopGame._Scripts.Feature.Match3.View;
 using UnityEngine;
@@ -43,6 +44,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             if (inputController != null)
             {
                 inputController.OnMoveRequested += HandleMoveRequested;
+                inputController.OnTileTapped += HandleTileTapped;
                 inputController.OnPreviewStarted += HandlePreviewStarted;
                 inputController.OnPreviewUpdated += HandlePreviewUpdated;
                 inputController.OnPreviewCleared += HandlePreviewCleared;
@@ -67,6 +69,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             if (inputController != null)
             {
                 inputController.OnMoveRequested -= HandleMoveRequested;
+                inputController.OnTileTapped -= HandleTileTapped;
                 inputController.OnPreviewStarted -= HandlePreviewStarted;
                 inputController.OnPreviewUpdated -= HandlePreviewUpdated;
                 inputController.OnPreviewCleared -= HandlePreviewCleared;
@@ -100,18 +103,39 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 StopCoroutine(_movePlaybackRoutine);
             }
 
-            _movePlaybackRoutine = StartCoroutine(PlayMoveRoutine(request));
+            _movePlaybackRoutine = StartCoroutine(PlayExecutionRoutine(() => gameManager != null
+                ? gameManager.ExecuteMove(request)
+                : new BoardMoveExecutionResult()));
         }
 
-        private System.Collections.IEnumerator PlayMoveRoutine(BoardMoveRequest request)
+        private void HandleTileTapped(CellModel cell)
+        {
+            if (_isAnimatingMove || cell?.CurrentTile == null)
+            {
+                return;
+            }
+
+            if (_movePlaybackRoutine != null)
+            {
+                StopCoroutine(_movePlaybackRoutine);
+            }
+
+            int x = cell.X;
+            int y = cell.Y;
+            _movePlaybackRoutine = StartCoroutine(PlayExecutionRoutine(() => gameManager != null
+                ? gameManager.ExecuteTileActivation(x, y)
+                : new BoardMoveExecutionResult()));
+        }
+
+        private System.Collections.IEnumerator PlayExecutionRoutine(System.Func<BoardMoveExecutionResult> executeAction)
         {
             _isAnimatingMove = true;
             inputController?.SetInputLocked(true);
             boardView?.ClearPreview();
             boardView?.SetIdleEnabled(false);
 
-            BoardMoveExecutionResult executionResult = gameManager != null
-                ? gameManager.ExecuteMove(request)
+            BoardMoveExecutionResult executionResult = executeAction != null
+                ? executeAction.Invoke()
                 : new BoardMoveExecutionResult();
 
             if (executionResult.IsApplied && boardView != null)

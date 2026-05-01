@@ -2,6 +2,7 @@ using System;
 using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
 using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Board;
+using _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presentation;
 using _PawSlidePopGame._Scripts.Feature.Match3.View;
 using _PawSlidePopGame.Input;
@@ -22,6 +23,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         private bool _isInputLocked;
 
         public event Action<BoardMoveRequest> OnMoveRequested;
+        public event Action<CellModel> OnTileTapped;
         public event Action<CellModel> OnPreviewStarted;
         public event Action<BoardLinePreview> OnPreviewUpdated;
         public event Action OnPreviewCleared;
@@ -131,6 +133,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             Vector2 delta = screenPosition - _pressScreenPosition;
             if (delta.magnitude < dragThresholdPixels)
             {
+                TryHandleTap();
                 ClearPreviewAndResetGesture();
                 return;
             }
@@ -147,11 +150,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             if (axis == MoveAxis.Row)
             {
                 LineSlideDirection direction = delta.x >= 0f ? LineSlideDirection.Right : LineSlideDirection.Left;
-                return new BoardMoveRequest(MoveAxis.Row, pressedCell.Y, direction);
+                return new BoardMoveRequest(MoveAxis.Row, pressedCell.Y, direction, pressedCell.X, pressedCell.Y);
             }
 
             LineSlideDirection verticalDirection = delta.y >= 0f ? LineSlideDirection.Up : LineSlideDirection.Down;
-            return new BoardMoveRequest(MoveAxis.Column, pressedCell.X, verticalDirection);
+            return new BoardMoveRequest(MoveAxis.Column, pressedCell.X, verticalDirection, pressedCell.X, pressedCell.Y);
         }
 
         private void ResetGesture()
@@ -165,6 +168,17 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         {
             OnPreviewCleared?.Invoke();
             ResetGesture();
+        }
+
+        private void TryHandleTap()
+        {
+            TileModel tile = _pressedCell?.CurrentTile;
+            if (tile == null || tile.TileKind != TileKind.Booster)
+            {
+                return;
+            }
+
+            OnTileTapped?.Invoke(_pressedCell);
         }
     }
 }

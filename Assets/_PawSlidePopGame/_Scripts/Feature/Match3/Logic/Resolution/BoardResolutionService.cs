@@ -40,9 +40,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             BoardResolutionResult resolutionResult = new BoardResolutionResult();
             int scoreBefore = board.CurrentScore;
             bool hasTriggeredRule = ApplyPostMoveRules(board, moveContext, resolutionResult, activeRuleSet.PostMoveRules);
-            HashSet<CellModel> initialMatches = activeRuleSet.MatchRule.FindMatchedCells(board);
+            BoardMatchAnalysis initialAnalysis = activeRuleSet.MatchRule.Analyze(board);
 
-            if (initialMatches.Count == 0 && !hasTriggeredRule)
+            if (!initialAnalysis.HasMatches && !hasTriggeredRule)
             {
                 traceBuilder.RecordRollback(moveRequest, ReverseOperations(traceBuilder.Build().MoveAttempt.TravelOps));
                 moveContext.Snapshot.Restore();
@@ -67,8 +67,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                 random,
                 resolutionResult,
                 activeRuleSet.MatchRule,
-                initialMatches.Count > 0 ? initialMatches : null,
-                traceBuilder);
+                initialAnalysis.HasMatches ? initialAnalysis : null,
+                traceBuilder,
+                moveRequest);
             resolutionResult.ScoreDelta = board.CurrentScore - scoreBefore;
 
             executionResult.ResolutionResult = resolutionResult;
@@ -90,6 +91,64 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             return executionResult.IsAccepted;
         }
 
+        public static BoardMoveExecutionResult ExecuteTileActivation(
+            BoardModel board,
+            int x,
+            int y,
+            Match3LevelData levelData,
+            Match3TileDatabaseSO tileDatabase,
+            Random random,
+            BoardRuleSet ruleSet = null)
+        {
+            BoardMoveExecutionResult executionResult = new BoardMoveExecutionResult();
+            BoardRuleSet activeRuleSet = ruleSet ?? BoardRuleSet.Default;
+            if (board == null || levelData == null || tileDatabase == null || activeRuleSet.MatchRule == null)
+            {
+                return executionResult;
+            }
+
+            CellModel cell = board.GetCell(x, y);
+            TileModel tile = cell?.CurrentTile;
+            if (cell == null || !cell.IsPlayable || tile == null || tile.TileKind != Core.Enum.TileKind.Booster)
+            {
+                return executionResult;
+            }
+
+            if (!board.CanConsumeMove())
+            {
+                return executionResult;
+            }
+
+            executionResult.IsApplied = true;
+            executionResult.IsAccepted = true;
+
+            board.ConsumeMove();
+
+            BoardPresentationTraceBuilder traceBuilder = new BoardPresentationTraceBuilder();
+            BoardResolutionResult resolutionResult = new BoardResolutionResult
+            {
+                IsMoveAccepted = true
+            };
+
+            int scoreBefore = board.CurrentScore;
+            CascadeTrace activationCascade = traceBuilder.BeginCascade();
+            BoardFxContext fxContext = new BoardFxContext(activationCascade, random);
+
+            tile.Activate(board, cell, fxContext);
+            resolutionResult.CascadesResolved += CountCascadeAsResolved(activationCascade);
+            resolutionResult.ClearedTiles += activationCascade.ClearPhase.ClearOps.Count;
+
+            BoardGravityService.Apply(board, activationCascade.GravityPhase.TravelOps);
+            resolutionResult.SpawnedTiles += BoardRefillService.Apply(board, levelData, tileDatabase, random, activationCascade.RefillPhase.SpawnOps);
+
+            ResolveBoard(board, levelData, tileDatabase, random, resolutionResult, activeRuleSet.MatchRule, null, traceBuilder, null);
+            resolutionResult.ScoreDelta = board.CurrentScore - scoreBefore;
+
+            executionResult.ResolutionResult = resolutionResult;
+            executionResult.PresentationTrace = traceBuilder.Build();
+            return executionResult;
+        }
+
         public static BoardResolutionResult ResolveBoard(
             BoardModel board,
             Match3LevelData levelData,
@@ -100,7 +159,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             BoardRuleSet activeRuleSet = ruleSet ?? BoardRuleSet.Default;
             int scoreBefore = board.CurrentScore;
             BoardResolutionResult result = new BoardResolutionResult();
-            ResolveBoard(board, levelData, tileDatabase, random, result, activeRuleSet.MatchRule, null, null);
+            ResolveBoard(board, levelData, tileDatabase, random, result, activeRuleSet.MatchRule, null, null, null);
             result.ScoreDelta = board.CurrentScore - scoreBefore;
             return result;
         }
@@ -112,37 +171,92 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             Random random,
             BoardResolutionResult result,
             IBoardMatchRule matchRule,
-            HashSet<CellModel> startingMatches,
-            BoardPresentationTraceBuilder traceBuilder)
+            BoardMatchAnalysis startingAnalysis,
+            BoardPresentationTraceBuilder traceBuilder,
+            BoardMoveRequest? sourceMoveRequest)
         {
-            HashSet<CellModel> matches = startingMatches ?? matchRule.FindMatchedCells(board);
-            while (matches.Count > 0)
+            BoardMatchAnalysis matchAnalysis = startingAnalysis ?? matchRule.Analyze(board);
+            while (matchAnalysis.HasMatches)
             {
                 CascadeTrace cascadeTrace = traceBuilder?.BeginCascade();
-                BoardFxContext fxContext = cascadeTrace != null ? new BoardFxContext(cascadeTrace) : null;
+                BoardFxContext fxContext = cascadeTrace != null ? new BoardFxContext(cascadeTrace, random) : null;
+                BoardMoveRequest decisionMoveRequest = sourceMoveRequest ?? new BoardMoveRequest(Core.Enum.MoveAxis.Row, -1, Core.Enum.LineSlideDirection.Left, -1, -1);
+                List<SpecialSpawnDecision> decisions = SpecialCreationService.CreateDecisions(matchAnalysis, decisionMoveRequest, tileDatabase);
                 result.CascadesResolved++;
-                result.ClearedTiles += ClearMatches(board, matches, fxContext);
+                result.ClearedTiles += ClearMatches(board, matchAnalysis, decisions, tileDatabase, fxContext);
                 BoardGravityService.Apply(board, cascadeTrace?.GravityPhase.TravelOps);
                 result.SpawnedTiles += BoardRefillService.Apply(board, levelData, tileDatabase, random, cascadeTrace?.RefillPhase.SpawnOps);
-                matches = matchRule.FindMatchedCells(board);
+                matchAnalysis = matchRule.Analyze(board);
             }
         }
 
-        private static int ClearMatches(BoardModel board, HashSet<CellModel> matches, BoardFxContext fxContext)
+        private static int ClearMatches(
+            BoardModel board,
+            BoardMatchAnalysis matchAnalysis,
+            IReadOnlyList<SpecialSpawnDecision> decisions,
+            Match3TileDatabaseSO tileDatabase,
+            BoardFxContext fxContext)
         {
-            int clearedTiles = 0;
-            List<CellModel> orderedMatches = new List<CellModel>(matches);
-            orderedMatches.Sort(CompareCells);
-
-            foreach (CellModel cell in orderedMatches)
+            Dictionary<int, SpecialSpawnDecision> decisionsByGroupId = new Dictionary<int, SpecialSpawnDecision>();
+            if (decisions != null)
             {
-                if (cell?.CurrentTile == null)
+                for (int i = 0; i < decisions.Count; i++)
+                {
+                    decisionsByGroupId[decisions[i].GroupId] = decisions[i];
+                }
+            }
+
+            int clearedTiles = 0;
+            List<PendingSpecialCreate> pendingCreates = new List<PendingSpecialCreate>();
+
+            for (int groupIndex = 0; groupIndex < matchAnalysis.Groups.Count; groupIndex++)
+            {
+                MatchGroup group = matchAnalysis.Groups[groupIndex];
+                decisionsByGroupId.TryGetValue(group.Id, out SpecialSpawnDecision decision);
+
+                for (int cellIndex = 0; cellIndex < group.Cells.Count; cellIndex++)
+                {
+                    CellModel cell = group.Cells[cellIndex];
+                    if (cell?.CurrentTile == null)
+                    {
+                        continue;
+                    }
+
+                    if (decision != null && cell == decision.SpawnCell)
+                    {
+                        pendingCreates.Add(new PendingSpecialCreate(decision, cell.CurrentTile, cell));
+                        if (cell.CurrentTile.CanMatch())
+                        {
+                            board.AddScore(10);
+                        }
+
+                        continue;
+                    }
+
+                    clearedTiles++;
+                    cell.CurrentTile.Match(board, cell, fxContext);
+                }
+            }
+
+            for (int i = 0; i < pendingCreates.Count; i++)
+            {
+                PendingSpecialCreate pendingCreate = pendingCreates[i];
+                BoosterTileDefinitionSO boosterDefinition = tileDatabase != null
+                    ? tileDatabase.GetBoosterDefinition(pendingCreate.Decision.LogicType)
+                    : null;
+                if (boosterDefinition == null || pendingCreate.Cell == null)
                 {
                     continue;
                 }
 
-                clearedTiles++;
-                cell.CurrentTile.Match(board, cell, fxContext);
+                TileModel createdTile = board.CreateTileFromDefinitionId(boosterDefinition.TileId, tileDatabase);
+                if (createdTile == null)
+                {
+                    continue;
+                }
+
+                board.SetTile(pendingCreate.Cell, createdTile);
+                fxContext?.RecordSpecialCreate(pendingCreate.SourceTile, createdTile, pendingCreate.Cell);
             }
 
             return clearedTiles;
@@ -256,10 +370,40 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             return Math.Abs(sourceCell.Y - destinationCell.Y) > 1;
         }
 
+        private static int CountCascadeAsResolved(CascadeTrace cascadeTrace)
+        {
+            if (cascadeTrace == null)
+            {
+                return 0;
+            }
+
+            return cascadeTrace.ClearPhase.ActivateOps.Count > 0 ||
+                   cascadeTrace.ClearPhase.TargetSelectionOps.Count > 0 ||
+                   cascadeTrace.ClearPhase.DamageOps.Count > 0 ||
+                   cascadeTrace.ClearPhase.ClearOps.Count > 0 ||
+                   cascadeTrace.ClearPhase.SpecialCreateOps.Count > 0
+                ? 1
+                : 0;
+        }
+
         private static int CompareCells(CellModel left, CellModel right)
         {
             int byY = left.Y.CompareTo(right.Y);
             return byY != 0 ? byY : left.X.CompareTo(right.X);
+        }
+
+        private readonly struct PendingSpecialCreate
+        {
+            public SpecialSpawnDecision Decision { get; }
+            public TileModel SourceTile { get; }
+            public CellModel Cell { get; }
+
+            public PendingSpecialCreate(SpecialSpawnDecision decision, TileModel sourceTile, CellModel cell)
+            {
+                Decision = decision;
+                SourceTile = sourceTile;
+                Cell = cell;
+            }
         }
     }
 }

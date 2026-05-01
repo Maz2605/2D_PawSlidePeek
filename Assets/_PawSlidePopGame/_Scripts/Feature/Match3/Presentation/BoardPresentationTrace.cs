@@ -92,8 +92,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
     public sealed class ClearPhaseTrace
     {
         public List<TileActivateOp> ActivateOps { get; } = new List<TileActivateOp>();
+        public List<TargetSelectionOp> TargetSelectionOps { get; } = new List<TargetSelectionOp>();
         public List<TileDamageOp> DamageOps { get; } = new List<TileDamageOp>();
         public List<TileClearOp> ClearOps { get; } = new List<TileClearOp>();
+        public List<SpecialCreateOp> SpecialCreateOps { get; } = new List<SpecialCreateOp>();
     }
 
     [Serializable]
@@ -134,6 +136,15 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
         public int TileInstanceId { get; set; }
         public int TileId { get; set; }
         public BoardCellPosition Cell { get; set; }
+        public TileLogicType LogicType { get; set; }
+    }
+
+    [Serializable]
+    public sealed class TargetSelectionOp
+    {
+        public int SourceTileInstanceId { get; set; }
+        public BoardCellPosition TargetCell { get; set; }
+        public int TargetTileInstanceId { get; set; }
     }
 
     [Serializable]
@@ -158,6 +169,18 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
     }
 
     [Serializable]
+    public sealed class SpecialCreateOp
+    {
+        public int SourceTileInstanceId { get; set; }
+        public int FromTileId { get; set; }
+        public int NewTileInstanceId { get; set; }
+        public int ToTileId { get; set; }
+        public TileDefinitionSO Definition { get; set; }
+        public TileLogicType LogicType { get; set; }
+        public BoardCellPosition Cell { get; set; }
+    }
+
+    [Serializable]
     public readonly struct BoardLinePreview
     {
         public CellModel FocusedCell { get; }
@@ -176,11 +199,20 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
     public sealed class BoardFxContext
     {
         private readonly CascadeTrace _cascadeTrace;
+        private readonly Random _random;
 
         public BoardFxContext(CascadeTrace cascadeTrace)
+            : this(cascadeTrace, null)
+        {
+        }
+
+        public BoardFxContext(CascadeTrace cascadeTrace, Random random)
         {
             _cascadeTrace = cascadeTrace ?? throw new ArgumentNullException(nameof(cascadeTrace));
+            _random = random;
         }
+
+        public Random Random => _random;
 
         public void RecordActivate(TileModel tile, CellModel cell)
         {
@@ -193,7 +225,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
             {
                 TileInstanceId = tile.InstanceId,
                 TileId = tile.TileId,
-                Cell = BoardCellPosition.FromCell(cell)
+                Cell = BoardCellPosition.FromCell(cell),
+                LogicType = tile.LogicType
             });
         }
 
@@ -230,11 +263,50 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
                 WasMatched = wasMatched
             });
         }
+
+        public void RecordTargetSelection(TileModel sourceTile, CellModel targetCell)
+        {
+            if (sourceTile == null || targetCell == null)
+            {
+                return;
+            }
+
+            _cascadeTrace.ClearPhase.TargetSelectionOps.Add(new TargetSelectionOp
+            {
+                SourceTileInstanceId = sourceTile.InstanceId,
+                TargetCell = BoardCellPosition.FromCell(targetCell),
+                TargetTileInstanceId = targetCell.CurrentTile != null ? targetCell.CurrentTile.InstanceId : 0
+            });
+        }
+
+        public void RecordSpecialCreate(TileModel sourceTile, TileModel createdTile, CellModel cell)
+        {
+            if (sourceTile == null || createdTile == null || cell == null)
+            {
+                return;
+            }
+
+            _cascadeTrace.ClearPhase.SpecialCreateOps.Add(new SpecialCreateOp
+            {
+                SourceTileInstanceId = sourceTile.InstanceId,
+                FromTileId = sourceTile.TileId,
+                NewTileInstanceId = createdTile.InstanceId,
+                ToTileId = createdTile.TileId,
+                Definition = createdTile.Definition,
+                LogicType = createdTile.LogicType,
+                Cell = BoardCellPosition.FromCell(cell)
+            });
+        }
     }
 
     internal sealed class BoardPresentationTraceBuilder
     {
         private readonly BoardPresentationTrace _trace;
+
+        public BoardPresentationTraceBuilder()
+        {
+            _trace = new BoardPresentationTrace();
+        }
 
         public BoardPresentationTraceBuilder(BoardMoveRequest request)
         {

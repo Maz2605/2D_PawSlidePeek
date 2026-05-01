@@ -376,9 +376,18 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             for (int i = 0; i < clearPhase.ActivateOps.Count; i++)
             {
                 TileActivateOp op = clearPhase.ActivateOps[i];
-                if (_tileViews.TryGetValue(op.TileInstanceId, out Match3TileView tileView) && tileView != null)
+                routines.Add(PlayActivateOp(op));
+            }
+
+            yield return StartCoroutine(RunParallel(routines));
+            routines.Clear();
+
+            for (int i = 0; i < clearPhase.TargetSelectionOps.Count; i++)
+            {
+                TargetSelectionOp op = clearPhase.TargetSelectionOps[i];
+                if (_tileViews.TryGetValue(op.TargetTileInstanceId, out Match3TileView tileView) && tileView != null)
                 {
-                    routines.Add(tileView.PlayActivateAsync());
+                    routines.Add(tileView.PlayTargetSelectionAsync());
                 }
             }
 
@@ -407,11 +416,21 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             }
 
             yield return StartCoroutine(RunParallel(routines));
+            routines.Clear();
 
             for (int i = 0; i < clearPhase.ClearOps.Count; i++)
             {
                 DestroyTileView(clearPhase.ClearOps[i].TileInstanceId);
             }
+
+            for (int i = 0; i < clearPhase.SpecialCreateOps.Count; i++)
+            {
+                SpecialCreateOp op = clearPhase.SpecialCreateOps[i];
+                routines.Add(PlaySpecialCreateOp(op));
+            }
+
+            yield return StartCoroutine(RunParallel(routines));
+            routines.Clear();
 
             if (phaseGap > 0f)
             {
@@ -596,6 +615,87 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             while (remaining > 0)
             {
                 yield return null;
+            }
+        }
+
+        private IEnumerator PlayActivateOp(TileActivateOp activateOp)
+        {
+            if (activateOp.LogicType == TileLogicType.CrossBomb)
+            {
+                yield return StartCoroutine(PlayCrossHighlight(activateOp.Cell));
+            }
+
+            if (_tileViews.TryGetValue(activateOp.TileInstanceId, out Match3TileView tileView) && tileView != null)
+            {
+                yield return StartCoroutine(tileView.PlayActivateAsync());
+            }
+        }
+
+        private IEnumerator PlaySpecialCreateOp(SpecialCreateOp createOp)
+        {
+            Match3TileView sourceTileView = null;
+            if (_tileViews.TryGetValue(createOp.SourceTileInstanceId, out Match3TileView existingView))
+            {
+                sourceTileView = existingView;
+            }
+
+            if (sourceTileView != null)
+            {
+                yield return StartCoroutine(sourceTileView.PlaySpecialCreateAsync());
+            }
+
+            DestroyTileView(createOp.SourceTileInstanceId);
+
+            CellModel boardCell = _board != null ? _board.GetCell(createOp.Cell.X, createOp.Cell.Y) : null;
+            TileModel boardTile = boardCell?.CurrentTile;
+            if (boardTile == null || boardTile.InstanceId != createOp.NewTileInstanceId)
+            {
+                boardTile = new TileModel(createOp.NewTileInstanceId, createOp.Definition);
+            }
+
+            Match3TileView newTileView = CreateTileView(boardTile, createOp.Definition, GetLocalPosition(createOp.Cell.X, createOp.Cell.Y));
+            if (newTileView != null)
+            {
+                yield return StartCoroutine(newTileView.PlaySpecialCreateAsync());
+            }
+        }
+
+        private IEnumerator PlayCrossHighlight(BoardCellPosition center)
+        {
+            if (_board == null)
+            {
+                yield break;
+            }
+
+            List<Match3TileView> highlighted = new List<Match3TileView>();
+            HighlightCells(_board.GetPlayableCellsInRow(center.Y), highlighted);
+            HighlightCells(_board.GetPlayableCellsInColumn(center.X), highlighted);
+            yield return new WaitForSeconds(Mathf.Max(0.04f, phaseGap + 0.04f));
+
+            for (int i = 0; i < highlighted.Count; i++)
+            {
+                if (highlighted[i] != null)
+                {
+                    highlighted[i].SetShadowState(TileShadowState.Off);
+                }
+            }
+        }
+
+        private void HighlightCells(IReadOnlyList<CellModel> cells, List<Match3TileView> highlighted)
+        {
+            for (int i = 0; i < cells.Count; i++)
+            {
+                TileModel tile = cells[i].CurrentTile;
+                if (tile == null || !_tileViews.TryGetValue(tile.InstanceId, out Match3TileView tileView) || tileView == null)
+                {
+                    continue;
+                }
+
+                tileView.SetShadowState(TileShadowState.Active);
+                if (!highlighted.Contains(tileView))
+                {
+                    highlighted.Add(tileView);
+                }
             }
         }
 
