@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using _PawSlidePopGame._Scripts.Core.System.DesignPattern.Singleton;
 using _PawSlidePopGame._Scripts.UI.Base;
 using _PawSlidePopGame._Scripts.UI.Popups;
 using _PawSlidePopGame._Scripts.UI.Screens;
 using _PawSlidePopGame._Scripts.UI.TopLevels;
-using _PawSlidePopGame.Scripts.DesignPattern.Singleton;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace _PawSlidePopGame._Scripts.UI.Manager
 {
@@ -61,6 +62,8 @@ namespace _PawSlidePopGame._Scripts.UI.Manager
 
         public void Init()
         {
+            AssignUILayerToRoots();
+            AssignUICameraToRoots();
             InitPrefabDictionaries();
             InitTopUI();
         }
@@ -97,6 +100,88 @@ namespace _PawSlidePopGame._Scripts.UI.Manager
             {
                 _toastInstance = Instantiate(toastPrefab, topRoot);
                 _toastInstance.gameObject.SetActive(false);
+            }
+        }
+
+        private void AssignUILayerToRoots()
+        {
+            int uiLayer = LayerMask.NameToLayer("UI");
+            if (uiLayer < 0)
+            {
+                return;
+            }
+
+            ApplyLayerRecursively(screenRoot, uiLayer);
+            ApplyLayerRecursively(popupRoot, uiLayer);
+            ApplyLayerRecursively(topRoot, uiLayer);
+        }
+
+        private void AssignUICameraToRoots()
+        {
+            Camera uiCamera = FindUICamera();
+            if (uiCamera == null)
+            {
+                return;
+            }
+
+            AssignUICamera(screenRoot, uiCamera);
+            AssignUICamera(popupRoot, uiCamera);
+            AssignUICamera(topRoot, uiCamera);
+        }
+
+        private static void AssignUICamera(Transform root, Camera uiCamera)
+        {
+            if (root == null || uiCamera == null)
+            {
+                return;
+            }
+
+            Canvas canvas = root.GetComponent<Canvas>();
+            if (canvas == null)
+            {
+                return;
+            }
+
+            canvas.renderMode = RenderMode.ScreenSpaceCamera;
+            canvas.worldCamera = uiCamera;
+            canvas.planeDistance = 100f;
+        }
+
+        private static Camera FindUICamera()
+        {
+            GameObject cameraObject = GameObject.Find("UICamera");
+            if (cameraObject != null)
+            {
+                Camera namedCamera = cameraObject.GetComponent<Camera>();
+                if (namedCamera != null)
+                {
+                    return namedCamera;
+                }
+            }
+
+            Camera[] cameras = FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int i = 0; i < cameras.Length; i++)
+            {
+                if (cameras[i] != null && cameras[i].name.Contains("UI"))
+                {
+                    return cameras[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static void ApplyLayerRecursively(Transform root, int layer)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            root.gameObject.layer = layer;
+            for (int i = 0; i < root.childCount; i++)
+            {
+                ApplyLayerRecursively(root.GetChild(i), layer);
             }
         }
 

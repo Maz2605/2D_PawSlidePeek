@@ -1,11 +1,10 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using _PawSlidePopGame._Scripts.Core.Boostrap;
 using _PawSlidePopGame._Scripts.Core.System.SceneManagement;
+using _PawSlidePopGame._Scripts.UI.Manager;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
-// Namespace chứa LoadingSceneVisual
 
 namespace _PawSlidePopGame._Scripts.Core.System.Boostrap
 {
@@ -14,7 +13,7 @@ namespace _PawSlidePopGame._Scripts.Core.System.Boostrap
         [Header("Scene Config")]
         [SerializeField] private string nameInitScene = "LoadingScene";
         [SerializeField] private string nameMainScene = "GameplayScene";
-        
+
         [Header("Core Services")]
         [SerializeField] private List<MonoBehaviour> coreServices;
 
@@ -34,13 +33,47 @@ namespace _PawSlidePopGame._Scripts.Core.System.Boostrap
         private IEnumerator RunInitFlowRoutine(bool isEditorAutoInject)
         {
             DontDestroyOnLoad(gameObject);
-            
-            foreach (var mono in coreServices)
+            EnsureUIManagerExists();
+
+            foreach (MonoBehaviour mono in coreServices)
             {
-                if (mono is IAppService service) service.Init();
+                if (mono is IAppService service)
+                {
+                    service.Init();
+                }
             }
-            yield return null; 
+
+            yield return null;
             SceneLoaderManager.Instance.LoadScene(nameMainScene);
+        }
+
+        private void EnsureUIManagerExists()
+        {
+            UIManager existingUIManager = FindFirstObjectByType<UIManager>();
+            if (existingUIManager != null)
+            {
+                existingUIManager.Init();
+                return;
+            }
+
+            GameObject uiManagerPrefab = Resources.Load<GameObject>("UI/UIManager");
+            if (uiManagerPrefab == null)
+            {
+                Debug.LogError("[AppBootstrap] Missing Resources/UI/UIManager prefab.");
+                return;
+            }
+
+            GameObject uiManagerInstance = Instantiate(uiManagerPrefab);
+            uiManagerInstance.name = uiManagerPrefab.name;
+
+            UIManager uiManager = uiManagerInstance.GetComponent<UIManager>();
+            if (uiManager == null)
+            {
+                Debug.LogError("[AppBootstrap] UIManager prefab does not contain UIManager component.");
+                return;
+            }
+
+            uiManager.Init();
         }
     }
 }

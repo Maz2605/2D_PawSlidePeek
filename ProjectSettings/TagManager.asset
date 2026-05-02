@@ -53,5 +53,8 @@ TagManager:
   - name: TopLevel
     uniqueID: 2413509097
     locked: 0
+  - name: HUD
+    uniqueID: 2361490839
+    locked: 0
   m_RenderingLayers:
   - Default

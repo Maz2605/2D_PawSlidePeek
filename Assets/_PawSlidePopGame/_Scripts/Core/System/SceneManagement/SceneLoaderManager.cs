@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
+using _PawSlidePopGame._Scripts.Core.System.DesignPattern.Singleton;
 using _PawSlidePopGame._Scripts.UI.Manager;
-using _PawSlidePopGame.Scripts.DesignPattern.Singleton;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 

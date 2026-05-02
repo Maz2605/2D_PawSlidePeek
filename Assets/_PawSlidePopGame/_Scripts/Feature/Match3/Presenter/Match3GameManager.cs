@@ -36,11 +36,6 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         public event Action<BoardModel> OnBoardInitialized;
         public event Action<BoardMoveExecutionResult> OnMoveExecuted;
 
-        private void Start()
-        {
-            InitializeGame();
-        }
-
         public void InitializeGame()
         {
             if (_isInitialized)

@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using _PawSlidePopGame._Scripts.Core.Boostrap;
+using _PawSlidePopGame._Scripts.Core.System.DesignPattern.Singleton;
 using _PawSlidePopGame._Scripts.Data.Audio;
 using _PawSlidePopGame._Scripts.Data.Config;
-using _PawSlidePopGame.Scripts.DesignPattern.Singleton;
 using DG.Tweening;
 using UnityEngine;
 

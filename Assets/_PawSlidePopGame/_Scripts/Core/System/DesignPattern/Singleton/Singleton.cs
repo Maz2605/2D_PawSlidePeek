@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace _PawSlidePopGame.Scripts.DesignPattern.Singleton
+namespace _PawSlidePopGame._Scripts.Core.System.DesignPattern.Singleton
 {
     public class Singleton<T> : MonoBehaviour where T : MonoBehaviour
     {

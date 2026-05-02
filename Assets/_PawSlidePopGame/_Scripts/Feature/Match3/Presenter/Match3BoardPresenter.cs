@@ -1,8 +1,13 @@
+using _PawSlidePopGame._Scripts.Core.System.GameFlow;
+using _PawSlidePopGame._Scripts.Data.Events;
+using _PawSlidePopGame._Scripts.Data.Events.Payloads;
+using _PawSlidePopGame._Scripts.Feature.Match3.Flow;
 using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Board;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presentation;
 using _PawSlidePopGame._Scripts.Feature.Match3.View;
+using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
 using UnityEngine;
 
 namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
@@ -49,6 +54,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 inputController.OnPreviewUpdated += HandlePreviewUpdated;
                 inputController.OnPreviewCleared += HandlePreviewCleared;
             }
+
+            EventManager<LogicGameEvent>.AddListener<InGameSubStateChangedPayload>(
+                LogicGameEvent.InGameSubStateChanged,
+                HandleSubStateChanged);
         }
 
         private void Start()
@@ -56,6 +65,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             if (gameManager != null && gameManager.IsInitialized)
             {
                 HandleBoardInitialized(gameManager.Board);
+            }
+
+            if (GameFlowManager.Instance != null)
+            {
+                ApplyInputState(GameFlowManager.Instance.CurrentInGameSubState);
             }
         }
 
@@ -74,6 +88,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 inputController.OnPreviewUpdated -= HandlePreviewUpdated;
                 inputController.OnPreviewCleared -= HandlePreviewCleared;
             }
+
+            EventManager<LogicGameEvent>.RemoveListener<InGameSubStateChangedPayload>(
+                LogicGameEvent.InGameSubStateChanged,
+                HandleSubStateChanged);
         }
 
         private void HandleBoardInitialized(BoardModel board)
@@ -93,7 +111,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
         private void HandleMoveRequested(BoardMoveRequest request)
         {
-            if (_isAnimatingMove)
+            if (_isAnimatingMove || GameFlowManager.Instance == null)
             {
                 return;
             }
@@ -103,14 +121,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 StopCoroutine(_movePlaybackRoutine);
             }
 
-            _movePlaybackRoutine = StartCoroutine(PlayExecutionRoutine(() => gameManager != null
-                ? gameManager.ExecuteMove(request)
+            _movePlaybackRoutine = StartCoroutine(PlayExecutionRoutine(() => GameFlowManager.Instance != null
+                ? GameFlowManager.Instance.RequestMove(request)
                 : new BoardMoveExecutionResult()));
         }
 
         private void HandleTileTapped(CellModel cell)
         {
-            if (_isAnimatingMove || cell?.CurrentTile == null)
+            if (_isAnimatingMove || cell?.CurrentTile == null || GameFlowManager.Instance == null)
             {
                 return;
             }
@@ -122,8 +140,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
             int x = cell.X;
             int y = cell.Y;
-            _movePlaybackRoutine = StartCoroutine(PlayExecutionRoutine(() => gameManager != null
-                ? gameManager.ExecuteTileActivation(x, y)
+            _movePlaybackRoutine = StartCoroutine(PlayExecutionRoutine(() => GameFlowManager.Instance != null
+                ? GameFlowManager.Instance.RequestTileActivation(x, y)
                 : new BoardMoveExecutionResult()));
         }
 
@@ -144,12 +162,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 boardView.SyncToBoardState();
             }
 
-            if (boardView != null)
-            {
-                boardView.SetIdleEnabled(true);
-            }
-
-            inputController?.SetInputLocked(false);
+            GameFlowManager.Instance?.NotifyResolutionPlaybackComplete(executionResult);
             _isAnimatingMove = false;
             _movePlaybackRoutine = null;
         }
@@ -182,6 +195,22 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             }
 
             boardView?.ClearPreview();
+        }
+
+        private void HandleSubStateChanged(InGameSubStateChangedPayload payload)
+        {
+            ApplyInputState(payload.Current);
+        }
+
+        private void ApplyInputState(InGameSubState subState)
+        {
+            bool canInteract = subState == InGameSubState.PlayerTurn;
+            inputController?.SetInputLocked(!canInteract);
+            boardView?.SetIdleEnabled(canInteract);
+            if (!canInteract)
+            {
+                boardView?.ClearPreview();
+            }
         }
     }
 }

@@ -14,9 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Match3.Data.Match3LevelDefinitionSO
   levelData:
     levelID: Level_0
+    displayLevelNumber: 1
     width: 8
     height: 8
     movesLimit: 30
     gridLayout: 
     playableMask: 
     spawnableTileIds: 65000000660000006700000068000000690000006a000000
+    targets:
+    - tileId: 101
+      requiredCount: 24
+    - tileId: 102
+      requiredCount: 24
+    - tileId: 103
+      requiredCount: 24
+    starScoreThresholds: 78000000f000000058020000
