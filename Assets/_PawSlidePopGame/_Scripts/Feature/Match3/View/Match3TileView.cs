@@ -2,11 +2,12 @@ using System.Collections;
 using DG.Tweening;
 using _PawSlidePopGame._Scripts.Feature.Match3.Data;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities;
+using _PawSlidePopGame.Scripts.DesignPattern.ObjectPooling;
 using UnityEngine;
 
 namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 {
-    public class Match3TileView : MonoBehaviour
+    public class Match3TileView : MonoBehaviour, IPoolable
     {
         [Header("Renderers")]
         [SerializeField] private SpriteRenderer bodyRenderer;
@@ -41,6 +42,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         private Coroutine _blinkRoutine;
         private Tween _pulseTween;
         private Vector3 _initialScale;
+        private Quaternion _initialLocalRotation;
         private Color _bodyBaseColor = Color.white;
         private Color _shadowBaseColor = Color.white;
         private TileShadowState _shadowState;
@@ -70,6 +72,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
         protected virtual void Awake()
         {
+            CacheInitialTransformState();
             _initialScale = transform.localScale;
             if (bodyRenderer != null)
             {
@@ -100,6 +103,21 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         {
             StopIdle();
             KillAllTweens();
+        }
+
+        public void OnSpawn()
+        {
+            CacheInitialTransformState();
+            ResetVisualState();
+        }
+
+        public void OnDespawn()
+        {
+            StopIdle();
+            KillAllTweens();
+            ResetVisualState();
+            _tile = null;
+            _definition = null;
         }
 
         public virtual void Bind(TileModel tile, TileDefinitionSO definition)
@@ -370,6 +388,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         {
             RestoreBodyColor();
             RestoreShadowColor();
+            ApplyOpenSprite();
+            transform.localRotation = _initialLocalRotation;
             transform.localScale = _initialScale;
             SetShadowState(TileShadowState.Off);
         }
@@ -555,6 +575,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             }
 
             shadowRenderer.sprite = bodyRenderer.sprite;
+        }
+
+        private void CacheInitialTransformState()
+        {
+            _initialScale = transform.localScale;
+            _initialLocalRotation = transform.localRotation;
         }
     }
 }

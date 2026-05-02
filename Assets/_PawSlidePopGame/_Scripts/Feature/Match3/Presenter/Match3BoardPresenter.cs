@@ -101,7 +101,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 return;
             }
 
-            boardView.Bind(board);
+            boardView.Bind(board, gameManager.LevelData, gameManager.TileDatabase);
 
             if (inputController != null)
             {

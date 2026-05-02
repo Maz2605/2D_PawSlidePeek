@@ -2,9 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
 using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
+using _PawSlidePopGame._Scripts.Feature.Match3.Data;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Board;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presentation;
+using _PawSlidePopGame._Scripts.Feature.Match3.View.Factory;
+using _PawSlidePopGame.Scripts.DesignPattern.ObjectPooling;
 using UnityEngine;
 
 namespace _PawSlidePopGame._Scripts.Feature.Match3.View
@@ -27,16 +30,23 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         [SerializeField] private float gravityDurationPerCell = 0.09f;
         [SerializeField] private float refillDurationPerCell = 0.1f;
         [SerializeField] private float phaseGap = 0.04f;
+        [SerializeField] private int spawnableTilePrewarmReserve = 2;
 
         private readonly Dictionary<CellModel, Match3CellView> _cellViews = new Dictionary<CellModel, Match3CellView>();
         private readonly Dictionary<int, Match3TileView> _tileViews = new Dictionary<int, Match3TileView>();
         private readonly HashSet<int> _previewedTileIds = new HashSet<int>();
+        private readonly Match3CellViewFactory _cellViewFactory = new Match3CellViewFactory();
+        private readonly Match3TileViewFactory _tileViewFactory = new Match3TileViewFactory();
         private BoardModel _board;
+        private Match3LevelData _levelData;
+        private Match3TileDatabaseSO _tileDatabase;
         private bool _isIdleEnabled = true;
 
-        public void Bind(BoardModel board)
+        public void Bind(BoardModel board, Match3LevelData levelData, Match3TileDatabaseSO tileDatabase)
         {
             _board = board;
+            _levelData = levelData;
+            _tileDatabase = tileDatabase;
             Rebuild();
         }
 
@@ -269,8 +279,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
             ClearCells();
             ClearTileViews();
+            PrewarmBoardPools();
 
-            Transform parent = cellRoot != null ? cellRoot : transform;
             foreach (CellModel cell in _board.GetAllCells())
             {
                 if (!cell.IsPlayable)
@@ -278,11 +288,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                     continue;
                 }
 
-                Match3CellView cellView = Instantiate(cellPrefab, parent);
-                cellView.name = $"Cell_{cell.X}_{cell.Y}";
-                cellView.transform.localPosition = GetLocalPosition(cell.X, cell.Y);
-                cellView.Initialize(cell);
-                _cellViews[cell] = cellView;
+                Match3CellView cellView = CreateCellView(cell);
+                if (cellView != null)
+                {
+                    _cellViews[cell] = cellView;
+                }
             }
 
             SyncToBoardState();
@@ -290,6 +300,18 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
         private void ClearCells()
         {
+            if (Application.isPlaying)
+            {
+                List<Match3CellView> cellViews = new List<Match3CellView>(_cellViews.Values);
+                for (int i = 0; i < cellViews.Count; i++)
+                {
+                    _cellViewFactory.ReturnVisual(cellViews[i]);
+                }
+
+                _cellViews.Clear();
+                return;
+            }
+
             Transform parent = cellRoot != null ? cellRoot : transform;
             List<Transform> children = new List<Transform>();
 
@@ -324,17 +346,37 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
         private Match3TileView CreateTileView(TileModel tile, _PawSlidePopGame._Scripts.Feature.Match3.Data.TileDefinitionSO definition, Vector3 localPosition)
         {
-            if (definition == null || definition.TileViewPrefab == null)
+            if (tile == null || definition == null || definition.TileViewPrefab == null)
             {
                 return null;
             }
 
             Transform parent = tileRoot != null ? tileRoot : transform;
-            Match3TileView tileView = Instantiate(definition.TileViewPrefab, parent);
-            tileView.name = $"Tile_{tile.InstanceId}_{tile.TileId}";
-            tileView.Bind(tile, definition);
-            tileView.SnapToLocalPosition(localPosition);
-            tileView.SetIdleEnabled(_isIdleEnabled);
+            Match3TileView tileView = Application.isPlaying
+                ? _tileViewFactory.CreateVisual(
+                    new TileViewSpawnData(
+                        definition.TileViewPrefab,
+                        tile,
+                        definition,
+                        localPosition,
+                        _isIdleEnabled,
+                        $"Tile_{tile.InstanceId}_{tile.TileId}"),
+                    parent)
+                : Instantiate(definition.TileViewPrefab, parent);
+
+            if (!Application.isPlaying && tileView != null)
+            {
+                tileView.name = $"Tile_{tile.InstanceId}_{tile.TileId}";
+                tileView.Bind(tile, definition);
+                tileView.SnapToLocalPosition(localPosition);
+                tileView.SetIdleEnabled(_isIdleEnabled);
+            }
+
+            if (tileView == null)
+            {
+                return null;
+            }
+
             _tileViews[tile.InstanceId] = tileView;
             return tileView;
         }
@@ -356,12 +398,123 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
             if (Application.isPlaying)
             {
-                Destroy(tileView.gameObject);
+                _tileViewFactory.ReturnVisual(tileView);
+                return;
             }
-            else
+
+            DestroyImmediate(tileView.gameObject);
+        }
+
+        private Match3CellView CreateCellView(CellModel cell)
+        {
+            Transform parent = cellRoot != null ? cellRoot : transform;
+            Vector3 localPosition = GetLocalPosition(cell.X, cell.Y);
+
+            if (Application.isPlaying)
             {
-                DestroyImmediate(tileView.gameObject);
+                return _cellViewFactory.CreateVisual(
+                    new CellViewSpawnData(cellPrefab, cell, localPosition, $"Cell_{cell.X}_{cell.Y}"),
+                    parent);
             }
+
+            Match3CellView cellView = Instantiate(cellPrefab, parent);
+            cellView.name = $"Cell_{cell.X}_{cell.Y}";
+            cellView.transform.localPosition = localPosition;
+            cellView.Initialize(cell);
+            return cellView;
+        }
+
+        private void PrewarmBoardPools()
+        {
+            if (!Application.isPlaying)
+            {
+                return;
+            }
+
+            if (cellPrefab != null)
+            {
+                PoolingManager.Instance.Prewarm(cellPrefab.gameObject, CountPlayableCells());
+            }
+
+            foreach (KeyValuePair<GameObject, int> pair in BuildTilePrewarmCounts())
+            {
+                if (pair.Key == null || pair.Value <= 0)
+                {
+                    continue;
+                }
+
+                PoolingManager.Instance.Prewarm(pair.Key, pair.Value);
+            }
+        }
+
+        private int CountPlayableCells()
+        {
+            if (_board == null)
+            {
+                return 0;
+            }
+
+            int count = 0;
+            foreach (CellModel cell in _board.GetAllCells())
+            {
+                if (cell != null && cell.IsPlayable)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private Dictionary<GameObject, int> BuildTilePrewarmCounts()
+        {
+            Dictionary<GameObject, int> counts = new Dictionary<GameObject, int>();
+
+            if (_board != null)
+            {
+                foreach (CellModel cell in _board.GetAllCells())
+                {
+                    TileDefinitionSO definition = cell?.CurrentTile?.Definition;
+                    Match3TileView prefab = definition?.TileViewPrefab;
+                    if (prefab == null)
+                    {
+                        continue;
+                    }
+
+                    GameObject prefabObject = prefab.gameObject;
+                    counts[prefabObject] = counts.TryGetValue(prefabObject, out int currentCount)
+                        ? currentCount + 1
+                        : 1;
+                }
+            }
+
+            if (_levelData == null || _tileDatabase == null || _levelData.spawnableTileIds == null || spawnableTilePrewarmReserve <= 0)
+            {
+                return counts;
+            }
+
+            HashSet<GameObject> reservedPrefabs = new HashSet<GameObject>();
+            for (int i = 0; i < _levelData.spawnableTileIds.Count; i++)
+            {
+                TileDefinitionSO definition = _tileDatabase.GetTileDefinition(_levelData.spawnableTileIds[i]);
+                Match3TileView prefab = definition?.TileViewPrefab;
+                if (prefab == null)
+                {
+                    continue;
+                }
+
+                GameObject prefabObject = prefab.gameObject;
+                if (!reservedPrefabs.Add(prefabObject))
+                {
+                    continue;
+                }
+
+                counts[prefabObject] = counts.TryGetValue(prefabObject, out int currentCount)
+                    ? currentCount + spawnableTilePrewarmReserve
+                    : spawnableTilePrewarmReserve;
+            }
+
+            return counts;
         }
 
         private IEnumerator PlayClearPhase(ClearPhaseTrace clearPhase)
@@ -737,6 +890,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             float offsetX = _board != null ? -((_board.Width - 1) * cellStepX) * 0.5f : 0f;
             float offsetY = _board != null ? ((_board.Height - 1) * cellStepY) * 0.5f : 0f;
             return new Vector3(boardOffset.x + offsetX + (x * cellStepX), boardOffset.y + offsetY - (y * cellStepY), 0f);
+        }
+
+        private void OnValidate()
+        {
+            if (spawnableTilePrewarmReserve < 0)
+            {
+                spawnableTilePrewarmReserve = 0;
+            }
         }
 
         private readonly struct WrapSnapData
