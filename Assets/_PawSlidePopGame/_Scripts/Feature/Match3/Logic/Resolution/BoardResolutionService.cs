@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
 using _PawSlidePopGame._Scripts.Feature.Match3.Data;
 using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Match;
 using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move;
@@ -108,8 +109,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             }
 
             CellModel cell = board.GetCell(x, y);
-            TileModel tile = cell?.CurrentTile;
-            if (cell == null || !cell.IsPlayable || tile == null || tile.TileKind != Core.Enum.TileKind.Booster)
+            TileModel tile = cell?.BaseTile;
+            if (cell == null || !cell.IsPlayable || !cell.CanBaseTileActivate() || tile == null || tile.TileKind != TileKind.Booster)
             {
                 return executionResult;
             }
@@ -208,6 +209,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
 
             int clearedTiles = 0;
             List<PendingSpecialCreate> pendingCreates = new List<PendingSpecialCreate>();
+            ApplyAdjacentIceBreaks(board, matchAnalysis, fxContext);
 
             for (int groupIndex = 0; groupIndex < matchAnalysis.Groups.Count; groupIndex++)
             {
@@ -217,25 +219,25 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                 for (int cellIndex = 0; cellIndex < group.Cells.Count; cellIndex++)
                 {
                     CellModel cell = group.Cells[cellIndex];
-                    if (cell?.CurrentTile == null)
+                    if (cell?.BaseTile == null)
                     {
                         continue;
                     }
 
                     if (decision != null && cell == decision.SpawnCell)
                     {
-                        pendingCreates.Add(new PendingSpecialCreate(decision, cell.CurrentTile, cell));
-                        if (cell.CurrentTile.CanMatch())
+                        pendingCreates.Add(new PendingSpecialCreate(decision, cell.BaseTile, cell));
+                        if (cell.CanBaseTileMatch())
                         {
                             board.AddScore(10);
-                            fxContext?.RecordScore(cell.CurrentTile, cell, 10, board.CurrentScore);
+                            fxContext?.RecordScore(cell.BaseTile, cell, 10, board.CurrentScore);
                         }
 
                         continue;
                     }
 
                     clearedTiles++;
-                    cell.CurrentTile.Match(board, cell, fxContext);
+                    cell.BaseTile.Match(board, cell, fxContext);
                 }
             }
 
@@ -256,11 +258,64 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                     continue;
                 }
 
-                board.SetTile(pendingCreate.Cell, createdTile);
+                board.SetTile(pendingCreate.Cell, TileStackLayer.Base, createdTile);
                 fxContext?.RecordSpecialCreate(pendingCreate.SourceTile, createdTile, pendingCreate.Cell);
             }
 
             return clearedTiles;
+        }
+
+        private static void ApplyAdjacentIceBreaks(BoardModel board, BoardMatchAnalysis matchAnalysis, BoardFxContext fxContext)
+        {
+            if (board == null || matchAnalysis?.Groups == null || matchAnalysis.Groups.Count == 0)
+            {
+                return;
+            }
+
+            HashSet<CellModel> iceCellsToBreak = new HashSet<CellModel>();
+            for (int groupIndex = 0; groupIndex < matchAnalysis.Groups.Count; groupIndex++)
+            {
+                MatchGroup group = matchAnalysis.Groups[groupIndex];
+                if (group?.Cells == null)
+                {
+                    continue;
+                }
+
+                for (int cellIndex = 0; cellIndex < group.Cells.Count; cellIndex++)
+                {
+                    CollectAdjacentIceCells(board, group.Cells[cellIndex], iceCellsToBreak);
+                }
+            }
+
+            List<CellModel> orderedIceCells = new List<CellModel>(iceCellsToBreak);
+            orderedIceCells.Sort(CompareCells);
+            for (int i = 0; i < orderedIceCells.Count; i++)
+            {
+                CellModel iceCell = orderedIceCells[i];
+                iceCell?.OverlayTile?.Match(board, iceCell, fxContext);
+            }
+        }
+
+        private static void CollectAdjacentIceCells(BoardModel board, CellModel sourceCell, HashSet<CellModel> iceCellsToBreak)
+        {
+            if (board == null || sourceCell == null || iceCellsToBreak == null)
+            {
+                return;
+            }
+
+            TryAddAdjacentIceCell(board, sourceCell.X + 1, sourceCell.Y, iceCellsToBreak);
+            TryAddAdjacentIceCell(board, sourceCell.X - 1, sourceCell.Y, iceCellsToBreak);
+            TryAddAdjacentIceCell(board, sourceCell.X, sourceCell.Y + 1, iceCellsToBreak);
+            TryAddAdjacentIceCell(board, sourceCell.X, sourceCell.Y - 1, iceCellsToBreak);
+        }
+
+        private static void TryAddAdjacentIceCell(BoardModel board, int x, int y, HashSet<CellModel> iceCellsToBreak)
+        {
+            CellModel adjacentCell = board.GetCell(x, y);
+            if (adjacentCell != null && adjacentCell.HasOverlayLogic(TileLogicType.IceBlocker))
+            {
+                iceCellsToBreak.Add(adjacentCell);
+            }
         }
 
         private static bool ApplyPostMoveRules(
@@ -321,6 +376,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                 {
                     TileInstanceId = tile.InstanceId,
                     TileId = tile.TileId,
+                    Layer = TileStackLayer.Base,
                     FromCell = new BoardCellPosition(sourceCell.X, sourceCell.Y),
                     ToCell = new BoardCellPosition(destinationCell.X, destinationCell.Y),
                     Distance = 1,
@@ -346,6 +402,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                 {
                     TileInstanceId = operation.TileInstanceId,
                     TileId = operation.TileId,
+                    Layer = operation.Layer,
                     FromCell = operation.ToCell,
                     ToCell = operation.FromCell,
                     Distance = operation.Distance,

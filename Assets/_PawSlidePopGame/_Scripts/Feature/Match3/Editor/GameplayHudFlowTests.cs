@@ -154,6 +154,32 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(snapshot.targets[0].requiredCount, Is.EqualTo(3));
         }
 
+        [Test]
+        public void BoardModel_PopulateBoard_NullGridStillCreatesOverlayTiles()
+        {
+            Match3LevelData levelData = new Match3LevelData
+            {
+                width = 2,
+                height = 2,
+                overlayLayout = new[] { 301, 0, 0, 301 }
+            };
+
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBlockerTile(301, 1));
+
+            BoardModel board = new BoardModel(levelData);
+
+            board.PopulateBoard(null, levelData.overlayLayout, database);
+
+            Assert.That(board.GetCell(0, 0).OverlayTile, Is.Not.Null);
+            Assert.That(board.GetCell(0, 0).OverlayTile.TileId, Is.EqualTo(301));
+            Assert.That(board.GetCell(1, 1).OverlayTile, Is.Not.Null);
+            Assert.That(board.GetCell(1, 1).OverlayTile.TileId, Is.EqualTo(301));
+            Assert.That(board.GetCell(1, 0).OverlayTile, Is.Null);
+            Assert.That(board.GetCell(0, 0).BaseTile, Is.Null);
+        }
+
         [TestCase(0, 0)]
         [TestCase(50, 1)]
         [TestCase(120, 2)]
@@ -351,6 +377,51 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(completionEventCount, Is.EqualTo(1));
         }
 
+        [Test]
+        public void GameFlowManager_PlaybackCallbacks_CountOverlayBlockerTargetsByTileId()
+        {
+            Match3LevelData levelData = CreateLevelData(1, 1, new[] { 101 });
+            levelData.overlayLayout = new[] { 301 };
+            levelData.targets = new List<LevelTargetData> { new LevelTargetData(301, 1) };
+
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBlockerTile(301, 1));
+
+            GameFlowManager flowManager = CreateFlowManager(levelData, database);
+            BoardMoveExecutionResult result = new BoardMoveExecutionResult
+            {
+                IsApplied = true,
+                IsAccepted = true,
+                PresentationTrace = new BoardPresentationTrace()
+            };
+            CascadeTrace cascade = new CascadeTrace();
+            cascade.ClearPhase.ClearOps.Add(new TileClearOp
+            {
+                TileId = 301,
+                TileInstanceId = 77,
+                Layer = TileStackLayer.Overlay,
+                Cell = new BoardCellPosition(0, 0)
+            });
+            result.PresentationTrace.Cascades.Add(cascade);
+
+            TargetProgressChangedPayload targetPayload = default;
+            int completedCount = 0;
+            EventManager<VisualGameEvent>.AddListener<TargetProgressChangedPayload>(
+                VisualGameEvent.TopHudTargetProgressFx,
+                payload => targetPayload = payload);
+            EventManager<VisualGameEvent>.AddListener(
+                VisualGameEvent.TopHudTargetsCompletedFx,
+                () => completedCount++);
+
+            flowManager.RequestMove(new BoardMoveRequest(MoveAxis.Row, 0, LineSlideDirection.Right, 0, 0));
+            flowManager.NotifyTileClearedDuringPlayback(cascade.ClearPhase.ClearOps[0], Vector3.zero);
+
+            Assert.That(targetPayload.TileId, Is.EqualTo(301));
+            Assert.That(targetPayload.CurrentCount, Is.EqualTo(1));
+            Assert.That(completedCount, Is.EqualTo(1));
+        }
+
         private static BoardMoveExecutionResult CreateExecutionResult(params int[] clearedTileIds)
         {
             BoardMoveExecutionResult result = new BoardMoveExecutionResult
@@ -399,6 +470,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
                 height = height,
                 movesLimit = 20,
                 gridLayout = layout,
+                overlayLayout = new int[layout.Length],
                 spawnableTileIds = new List<int>()
             };
         }
@@ -426,6 +498,17 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             BoosterTileDefinitionSO tile = ScriptableObject.CreateInstance<BoosterTileDefinitionSO>();
             SetPrivateField(tile, "tileId", tileId);
             SetPrivateField(tile, "boosterLogicType", logicType);
+            SetPrivateField(tile, "canSpawnOnRefill", false);
+            SetPrivateField(tile, "spawnWeight", 0);
+            return tile;
+        }
+
+        private static BlockerTileDefinitionSO CreateBlockerTile(int tileId, int defaultHp)
+        {
+            BlockerTileDefinitionSO tile = ScriptableObject.CreateInstance<BlockerTileDefinitionSO>();
+            SetPrivateField(tile, "tileId", tileId);
+            SetPrivateField(tile, "blockerLogicType", TileLogicType.IceBlocker);
+            SetPrivateField(tile, "defaultHP", defaultHp);
             SetPrivateField(tile, "canSpawnOnRefill", false);
             SetPrivateField(tile, "spawnWeight", 0);
             return tile;

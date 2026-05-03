@@ -66,7 +66,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             _ruleSet = BoardRuleSet.Default;
             _board = new BoardModel(levelData);
             tileDatabase.RebuildCache();
-            _board.PopulateBoard(levelData.gridLayout, tileDatabase);
+            _board.PopulateBoard(levelData.gridLayout, levelData.overlayLayout, tileDatabase);
 
             if (resolveBoardOnStart)
             {

@@ -25,6 +25,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
         public int height = 8;
         public int movesLimit = 30;
         public int[] gridLayout;
+        public int[] overlayLayout;
         public bool[] playableMask;
         public List<int> spawnableTileIds = new List<int>();
         public List<LevelTargetData> targets = new List<LevelTargetData>();
@@ -36,6 +37,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
         public bool HasValidGridLayout()
         {
             return gridLayout != null && gridLayout.Length == CellCount;
+        }
+
+        public bool HasValidOverlayLayout()
+        {
+            return overlayLayout != null && overlayLayout.Length == CellCount;
         }
 
         public bool HasPlayableMask()
@@ -66,6 +72,16 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
             }
 
             return gridLayout[(y * width) + x];
+        }
+
+        public int GetOverlayValue(int x, int y)
+        {
+            if (!HasValidOverlayLayout() || x < 0 || x >= width || y < 0 || y >= height)
+            {
+                return 0;
+            }
+
+            return overlayLayout[(y * width) + x];
         }
 
         public int[] GetSafeStarThresholds()

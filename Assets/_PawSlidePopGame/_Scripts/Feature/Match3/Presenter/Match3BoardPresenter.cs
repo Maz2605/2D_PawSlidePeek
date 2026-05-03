@@ -140,7 +140,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
         private void HandleTileTapped(CellModel cell)
         {
-            if (_isAnimatingMove || cell?.CurrentTile == null || GameFlowManager.Instance == null)
+            if (_isAnimatingMove || cell?.BaseTile == null || !cell.CanBaseTileActivate() || GameFlowManager.Instance == null)
             {
                 return;
             }

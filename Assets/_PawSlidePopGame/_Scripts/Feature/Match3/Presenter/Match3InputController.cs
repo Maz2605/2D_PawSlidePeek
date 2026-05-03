@@ -172,8 +172,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
         private void TryHandleTap()
         {
-            TileModel tile = _pressedCell?.CurrentTile;
-            if (tile == null || tile.TileKind != TileKind.Booster)
+            TileModel tile = _pressedCell?.BaseTile;
+            if (_pressedCell == null || !_pressedCell.CanBaseTileActivate() || tile == null || tile.TileKind != TileKind.Booster)
             {
                 return;
             }

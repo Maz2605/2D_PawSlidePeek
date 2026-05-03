@@ -27,6 +27,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: a35d9145689a626418f73710a5eab2cb, type: 2}
   - {fileID: 11400000, guid: 05a8ea5196a901c4daf8bbd7ac9726b5, type: 2}
   - {fileID: 11400000, guid: 414747f8b689a464b8d090c5abd48692, type: 2}
-  blockerTiles: []
+  blockerTiles:
+  - {fileID: 11400000, guid: e1a9a4c625da4d79a2658f1c4795d201, type: 2}
   mechanicTiles: []
   tiles: []

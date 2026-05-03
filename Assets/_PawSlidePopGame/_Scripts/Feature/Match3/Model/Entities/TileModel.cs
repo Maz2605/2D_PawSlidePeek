@@ -48,6 +48,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities
             return Logic != null && Logic.CanMatch();
         }
 
+        public bool BlocksTileBelow()
+        {
+            return Logic != null && Logic.BlocksTileBelow();
+        }
+
         public bool IsMatchableWith(TileModel other)
         {
             if (other == null || !CanMatch() || !other.CanMatch())
@@ -67,7 +72,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities
 
         public void Match(BoardModel board, CellModel cell, BoardFxContext fxContext = null)
         {
-            Logic?.OnMatched(board, cell, fxContext);
+            Logic?.OnMatched(board, cell, this, fxContext);
         }
 
         public void Explode(BoardModel board, CellModel cell, BoardFxContext fxContext = null)
@@ -77,12 +82,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities
                 return;
             }
 
-            Logic?.OnExploded(board, cell, fxContext);
+            Logic?.OnExploded(board, cell, this, fxContext);
         }
 
         public void Activate(BoardModel board, CellModel cell, BoardFxContext fxContext = null)
         {
-            Logic?.OnActivated(board, cell, fxContext);
+            Logic?.OnActivated(board, cell, this, fxContext);
         }
     }
 }

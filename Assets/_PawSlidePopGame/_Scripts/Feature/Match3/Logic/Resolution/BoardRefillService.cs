@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
 using _PawSlidePopGame._Scripts.Feature.Match3.Data;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Board;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities;
@@ -25,7 +26,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                 for (int y = board.Height - 1; y >= 0; y--)
                 {
                     CellModel cell = board.GetCell(x, y);
-                    if (cell == null || !cell.IsPlayable || cell.HasTile())
+                    if (cell == null || !cell.IsPlayable || cell.HasBaseTile())
                     {
                         continue;
                     }
@@ -48,6 +49,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                     {
                         TileInstanceId = tile.InstanceId,
                         TileId = tile.TileId,
+                        Layer = TileStackLayer.Base,
                         Definition = tile.Definition,
                         SpawnFromRowAboveBoard = -spawnOffset,
                         ToCell = new BoardCellPosition(cell.X, cell.Y)
@@ -88,17 +90,17 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
 
         private static void AddNeighborRestriction(CellModel first, CellModel second, List<int> restrictedIds)
         {
-            if (first?.CurrentTile == null || second?.CurrentTile == null)
+            if (first?.BaseTile == null || second?.BaseTile == null)
             {
                 return;
             }
 
-            if (!first.CurrentTile.IsMatchableWith(second.CurrentTile))
+            if (!first.BaseTile.IsMatchableWith(second.BaseTile))
             {
                 return;
             }
 
-            restrictedIds.Add(first.CurrentTile.TileId);
+            restrictedIds.Add(first.BaseTile.TileId);
         }
 
         private static bool IsRestricted(int tileId, List<int> restrictedIds)

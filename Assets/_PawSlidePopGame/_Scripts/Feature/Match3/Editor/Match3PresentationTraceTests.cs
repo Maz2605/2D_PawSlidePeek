@@ -298,8 +298,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(result.PresentationTrace.Cascades[0].ClearPhase.ClearOps.Count, Is.EqualTo(5));
             Assert.That(result.PresentationTrace.Cascades[0].ClearPhase.ScoreGainOps.Count, Is.EqualTo(5));
             Assert.That(board.RemainingMoves, Is.EqualTo(movesBefore - 1));
-            Assert.That(board.GetCell(1, 1).CurrentTile, Is.Not.Null);
-            Assert.That(board.GetCell(1, 1).CurrentTile.TileKind, Is.EqualTo(TileKind.Normal));
+            Assert.That(board.GetCell(1, 1).BaseTile, Is.Not.Null);
+            Assert.That(board.GetCell(1, 1).BaseTile.TileKind, Is.EqualTo(TileKind.Normal));
         }
 
         [Test]
@@ -435,22 +435,157 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         [Test]
         public void IceExplosion_RecordsDamageAndClearWhenDestroyed()
         {
-            Match3TileDatabaseSO database = CreateDatabase(CreateBlockerTile(301, 1));
-            Match3LevelData levelData = CreateLevelData(1, 1, new[] { 301 });
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBlockerTile(301, 1));
+            Match3LevelData levelData = CreateLevelData(1, 1, new[] { 101 });
+            levelData.overlayLayout = new[] { 301 };
 
             BoardModel board = CreateBoard(levelData, database);
             CascadeTrace cascadeTrace = new CascadeTrace();
             BoardFxContext fxContext = new BoardFxContext(cascadeTrace, new System.Random(0));
             CellModel cell = board.GetCell(0, 0);
 
-            cell.CurrentTile.Explode(board, cell, fxContext);
+            cell.OverlayTile.Explode(board, cell, fxContext);
 
             Assert.That(cascadeTrace.ClearPhase.DamageOps.Count, Is.EqualTo(1));
             Assert.That(cascadeTrace.ClearPhase.DamageOps[0].Destroyed, Is.True);
+            Assert.That(cascadeTrace.ClearPhase.DamageOps[0].Layer, Is.EqualTo(TileStackLayer.Overlay));
             Assert.That(cascadeTrace.ClearPhase.ClearOps.Count, Is.EqualTo(1));
+            Assert.That(cascadeTrace.ClearPhase.ClearOps[0].Layer, Is.EqualTo(TileStackLayer.Overlay));
             Assert.That(cascadeTrace.ClearPhase.ScoreGainOps.Count, Is.EqualTo(1));
             Assert.That(cascadeTrace.ClearPhase.ScoreGainOps[0].Amount, Is.EqualTo(50));
-            Assert.That(cell.CurrentTile, Is.Null);
+            Assert.That(cell.OverlayTile, Is.Null);
+            Assert.That(cell.BaseTile, Is.Not.Null);
+        }
+
+        [Test]
+        public void OverlayTile_BlocksBaseMatchUntilDestroyed()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBlockerTile(301, 1));
+            Match3LevelData levelData = CreateLevelData(3, 1, new[] { 101, 101, 101 });
+            levelData.overlayLayout = new[] { 0, 301, 0 };
+
+            BoardModel board = CreateBoard(levelData, database);
+            BoardMatchAnalysis blockedAnalysis = new BoardMatchFinder().Analyze(board);
+
+            Assert.That(blockedAnalysis.HasMatches, Is.False);
+
+            CascadeTrace cascadeTrace = new CascadeTrace();
+            BoardFxContext fxContext = new BoardFxContext(cascadeTrace, new System.Random(0));
+            CellModel centerCell = board.GetCell(1, 0);
+            centerCell.OverlayTile.Explode(board, centerCell, fxContext);
+
+            Assert.That(centerCell.OverlayTile, Is.Null);
+
+            BoardMatchAnalysis releasedAnalysis = new BoardMatchFinder().Analyze(board);
+            Assert.That(releasedAnalysis.HasMatches, Is.True);
+        }
+
+        [Test]
+        public void LineSlideMoveRule_IceOverlayLocksItsRowAndColumn()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateNormalTile(102, AnimalTileId.Dog),
+                CreateBlockerTile(301, 1));
+            Match3LevelData levelData = CreateLevelData(3, 3, new[]
+            {
+                101, 102, 101,
+                102, 101, 102,
+                101, 102, 101
+            });
+            levelData.overlayLayout = new[]
+            {
+                0, 0, 0,
+                0, 301, 0,
+                0, 0, 0
+            };
+
+            BoardModel board = CreateBoard(levelData, database);
+            LineSlideMoveRule rule = new LineSlideMoveRule();
+
+            Assert.That(rule.TryApply(board, new BoardMoveRequest(MoveAxis.Row, 1, LineSlideDirection.Right, 1, 1), out _), Is.False);
+            Assert.That(rule.TryApply(board, new BoardMoveRequest(MoveAxis.Column, 1, LineSlideDirection.Down, 1, 1), out _), Is.False);
+            Assert.That(rule.TryApply(board, new BoardMoveRequest(MoveAxis.Row, 0, LineSlideDirection.Right, 1, 0), out _), Is.True);
+        }
+
+        [Test]
+        public void ResolveBoard_MatchAdjacentToIce_BreaksIceAndKeepsBaseTile()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateNormalTile(102, AnimalTileId.Dog),
+                CreateNormalTile(103, AnimalTileId.Fox),
+                CreateBlockerTile(301, 1));
+
+            Match3LevelData levelData = CreateLevelData(3, 2, new[]
+            {
+                101, 101, 101,
+                102, 102, 103
+            });
+            levelData.overlayLayout = new[]
+            {
+                0, 0, 0,
+                0, 301, 0
+            };
+
+            BoardModel board = CreateBoard(levelData, database);
+
+            BoardResolutionService.ResolveBoard(board, levelData, database, new System.Random(0));
+
+            CellModel icedCell = board.GetCell(1, 1);
+            Assert.That(icedCell.OverlayTile, Is.Null);
+            Assert.That(icedCell.BaseTile, Is.Not.Null);
+            Assert.That(icedCell.BaseTile.TileId, Is.EqualTo(102));
+        }
+
+        [Test]
+        public void BombActivation_BreaksIceAndPreservesBaseTile()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBoosterTile(201, TileLogicType.BombBooster),
+                CreateBlockerTile(301, 1));
+
+            Match3LevelData levelData = CreateLevelData(3, 3, new[]
+            {
+                101, 101, 101,
+                101, 201, 101,
+                101, 101, 101
+            });
+            levelData.overlayLayout = new[]
+            {
+                0, 0, 0,
+                0, 0, 0,
+                0, 301, 0
+            };
+
+            BoardModel board = CreateBoard(levelData, database);
+            CascadeTrace cascadeTrace = new CascadeTrace();
+            BoardFxContext fxContext = new BoardFxContext(cascadeTrace, new System.Random(0));
+            CellModel centerCell = board.GetCell(1, 1);
+            CellModel icedCell = board.GetCell(1, 2);
+
+            centerCell.CurrentTile.Activate(board, centerCell, fxContext);
+
+            Assert.That(cascadeTrace.ClearPhase.DamageOps.Exists(op =>
+                op.Cell.Equals(new BoardCellPosition(1, 2)) &&
+                op.Layer == TileStackLayer.Overlay &&
+                op.TileId == 301), Is.True);
+            Assert.That(cascadeTrace.ClearPhase.ClearOps.Exists(op =>
+                op.Cell.Equals(new BoardCellPosition(1, 2)) &&
+                op.Layer == TileStackLayer.Overlay &&
+                op.TileId == 301), Is.True);
+            Assert.That(icedCell.OverlayTile, Is.Null);
+            Assert.That(icedCell.BaseTile, Is.Not.Null);
+            Assert.That(icedCell.BaseTile.TileId, Is.EqualTo(101));
+            Assert.That(cascadeTrace.ClearPhase.ClearOps.Exists(op =>
+                op.Cell.Equals(new BoardCellPosition(1, 2)) &&
+                op.Layer == TileStackLayer.Base),
+                Is.False);
         }
 
         private static Match3LevelData CreateFilledLevel(int width, int height, int tileId)
@@ -472,6 +607,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
                 height = height,
                 movesLimit = 20,
                 gridLayout = layout,
+                overlayLayout = new int[layout.Length],
                 spawnableTileIds = new List<int>()
             };
         }
@@ -479,7 +615,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         private static BoardModel CreateBoard(Match3LevelData levelData, Match3TileDatabaseSO database)
         {
             BoardModel board = new BoardModel(levelData);
-            board.PopulateBoard(levelData.gridLayout, database);
+            board.PopulateBoard(levelData.gridLayout, levelData.overlayLayout, database);
             return board;
         }
 

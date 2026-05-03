@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Board;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presentation;
@@ -24,7 +25,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                         continue;
                     }
 
-                    TileModel tile = cell.CurrentTile;
+                    TileModel tile = cell.BaseTile;
                     if (tile == null)
                     {
                         continue;
@@ -39,7 +40,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                     while (writeY > y)
                     {
                         CellModel destination = board.GetCell(x, writeY);
-                        if (destination != null && destination.IsPlayable && destination.IsEmpty())
+                        if (destination != null && destination.IsPlayable && destination.IsBaseEmpty())
                         {
                             break;
                         }
@@ -54,13 +55,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                         {
                             TileInstanceId = tile.InstanceId,
                             TileId = tile.TileId,
+                            Layer = TileStackLayer.Base,
                             FromCell = new BoardCellPosition(cell.X, cell.Y),
                             ToCell = new BoardCellPosition(target.X, target.Y),
                             Distance = target.Y - cell.Y,
                             IsWrapAround = false
                         });
-                        target.SetTile(tile);
-                        cell.ClearTile();
+                        target.SetBaseTile(tile);
+                        cell.ClearBaseTile();
                         movedTiles++;
                     }
 

@@ -116,6 +116,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
     {
         public int TileInstanceId { get; set; }
         public int TileId { get; set; }
+        public TileStackLayer Layer { get; set; }
         public BoardCellPosition Cell { get; set; }
         public bool WasMatched { get; set; }
     }
@@ -125,6 +126,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
     {
         public int TileInstanceId { get; set; }
         public int TileId { get; set; }
+        public TileStackLayer Layer { get; set; }
         public BoardCellPosition Cell { get; set; }
         public int PreviousHP { get; set; }
         public int CurrentHP { get; set; }
@@ -136,6 +138,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
     {
         public int TileInstanceId { get; set; }
         public int TileId { get; set; }
+        public TileStackLayer Layer { get; set; }
         public BoardCellPosition Cell { get; set; }
         public TileLogicType LogicType { get; set; }
     }
@@ -146,6 +149,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
         public int SourceTileInstanceId { get; set; }
         public BoardCellPosition TargetCell { get; set; }
         public int TargetTileInstanceId { get; set; }
+        public TileStackLayer TargetLayer { get; set; }
     }
 
     [Serializable]
@@ -153,6 +157,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
     {
         public int TileInstanceId { get; set; }
         public int TileId { get; set; }
+        public TileStackLayer Layer { get; set; }
         public BoardCellPosition FromCell { get; set; }
         public BoardCellPosition ToCell { get; set; }
         public int Distance { get; set; }
@@ -164,6 +169,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
     {
         public int TileInstanceId { get; set; }
         public int TileId { get; set; }
+        public TileStackLayer Layer { get; set; }
         public TileDefinitionSO Definition { get; set; }
         public int SpawnFromRowAboveBoard { get; set; }
         public BoardCellPosition ToCell { get; set; }
@@ -176,6 +182,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
         public int FromTileId { get; set; }
         public int NewTileInstanceId { get; set; }
         public int ToTileId { get; set; }
+        public TileStackLayer Layer { get; set; }
         public TileDefinitionSO Definition { get; set; }
         public TileLogicType LogicType { get; set; }
         public BoardCellPosition Cell { get; set; }
@@ -186,6 +193,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
     {
         public int TileInstanceId { get; set; }
         public int TileId { get; set; }
+        public TileStackLayer Layer { get; set; }
         public BoardCellPosition Cell { get; set; }
         public int Amount { get; set; }
         public int RunningScore { get; set; }
@@ -236,6 +244,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
             {
                 TileInstanceId = tile.InstanceId,
                 TileId = tile.TileId,
+                Layer = ResolveLayer(cell, tile),
                 Cell = BoardCellPosition.FromCell(cell),
                 LogicType = tile.LogicType
             });
@@ -252,6 +261,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
             {
                 TileInstanceId = tile.InstanceId,
                 TileId = tile.TileId,
+                Layer = ResolveLayer(cell, tile),
                 Cell = BoardCellPosition.FromCell(cell),
                 PreviousHP = previousHp,
                 CurrentHP = currentHp,
@@ -270,6 +280,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
             {
                 TileInstanceId = tile.InstanceId,
                 TileId = tile.TileId,
+                Layer = ResolveLayer(cell, tile),
                 Cell = BoardCellPosition.FromCell(cell),
                 WasMatched = wasMatched
             });
@@ -286,7 +297,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
             {
                 SourceTileInstanceId = sourceTile.InstanceId,
                 TargetCell = BoardCellPosition.FromCell(targetCell),
-                TargetTileInstanceId = targetCell.CurrentTile != null ? targetCell.CurrentTile.InstanceId : 0
+                TargetTileInstanceId = targetCell.TopTile != null ? targetCell.TopTile.InstanceId : 0,
+                TargetLayer = targetCell.OverlayTile != null ? TileStackLayer.Overlay : TileStackLayer.Base
             });
         }
 
@@ -303,6 +315,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
                 FromTileId = sourceTile.TileId,
                 NewTileInstanceId = createdTile.InstanceId,
                 ToTileId = createdTile.TileId,
+                Layer = TileStackLayer.Base,
                 Definition = createdTile.Definition,
                 LogicType = createdTile.LogicType,
                 Cell = BoardCellPosition.FromCell(cell)
@@ -320,10 +333,27 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
             {
                 TileInstanceId = tile.InstanceId,
                 TileId = tile.TileId,
+                Layer = ResolveLayer(cell, tile),
                 Cell = BoardCellPosition.FromCell(cell),
                 Amount = amount,
                 RunningScore = runningScore
             });
+        }
+
+        private static TileStackLayer ResolveLayer(CellModel cell, TileModel tile)
+        {
+            TileStackLayer? layer = cell?.GetTileLayer(tile);
+            if (layer.HasValue)
+            {
+                return layer.Value;
+            }
+
+            if (tile != null && (tile.TileKind == TileKind.Blocker || tile.TileKind == TileKind.Mechanic))
+            {
+                return TileStackLayer.Overlay;
+            }
+
+            return TileStackLayer.Base;
         }
     }
 

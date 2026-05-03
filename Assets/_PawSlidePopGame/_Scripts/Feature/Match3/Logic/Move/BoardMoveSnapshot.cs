@@ -22,7 +22,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move
             for (int i = 0; i < cells.Count; i++)
             {
                 capturedCells[i] = cells[i];
-                capturedTiles[i] = cells[i].CurrentTile;
+                capturedTiles[i] = cells[i].BaseTile;
             }
 
             return new BoardMoveSnapshot(capturedCells, capturedTiles);
@@ -36,7 +36,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move
         {
             for (int i = 0; i < _cells.Length; i++)
             {
-                _cells[i].SetTile(_tiles[i]);
+                _cells[i].SetBaseTile(_tiles[i]);
             }
         }
     }

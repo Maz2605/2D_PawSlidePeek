@@ -1,17 +1,20 @@
 using _PawSlidePopGame.Scripts.DesignPattern.ObjectPooling;
 using UnityEngine;
+using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
 
 namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 {
     public class Match3CellView : MonoBehaviour, IPoolable
     {
         [SerializeField] private Transform tileAnchor;
+        [SerializeField] private Transform overlayTileAnchor;
         [SerializeField] private SpriteRenderer fallbackRenderer;
 
         private Quaternion _initialLocalRotation;
         private Vector3 _initialLocalScale;
 
         public Transform TileAnchor => tileAnchor != null ? tileAnchor : transform;
+        public Transform OverlayTileAnchor => overlayTileAnchor != null ? overlayTileAnchor : TileAnchor;
         public SpriteRenderer FallbackRenderer => fallbackRenderer;
 
         private void Awake()
@@ -29,12 +32,18 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
         public Vector3 GetTileAnchorLocalPosition(Transform relativeTo)
         {
+            return GetTileAnchorLocalPosition(TileStackLayer.Base, relativeTo);
+        }
+
+        public Vector3 GetTileAnchorLocalPosition(TileStackLayer layer, Transform relativeTo)
+        {
+            Transform anchor = layer == TileStackLayer.Overlay ? OverlayTileAnchor : TileAnchor;
             if (relativeTo == null)
             {
-                return TileAnchor.position;
+                return anchor.position;
             }
 
-            return relativeTo.InverseTransformPoint(TileAnchor.position);
+            return relativeTo.InverseTransformPoint(anchor.position);
         }
 
         public void OnSpawn()
@@ -56,6 +65,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             if (tileAnchor == null)
             {
                 tileAnchor = transform;
+            }
+
+            if (overlayTileAnchor == null)
+            {
+                overlayTileAnchor = tileAnchor;
             }
         }
 

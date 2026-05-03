@@ -39,29 +39,36 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
 
         public void PopulateBoard(int[] gridLayout, Match3TileDatabaseSO tileDatabase)
         {
-            if (gridLayout == null)
-            {
-                return;
-            }
+            PopulateBoard(gridLayout, null, tileDatabase);
+        }
 
+        public void PopulateBoard(int[] gridLayout, int[] overlayLayout, Match3TileDatabaseSO tileDatabase)
+        {
             for (int y = 0; y < Height; y++)
             {
                 for (int x = 0; x < Width; x++)
                 {
                     int index = (y * Width) + x;
-                    if (index >= gridLayout.Length)
-                    {
-                        continue;
-                    }
-
                     CellModel cell = _grid[x, y];
                     if (!cell.IsPlayable)
                     {
-                        cell.ClearTile();
+                        cell.ClearBaseTile();
+                        cell.ClearOverlayTile();
                         continue;
                     }
 
-                    SetTileFromDefinitionId(cell, gridLayout[index], tileDatabase);
+                    int baseTileId = gridLayout != null && index < gridLayout.Length
+                        ? gridLayout[index]
+                        : 0;
+                    SetBaseTileFromDefinitionId(cell, baseTileId, tileDatabase);
+                    if (overlayLayout != null && index < overlayLayout.Length)
+                    {
+                        SetOverlayTileFromDefinitionId(cell, overlayLayout[index], tileDatabase);
+                    }
+                    else
+                    {
+                        cell.ClearOverlayTile();
+                    }
                 }
             }
         }
@@ -155,13 +162,13 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
             TileModel[] snapshot = new TileModel[cells.Count];
             for (int i = 0; i < cells.Count; i++)
             {
-                snapshot[i] = cells[i].CurrentTile;
+                snapshot[i] = cells[i].BaseTile;
             }
 
             for (int i = 0; i < cells.Count; i++)
             {
                 int sourceIndex = (i - normalizedStep + cells.Count) % cells.Count;
-                cells[i].SetTile(snapshot[sourceIndex]);
+                cells[i].SetBaseTile(snapshot[sourceIndex]);
             }
         }
 
@@ -184,23 +191,49 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
 
         public void SetTileFromDefinitionId(CellModel cell, int tileId, Match3TileDatabaseSO tileDatabase)
         {
+            SetBaseTileFromDefinitionId(cell, tileId, tileDatabase);
+        }
+
+        public void SetBaseTileFromDefinitionId(CellModel cell, int tileId, Match3TileDatabaseSO tileDatabase)
+        {
             if (cell == null)
             {
                 return;
             }
 
             TileModel tile = CreateTileFromDefinitionId(tileId, tileDatabase);
-            cell.SetTile(tile);
+            cell.SetBaseTile(tile);
+        }
+
+        public void SetOverlayTileFromDefinitionId(CellModel cell, int tileId, Match3TileDatabaseSO tileDatabase)
+        {
+            if (cell == null)
+            {
+                return;
+            }
+
+            TileModel tile = CreateTileFromDefinitionId(tileId, tileDatabase);
+            cell.SetOverlayTile(tile);
         }
 
         public void SetTile(CellModel cell, TileModel tile)
         {
-            cell?.SetTile(tile);
+            cell?.SetBaseTile(tile);
+        }
+
+        public void SetTile(CellModel cell, TileStackLayer layer, TileModel tile)
+        {
+            cell?.SetTile(layer, tile);
         }
 
         public void ClearCell(CellModel cell)
         {
-            cell?.ClearTile();
+            cell?.ClearBaseTile();
+        }
+
+        public void ClearCell(CellModel cell, TileStackLayer layer)
+        {
+            cell?.ClearTile(layer);
         }
 
         public List<CellModel> GetNeighbors(int x, int y, int radius = 1)

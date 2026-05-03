@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Board;
 
 namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move
@@ -22,13 +23,18 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move
             bool hasAnyMovableState = false;
             for (int i = 0; i < affectedCells.Count; i++)
             {
-                if (affectedCells[i].CurrentTile == null)
+                if (affectedCells[i].HasOverlayLogic(TileLogicType.IceBlocker))
+                {
+                    return false;
+                }
+
+                if (affectedCells[i].BaseTile == null)
                 {
                     continue;
                 }
 
                 hasAnyMovableState = true;
-                if (!affectedCells[i].CurrentTile.CanBeMoved())
+                if (!affectedCells[i].BaseTile.CanBeMoved())
                 {
                     return false;
                 }

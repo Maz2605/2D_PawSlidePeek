@@ -118,15 +118,15 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         {
             ClearPreview();
 
-            if (cell?.CurrentTile == null)
+            if (cell?.TopTile == null)
             {
                 return;
             }
 
-            if (_tileViews.TryGetValue(cell.CurrentTile.InstanceId, out Match3TileView tileView) && tileView != null)
+            if (_tileViews.TryGetValue(cell.TopTile.InstanceId, out Match3TileView tileView) && tileView != null)
             {
                 tileView.SetShadowState(TileShadowState.Active);
-                _previewedTileIds.Add(cell.CurrentTile.InstanceId);
+                _previewedTileIds.Add(cell.TopTile.InstanceId);
             }
         }
 
@@ -149,14 +149,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             List<CellModel> cells = _board.GetPlayableCellsForMove(preview.Axis.Value, preview.LineIndex);
             for (int i = 0; i < cells.Count; i++)
             {
-                TileModel tile = cells[i].CurrentTile;
+                TileModel tile = cells[i].TopTile;
                 if (tile == null || !_tileViews.TryGetValue(tile.InstanceId, out Match3TileView tileView) || tileView == null)
                 {
                     continue;
                 }
 
-                TileShadowState state = preview.FocusedCell.CurrentTile != null &&
-                                        preview.FocusedCell.CurrentTile.InstanceId == tile.InstanceId
+                TileShadowState state = preview.FocusedCell.TopTile != null &&
+                                        preview.FocusedCell.TopTile.InstanceId == tile.InstanceId
                     ? TileShadowState.Active
                     : TileShadowState.Preview;
                 tileView.SetShadowState(state);
@@ -226,30 +226,13 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
             foreach (CellModel cell in _board.GetAllCells())
             {
-                if (cell == null || !cell.IsPlayable || cell.CurrentTile == null)
+                if (cell == null || !cell.IsPlayable)
                 {
                     continue;
                 }
 
-                TileModel tile = cell.CurrentTile;
-                aliveTileIds.Add(tile.InstanceId);
-
-                Vector3 targetLocalPosition = GetTileLocalPosition(cell);
-                if (!_tileViews.TryGetValue(tile.InstanceId, out Match3TileView tileView) || tileView == null)
-                {
-                    tileView = CreateTileView(tile, tile.Definition, targetLocalPosition);
-                }
-                else
-                {
-                    tileView.Bind(tile, tile.Definition);
-                    tileView.SnapToLocalPosition(targetLocalPosition);
-                }
-
-                if (tileView != null)
-                {
-                    tileView.SetShadowState(TileShadowState.Off);
-                    tileView.SetIdleEnabled(_isIdleEnabled);
-                }
+                SyncTileView(cell, cell.BaseTile, TileStackLayer.Base, aliveTileIds);
+                SyncTileView(cell, cell.OverlayTile, TileStackLayer.Overlay, aliveTileIds);
             }
 
             List<int> staleTileIds = new List<int>();
@@ -478,17 +461,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             {
                 foreach (CellModel cell in _board.GetAllCells())
                 {
-                    TileDefinitionSO definition = cell?.CurrentTile?.Definition;
-                    Match3TileView prefab = definition?.TileViewPrefab;
-                    if (prefab == null)
-                    {
-                        continue;
-                    }
-
-                    GameObject prefabObject = prefab.gameObject;
-                    counts[prefabObject] = counts.TryGetValue(prefabObject, out int currentCount)
-                        ? currentCount + 1
-                        : 1;
+                    AccumulatePrewarmCount(counts, cell?.BaseTile?.Definition);
+                    AccumulatePrewarmCount(counts, cell?.OverlayTile?.Definition);
                 }
             }
 
@@ -622,7 +596,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 }
 
                 float duration = Mathf.Max(0.05f, gravityDurationPerCell * Mathf.Max(1, op.Distance));
-                moveRoutines.Add(tileView.PlayMoveAsync(GetLocalPosition(op.ToCell.X, op.ToCell.Y), duration));
+                moveRoutines.Add(tileView.PlayMoveAsync(GetTileLocalPosition(op.ToCell.X, op.ToCell.Y, op.Layer), duration));
                 landingViews.Add(tileView);
             }
 
@@ -654,7 +628,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                     continue;
                 }
 
-                Match3TileView tileView = CreateTileView(new TileModel(op.TileInstanceId, op.Definition), op.Definition, GetLocalPosition(op.ToCell.X, op.SpawnFromRowAboveBoard));
+                Match3TileView tileView = CreateTileView(
+                    new TileModel(op.TileInstanceId, op.Definition),
+                    op.Definition,
+                    GetTileLocalPosition(op.ToCell.X, op.SpawnFromRowAboveBoard, op.Layer));
                 if (tileView == null)
                 {
                     continue;
@@ -663,8 +640,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 float distance = Mathf.Abs(op.ToCell.Y - op.SpawnFromRowAboveBoard);
                 float duration = Mathf.Max(0.08f, refillDurationPerCell * Mathf.Max(1f, distance));
                 spawnRoutines.Add(tileView.PlaySpawnFallAsync(
-                    GetLocalPosition(op.ToCell.X, op.SpawnFromRowAboveBoard),
-                    GetLocalPosition(op.ToCell.X, op.ToCell.Y),
+                    GetTileLocalPosition(op.ToCell.X, op.SpawnFromRowAboveBoard, op.Layer),
+                    GetTileLocalPosition(op.ToCell.X, op.ToCell.Y, op.Layer),
                     duration));
                 landingViews.Add(tileView);
                 landingDistances.Add(Mathf.Max(1, Mathf.RoundToInt(distance)));
@@ -708,7 +685,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                     continue;
                 }
 
-                Vector3 finalTarget = GetLocalPosition(op.ToCell.X, op.ToCell.Y);
+                Vector3 finalTarget = GetTileLocalPosition(op.ToCell.X, op.ToCell.Y, op.Layer);
                 Vector3 tweenTarget = op.IsWrapAround ? GetWrapExitPosition(op.FromCell, axis, direction) : finalTarget;
                 routines.Add(tileView.PlayMoveAsync(tweenTarget, duration));
 
@@ -812,13 +789,13 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             DestroyTileView(createOp.SourceTileInstanceId);
 
             CellModel boardCell = _board != null ? _board.GetCell(createOp.Cell.X, createOp.Cell.Y) : null;
-            TileModel boardTile = boardCell?.CurrentTile;
+            TileModel boardTile = boardCell?.GetTile(createOp.Layer);
             if (boardTile == null || boardTile.InstanceId != createOp.NewTileInstanceId)
             {
                 boardTile = new TileModel(createOp.NewTileInstanceId, createOp.Definition);
             }
 
-            Match3TileView newTileView = CreateTileView(boardTile, createOp.Definition, GetLocalPosition(createOp.Cell.X, createOp.Cell.Y));
+            Match3TileView newTileView = CreateTileView(boardTile, createOp.Definition, GetTileLocalPosition(createOp.Cell.X, createOp.Cell.Y, createOp.Layer));
             if (newTileView != null)
             {
                 yield return StartCoroutine(newTileView.PlaySpecialCreateAsync());
@@ -850,7 +827,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         {
             for (int i = 0; i < cells.Count; i++)
             {
-                TileModel tile = cells[i].CurrentTile;
+                TileModel tile = cells[i].TopTile;
                 if (tile == null || !_tileViews.TryGetValue(tile.InstanceId, out Match3TileView tileView) || tileView == null)
                 {
                     continue;
@@ -927,12 +904,22 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
         private Vector3 GetTileLocalPosition(CellModel cell)
         {
+            return GetTileLocalPosition(cell, TileStackLayer.Base);
+        }
+
+        private Vector3 GetTileLocalPosition(CellModel cell, TileStackLayer layer)
+        {
             if (cell != null && _cellViews.TryGetValue(cell, out Match3CellView cellView) && cellView != null)
             {
-                return cellView.GetTileAnchorLocalPosition(transform);
+                return cellView.GetTileAnchorLocalPosition(layer, transform);
             }
 
-            return GetLocalPosition(cell.X, cell.Y);
+            if (cell == null)
+            {
+                return Vector3.zero;
+            }
+
+            return GetTileLocalPosition(cell.X, cell.Y, layer);
         }
 
         private Vector3 ResolveWorldPosition(TileClearOp clearOp)
@@ -944,7 +931,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 return tileView.transform.position;
             }
 
-            return transform.TransformPoint(GetLocalPosition(clearOp.Cell.X, clearOp.Cell.Y));
+            return transform.TransformPoint(GetTileLocalPosition(clearOp.Cell.X, clearOp.Cell.Y, clearOp.Layer));
         }
 
         private Vector3 GetWrapExitPosition(BoardCellPosition fromCell, MoveAxis axis, LineSlideDirection direction)
@@ -957,11 +944,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             if (axis == MoveAxis.Row)
             {
                 int exitX = direction == LineSlideDirection.Right ? _board.Width : -1;
-                return GetLocalPosition(exitX, fromCell.Y);
+                return GetTileLocalPosition(exitX, fromCell.Y, TileStackLayer.Base);
             }
 
             int exitY = direction == LineSlideDirection.Down ? _board.Height : -1;
-            return GetLocalPosition(fromCell.X, exitY);
+            return GetTileLocalPosition(fromCell.X, exitY, TileStackLayer.Base);
         }
 
         private Vector3 GetLocalPosition(int x, int y)
@@ -969,6 +956,63 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             float offsetX = _board != null ? -((_board.Width - 1) * cellStepX) * 0.5f : 0f;
             float offsetY = _board != null ? ((_board.Height - 1) * cellStepY) * 0.5f : 0f;
             return new Vector3(boardOffset.x + offsetX + (x * cellStepX), boardOffset.y + offsetY - (y * cellStepY), 0f);
+        }
+
+        private Vector3 GetTileLocalPosition(int x, int y, TileStackLayer layer)
+        {
+            CellModel cell = _board != null ? _board.GetCell(x, y) : null;
+            if (cell != null && _cellViews.TryGetValue(cell, out Match3CellView cellView) && cellView != null)
+            {
+                return cellView.GetTileAnchorLocalPosition(layer, transform);
+            }
+
+            Vector3 position = GetLocalPosition(x, y);
+            if (layer == TileStackLayer.Overlay)
+            {
+                position.z -= 0.05f;
+            }
+
+            return position;
+        }
+
+        private void SyncTileView(CellModel cell, TileModel tile, TileStackLayer layer, HashSet<int> aliveTileIds)
+        {
+            if (cell == null || tile == null)
+            {
+                return;
+            }
+
+            aliveTileIds.Add(tile.InstanceId);
+            Vector3 targetLocalPosition = GetTileLocalPosition(cell, layer);
+            if (!_tileViews.TryGetValue(tile.InstanceId, out Match3TileView tileView) || tileView == null)
+            {
+                tileView = CreateTileView(tile, tile.Definition, targetLocalPosition);
+            }
+            else
+            {
+                tileView.Bind(tile, tile.Definition);
+                tileView.SnapToLocalPosition(targetLocalPosition);
+            }
+
+            if (tileView != null)
+            {
+                tileView.SetShadowState(TileShadowState.Off);
+                tileView.SetIdleEnabled(_isIdleEnabled);
+            }
+        }
+
+        private static void AccumulatePrewarmCount(Dictionary<GameObject, int> counts, TileDefinitionSO definition)
+        {
+            Match3TileView prefab = definition?.TileViewPrefab;
+            if (prefab == null)
+            {
+                return;
+            }
+
+            GameObject prefabObject = prefab.gameObject;
+            counts[prefabObject] = counts.TryGetValue(prefabObject, out int currentCount)
+                ? currentCount + 1
+                : 1;
         }
 
         private static bool MatchesClearOp(ScoreGainOp scoreGainOp, TileClearOp clearOp)

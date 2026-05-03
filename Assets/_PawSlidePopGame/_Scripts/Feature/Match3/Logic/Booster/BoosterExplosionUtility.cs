@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Board;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presentation;
@@ -7,17 +8,16 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Booster
 {
     internal static class BoosterExplosionUtility
     {
-        public static void ExplodeArea(BoardModel board, CellModel centerCell, int radius, BoardFxContext fxContext, int score)
+        public static void ExplodeArea(BoardModel board, CellModel centerCell, TileModel sourceTile, int radius, BoardFxContext fxContext, int score)
         {
-            if (board == null || centerCell == null || centerCell.CurrentTile == null)
+            if (board == null || centerCell == null || sourceTile == null)
             {
                 return;
             }
 
-            TileModel sourceTile = centerCell.CurrentTile;
             fxContext?.RecordActivate(sourceTile, centerCell);
             fxContext?.RecordClear(sourceTile, centerCell, false);
-            centerCell.ClearTile();
+            centerCell.ClearTile(centerCell.GetTileLayer(sourceTile) ?? TileStackLayer.Base);
             board.AddScore(score);
             fxContext?.RecordScore(sourceTile, centerCell, score, board.CurrentScore);
 
@@ -31,25 +31,21 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Booster
                     }
 
                     CellModel neighbor = board.GetCell(x, y);
-                    if (neighbor?.CurrentTile != null)
-                    {
-                        neighbor.CurrentTile.Explode(board, neighbor, fxContext);
-                    }
+                    ExplodeCell(board, neighbor, fxContext);
                 }
             }
         }
 
-        public static void ExplodeDiamond(BoardModel board, CellModel centerCell, int radius, BoardFxContext fxContext, int score)
+        public static void ExplodeDiamond(BoardModel board, CellModel centerCell, TileModel sourceTile, int radius, BoardFxContext fxContext, int score)
         {
-            if (board == null || centerCell == null || centerCell.CurrentTile == null)
+            if (board == null || centerCell == null || sourceTile == null)
             {
                 return;
             }
 
-            TileModel sourceTile = centerCell.CurrentTile;
             fxContext?.RecordActivate(sourceTile, centerCell);
             fxContext?.RecordClear(sourceTile, centerCell, false);
-            centerCell.ClearTile();
+            centerCell.ClearTile(centerCell.GetTileLayer(sourceTile) ?? TileStackLayer.Base);
             board.AddScore(score);
             fxContext?.RecordScore(sourceTile, centerCell, score, board.CurrentScore);
 
@@ -68,25 +64,21 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Booster
                     }
 
                     CellModel neighbor = board.GetCell(x, y);
-                    if (neighbor?.CurrentTile != null)
-                    {
-                        neighbor.CurrentTile.Explode(board, neighbor, fxContext);
-                    }
+                    ExplodeCell(board, neighbor, fxContext);
                 }
             }
         }
 
-        public static void ExplodeCross(BoardModel board, CellModel centerCell, BoardFxContext fxContext, int score)
+        public static void ExplodeCross(BoardModel board, CellModel centerCell, TileModel sourceTile, BoardFxContext fxContext, int score)
         {
-            if (board == null || centerCell == null || centerCell.CurrentTile == null)
+            if (board == null || centerCell == null || sourceTile == null)
             {
                 return;
             }
 
-            TileModel sourceTile = centerCell.CurrentTile;
             fxContext?.RecordActivate(sourceTile, centerCell);
             fxContext?.RecordClear(sourceTile, centerCell, false);
-            centerCell.ClearTile();
+            centerCell.ClearTile(centerCell.GetTileLayer(sourceTile) ?? TileStackLayer.Base);
             board.AddScore(score);
             fxContext?.RecordScore(sourceTile, centerCell, score, board.CurrentScore);
 
@@ -94,24 +86,48 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Booster
             for (int i = 0; i < rowCells.Count; i++)
             {
                 CellModel cell = rowCells[i];
-                if (cell.X == centerCell.X || cell.CurrentTile == null)
+                if (cell.X == centerCell.X)
                 {
                     continue;
                 }
 
-                cell.CurrentTile.Explode(board, cell, fxContext);
+                ExplodeCell(board, cell, fxContext);
             }
 
             List<CellModel> columnCells = board.GetPlayableCellsInColumn(centerCell.X);
             for (int i = 0; i < columnCells.Count; i++)
             {
                 CellModel cell = columnCells[i];
-                if (cell.Y == centerCell.Y || cell.CurrentTile == null)
+                if (cell.Y == centerCell.Y)
                 {
                     continue;
                 }
 
-                cell.CurrentTile.Explode(board, cell, fxContext);
+                ExplodeCell(board, cell, fxContext);
+            }
+        }
+
+        public static void ExplodeCell(BoardModel board, CellModel cell, BoardFxContext fxContext)
+        {
+            if (board == null || cell == null || !cell.IsPlayable)
+            {
+                return;
+            }
+
+            if (cell.OverlayTile != null)
+            {
+                TileModel overlayTile = cell.OverlayTile;
+                bool stopsExplosionAtOverlay = overlayTile.LogicType == TileLogicType.IceBlocker;
+                overlayTile.Explode(board, cell, fxContext);
+                if (stopsExplosionAtOverlay || cell.OverlayTile != null)
+                {
+                    return;
+                }
+            }
+
+            if (cell.BaseTile != null)
+            {
+                cell.BaseTile.Explode(board, cell, fxContext);
             }
         }
     }
