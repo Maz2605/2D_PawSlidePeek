@@ -14,10 +14,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Booster
                 return;
             }
 
-            fxContext?.RecordActivate(centerCell.CurrentTile, centerCell);
-            fxContext?.RecordClear(centerCell.CurrentTile, centerCell, false);
+            TileModel sourceTile = centerCell.CurrentTile;
+            fxContext?.RecordActivate(sourceTile, centerCell);
+            fxContext?.RecordClear(sourceTile, centerCell, false);
             centerCell.ClearTile();
             board.AddScore(score);
+            fxContext?.RecordScore(sourceTile, centerCell, score, board.CurrentScore);
 
             for (int x = centerCell.X - radius; x <= centerCell.X + radius; x++)
             {
@@ -44,10 +46,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Booster
                 return;
             }
 
-            fxContext?.RecordActivate(centerCell.CurrentTile, centerCell);
-            fxContext?.RecordClear(centerCell.CurrentTile, centerCell, false);
+            TileModel sourceTile = centerCell.CurrentTile;
+            fxContext?.RecordActivate(sourceTile, centerCell);
+            fxContext?.RecordClear(sourceTile, centerCell, false);
             centerCell.ClearTile();
             board.AddScore(score);
+            fxContext?.RecordScore(sourceTile, centerCell, score, board.CurrentScore);
 
             for (int x = centerCell.X - radius; x <= centerCell.X + radius; x++)
             {
@@ -79,10 +83,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Booster
                 return;
             }
 
-            fxContext?.RecordActivate(centerCell.CurrentTile, centerCell);
-            fxContext?.RecordClear(centerCell.CurrentTile, centerCell, false);
+            TileModel sourceTile = centerCell.CurrentTile;
+            fxContext?.RecordActivate(sourceTile, centerCell);
+            fxContext?.RecordClear(sourceTile, centerCell, false);
             centerCell.ClearTile();
             board.AddScore(score);
+            fxContext?.RecordScore(sourceTile, centerCell, score, board.CurrentScore);
 
             List<CellModel> rowCells = board.GetPlayableCellsInRow(centerCell.Y);
             for (int i = 0; i < rowCells.Count; i++)

@@ -9,6 +9,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
     {
         private readonly List<TargetProgressData> _targets = new List<TargetProgressData>();
         private readonly Dictionary<int, TargetProgressData> _targetsByTileId = new Dictionary<int, TargetProgressData>();
+        private bool _hasCompletedFxBeenConsumed;
 
         public Match3ObjectiveTracker(Match3LevelData levelData, Match3TileDatabaseSO tileDatabase)
         {
@@ -66,6 +67,53 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
 
         public IReadOnlyList<TargetProgressData> Targets => _targets;
 
+        public bool TryApplyClearOp(TileClearOp clearOp, out TargetProgressChangedPayload change)
+        {
+            change = default;
+            if (clearOp == null || clearOp.TileId <= 0)
+            {
+                return false;
+            }
+
+            if (!_targetsByTileId.TryGetValue(clearOp.TileId, out TargetProgressData target) || target == null)
+            {
+                return false;
+            }
+
+            int previousCount = target.currentCount;
+            if (previousCount >= target.requiredCount)
+            {
+                return false;
+            }
+
+            target.currentCount = previousCount + 1;
+            if (target.currentCount > target.requiredCount)
+            {
+                target.currentCount = target.requiredCount;
+            }
+
+            bool wasCompleted = target.isCompleted;
+            target.isCompleted = target.currentCount >= target.requiredCount;
+            change = new TargetProgressChangedPayload(
+                target.tileId,
+                previousCount,
+                target.currentCount,
+                target.requiredCount,
+                !wasCompleted && target.isCompleted);
+            return true;
+        }
+
+        public bool TryConsumeTargetsCompletedFx()
+        {
+            if (_hasCompletedFxBeenConsumed || !AreAllTargetsComplete)
+            {
+                return false;
+            }
+
+            _hasCompletedFxBeenConsumed = true;
+            return true;
+        }
+
         public List<TargetProgressChangedPayload> ApplyExecutionResult(BoardMoveExecutionResult executionResult)
         {
             List<TargetProgressChangedPayload> changes = new List<TargetProgressChangedPayload>();
@@ -74,7 +122,6 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
                 return changes;
             }
 
-            Dictionary<int, int> clearedByTileId = new Dictionary<int, int>();
             for (int cascadeIndex = 0; cascadeIndex < executionResult.PresentationTrace.Cascades.Count; cascadeIndex++)
             {
                 CascadeTrace cascade = executionResult.PresentationTrace.Cascades[cascadeIndex];
@@ -86,39 +133,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
                 for (int clearIndex = 0; clearIndex < cascade.ClearPhase.ClearOps.Count; clearIndex++)
                 {
                     TileClearOp clearOp = cascade.ClearPhase.ClearOps[clearIndex];
-                    if (clearOp == null || clearOp.TileId <= 0)
+                    if (TryApplyClearOp(clearOp, out TargetProgressChangedPayload change))
                     {
-                        continue;
+                        changes.Add(change);
                     }
-
-                    clearedByTileId.TryGetValue(clearOp.TileId, out int count);
-                    clearedByTileId[clearOp.TileId] = count + 1;
                 }
-            }
-
-            foreach (KeyValuePair<int, int> pair in clearedByTileId)
-            {
-                if (!_targetsByTileId.TryGetValue(pair.Key, out TargetProgressData target))
-                {
-                    continue;
-                }
-
-                int previousCount = target.currentCount;
-                target.currentCount = previousCount + pair.Value;
-                if (target.currentCount > target.requiredCount)
-                {
-                    target.currentCount = target.requiredCount;
-                }
-
-                bool wasCompleted = target.isCompleted;
-                target.isCompleted = target.currentCount >= target.requiredCount;
-
-                changes.Add(new TargetProgressChangedPayload(
-                    target.tileId,
-                    previousCount,
-                    target.currentCount,
-                    target.requiredCount,
-                    !wasCompleted && target.isCompleted));
             }
 
             return changes;

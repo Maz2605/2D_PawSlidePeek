@@ -96,6 +96,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
         public List<TileDamageOp> DamageOps { get; } = new List<TileDamageOp>();
         public List<TileClearOp> ClearOps { get; } = new List<TileClearOp>();
         public List<SpecialCreateOp> SpecialCreateOps { get; } = new List<SpecialCreateOp>();
+        public List<ScoreGainOp> ScoreGainOps { get; } = new List<ScoreGainOp>();
     }
 
     [Serializable]
@@ -178,6 +179,16 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
         public TileDefinitionSO Definition { get; set; }
         public TileLogicType LogicType { get; set; }
         public BoardCellPosition Cell { get; set; }
+    }
+
+    [Serializable]
+    public sealed class ScoreGainOp
+    {
+        public int TileInstanceId { get; set; }
+        public int TileId { get; set; }
+        public BoardCellPosition Cell { get; set; }
+        public int Amount { get; set; }
+        public int RunningScore { get; set; }
     }
 
     [Serializable]
@@ -295,6 +306,23 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
                 Definition = createdTile.Definition,
                 LogicType = createdTile.LogicType,
                 Cell = BoardCellPosition.FromCell(cell)
+            });
+        }
+
+        public void RecordScore(TileModel tile, CellModel cell, int amount, int runningScore)
+        {
+            if (tile == null || cell == null || amount == 0)
+            {
+                return;
+            }
+
+            _cascadeTrace.ClearPhase.ScoreGainOps.Add(new ScoreGainOp
+            {
+                TileInstanceId = tile.InstanceId,
+                TileId = tile.TileId,
+                Cell = BoardCellPosition.FromCell(cell),
+                Amount = amount,
+                RunningScore = runningScore
             });
         }
     }

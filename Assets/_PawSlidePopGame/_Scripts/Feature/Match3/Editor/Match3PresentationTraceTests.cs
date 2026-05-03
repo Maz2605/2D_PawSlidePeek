@@ -82,6 +82,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
 
             CascadeTrace firstCascade = result.PresentationTrace.Cascades[0];
             Assert.That(firstCascade.ClearPhase.ClearOps.Count, Is.EqualTo(3));
+            Assert.That(firstCascade.ClearPhase.ScoreGainOps.Count, Is.EqualTo(3));
+            Assert.That(firstCascade.ClearPhase.ScoreGainOps.TrueForAll(op => op.Amount == 10), Is.True);
             Assert.That(firstCascade.GravityPhase.TravelOps.Count, Is.GreaterThanOrEqualTo(1));
             Assert.That(firstCascade.RefillPhase.SpawnOps.Count, Is.GreaterThanOrEqualTo(1));
             Assert.That(firstCascade.RefillPhase.SpawnOps.TrueForAll(op => op.SpawnFromRowAboveBoard < 0), Is.True);
@@ -216,9 +218,15 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(result.IsAccepted, Is.True);
             Assert.That(result.PresentationTrace.Cascades.Count, Is.EqualTo(1));
             Assert.That(result.PresentationTrace.Cascades[0].ClearPhase.SpecialCreateOps.Count, Is.EqualTo(1));
+            Assert.That(result.PresentationTrace.Cascades[0].ClearPhase.ScoreGainOps.Count, Is.EqualTo(4));
 
             SpecialCreateOp createOp = result.PresentationTrace.Cascades[0].ClearPhase.SpecialCreateOps[0];
             Assert.That(createOp.LogicType, Is.EqualTo(TileLogicType.CrossBomb));
+            Assert.That(
+                result.PresentationTrace.Cascades[0].ClearPhase.ScoreGainOps.Exists(op =>
+                    op.TileInstanceId == createOp.SourceTileInstanceId &&
+                    op.Cell.Equals(createOp.Cell)),
+                Is.True);
 
             CellModel sourceCell = board.GetCell(1, 0);
             Assert.That(sourceCell.CurrentTile, Is.Not.Null);
@@ -288,6 +296,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(result.PresentationTrace.Cascades.Count, Is.GreaterThanOrEqualTo(1));
             Assert.That(result.PresentationTrace.Cascades[0].ClearPhase.ActivateOps.Count, Is.EqualTo(1));
             Assert.That(result.PresentationTrace.Cascades[0].ClearPhase.ClearOps.Count, Is.EqualTo(5));
+            Assert.That(result.PresentationTrace.Cascades[0].ClearPhase.ScoreGainOps.Count, Is.EqualTo(5));
             Assert.That(board.RemainingMoves, Is.EqualTo(movesBefore - 1));
             Assert.That(board.GetCell(1, 1).CurrentTile, Is.Not.Null);
             Assert.That(board.GetCell(1, 1).CurrentTile.TileKind, Is.EqualTo(TileKind.Normal));
@@ -316,6 +325,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
 
             Assert.That(cascadeTrace.ClearPhase.ActivateOps.Count, Is.EqualTo(1));
             Assert.That(cascadeTrace.ClearPhase.ClearOps.Count, Is.EqualTo(9));
+            Assert.That(cascadeTrace.ClearPhase.ScoreGainOps.Count, Is.EqualTo(9));
             Assert.That(centerCell.CurrentTile, Is.Null);
         }
 
@@ -344,6 +354,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
 
             Assert.That(cascadeTrace.ClearPhase.ActivateOps.Count, Is.EqualTo(1));
             Assert.That(cascadeTrace.ClearPhase.ClearOps.Count, Is.EqualTo(9));
+            Assert.That(cascadeTrace.ClearPhase.ScoreGainOps.Count, Is.EqualTo(9));
             Assert.That(centerCell.CurrentTile, Is.Null);
         }
 
@@ -375,6 +386,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(cascadeTrace.ClearPhase.TargetSelectionOps[0].TargetCell, Is.EqualTo(new BoardCellPosition(0, 2)));
             Assert.That(cascadeTrace.ClearPhase.TargetSelectionOps[0].TargetTileInstanceId, Is.EqualTo(expectedTargetInstanceId));
             Assert.That(cascadeTrace.ClearPhase.ClearOps.Count, Is.EqualTo(4));
+            Assert.That(cascadeTrace.ClearPhase.ScoreGainOps.Count, Is.EqualTo(4));
             Assert.That(centerCell.CurrentTile, Is.Null);
         }
 
@@ -436,6 +448,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(cascadeTrace.ClearPhase.DamageOps.Count, Is.EqualTo(1));
             Assert.That(cascadeTrace.ClearPhase.DamageOps[0].Destroyed, Is.True);
             Assert.That(cascadeTrace.ClearPhase.ClearOps.Count, Is.EqualTo(1));
+            Assert.That(cascadeTrace.ClearPhase.ScoreGainOps.Count, Is.EqualTo(1));
+            Assert.That(cascadeTrace.ClearPhase.ScoreGainOps[0].Amount, Is.EqualTo(50));
             Assert.That(cell.CurrentTile, Is.Null);
         }
 

@@ -1,6 +1,7 @@
 using _PawSlidePopGame._Scripts.Core.System.GameFlow;
 using _PawSlidePopGame._Scripts.Data.Events;
 using _PawSlidePopGame._Scripts.Data.Events.Payloads;
+using _PawSlidePopGame._Scripts.Feature.Match3.Flow;
 using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
 using DG.Tweening;
 using UnityEngine;
@@ -54,7 +55,8 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         private void OnEnable()
         {
             EventManager<LogicGameEvent>.AddListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudInitialized, HandleHudSnapshot);
-            EventManager<LogicGameEvent>.AddListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudStateChanged, HandleHudSnapshot);
+            EventManager<LogicGameEvent>.AddListener<RemainingMovesChangedPayload>(LogicGameEvent.GameplayMovesChanged, HandleMovesChanged);
+            EventManager<LogicGameEvent>.AddListener<ScoreChangedPayload>(LogicGameEvent.GameplayScoreChanged, HandleScoreChanged);
             EventManager<LogicGameEvent>.AddListener<InGameSubStateChangedPayload>(LogicGameEvent.InGameSubStateChanged, HandleSubStateChanged);
             EventManager<VisualGameEvent>.AddListener<TargetProgressChangedPayload>(VisualGameEvent.TopHudTargetProgressFx, HandleTargetProgressFx);
             EventManager<VisualGameEvent>.AddListener<StarReachedPayload>(VisualGameEvent.TopHudStarReachedFx, HandleStarReachedFx);
@@ -64,7 +66,8 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         private void OnDisable()
         {
             EventManager<LogicGameEvent>.RemoveListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudInitialized, HandleHudSnapshot);
-            EventManager<LogicGameEvent>.RemoveListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudStateChanged, HandleHudSnapshot);
+            EventManager<LogicGameEvent>.RemoveListener<RemainingMovesChangedPayload>(LogicGameEvent.GameplayMovesChanged, HandleMovesChanged);
+            EventManager<LogicGameEvent>.RemoveListener<ScoreChangedPayload>(LogicGameEvent.GameplayScoreChanged, HandleScoreChanged);
             EventManager<LogicGameEvent>.RemoveListener<InGameSubStateChangedPayload>(LogicGameEvent.InGameSubStateChanged, HandleSubStateChanged);
             EventManager<VisualGameEvent>.RemoveListener<TargetProgressChangedPayload>(VisualGameEvent.TopHudTargetProgressFx, HandleTargetProgressFx);
             EventManager<VisualGameEvent>.RemoveListener<StarReachedPayload>(VisualGameEvent.TopHudStarReachedFx, HandleStarReachedFx);
@@ -78,16 +81,10 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                 return;
             }
 
-            bool movesChanged = _currentSnapshot == null || _currentSnapshot.remainingMoves != snapshot.remainingMoves;
             _currentSnapshot = snapshot.Clone();
             movesCounterView?.SetValue(_currentSnapshot.remainingMoves);
             targetListView?.SetTargets(_currentSnapshot.targets);
             levelProgressView?.SetData(_currentSnapshot);
-
-            if (movesChanged)
-            {
-                movesCounterView?.PlayValueChangedFx();
-            }
         }
 
         private void HandleSubStateChanged(InGameSubStateChangedPayload payload)
@@ -100,6 +97,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         private void HandleTargetProgressFx(TargetProgressChangedPayload payload)
         {
+            UpdateSnapshotTargetProgress(payload);
             targetListView?.PlayProgressFx(payload);
         }
 
@@ -111,6 +109,52 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         private void HandleTargetsCompletedFx()
         {
             targetListView?.PlayCompletedFx();
+        }
+
+        private void HandleMovesChanged(RemainingMovesChangedPayload payload)
+        {
+            if (_currentSnapshot == null)
+            {
+                return;
+            }
+
+            _currentSnapshot.remainingMoves = payload.CurrentMoves;
+            movesCounterView?.SetValue(payload.CurrentMoves);
+            movesCounterView?.PlayValueChangedFx();
+        }
+
+        private void HandleScoreChanged(ScoreChangedPayload payload)
+        {
+            if (_currentSnapshot == null)
+            {
+                return;
+            }
+
+            _currentSnapshot.currentScore = payload.CurrentScore;
+            _currentSnapshot.reachedStars = GameplayHudSnapshotBuilder.CountReachedStars(payload.CurrentScore, _currentSnapshot.starScoreThresholds);
+            levelProgressView?.PlayScoreChangedFx(payload);
+        }
+
+        private void UpdateSnapshotTargetProgress(TargetProgressChangedPayload payload)
+        {
+            if (_currentSnapshot?.targets == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _currentSnapshot.targets.Count; i++)
+            {
+                TargetProgressData target = _currentSnapshot.targets[i];
+                if (target == null || target.tileId != payload.TileId)
+                {
+                    continue;
+                }
+
+                target.currentCount = payload.CurrentCount;
+                target.requiredCount = payload.RequiredCount;
+                target.isCompleted = payload.CurrentCount >= payload.RequiredCount;
+                return;
+            }
         }
     }
 }

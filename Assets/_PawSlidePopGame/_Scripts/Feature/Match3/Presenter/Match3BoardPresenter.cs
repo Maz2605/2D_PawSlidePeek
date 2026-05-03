@@ -46,6 +46,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 gameManager.OnBoardInitialized += HandleBoardInitialized;
             }
 
+            if (boardView != null)
+            {
+                boardView.OnTileClearPlaybackStarted += HandleTileClearPlaybackStarted;
+                boardView.OnScoreGainPlaybackStarted += HandleScoreGainPlaybackStarted;
+            }
+
             if (inputController != null)
             {
                 inputController.OnMoveRequested += HandleMoveRequested;
@@ -78,6 +84,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             if (gameManager != null)
             {
                 gameManager.OnBoardInitialized -= HandleBoardInitialized;
+            }
+
+            if (boardView != null)
+            {
+                boardView.OnTileClearPlaybackStarted -= HandleTileClearPlaybackStarted;
+                boardView.OnScoreGainPlaybackStarted -= HandleScoreGainPlaybackStarted;
             }
 
             if (inputController != null)
@@ -195,6 +207,16 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             }
 
             boardView?.ClearPreview();
+        }
+
+        private void HandleTileClearPlaybackStarted(TileClearOp clearOp, Vector3 worldPosition)
+        {
+            GameFlowManager.Instance?.NotifyTileClearedDuringPlayback(clearOp, worldPosition);
+        }
+
+        private void HandleScoreGainPlaybackStarted(ScoreGainOp scoreGainOp)
+        {
+            GameFlowManager.Instance?.NotifyScoreGainedDuringPlayback(scoreGainOp);
         }
 
         private void HandleSubStateChanged(InGameSubStateChangedPayload payload)

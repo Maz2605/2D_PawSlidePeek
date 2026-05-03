@@ -28,7 +28,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
         public bool[] playableMask;
         public List<int> spawnableTileIds = new List<int>();
         public List<LevelTargetData> targets = new List<LevelTargetData>();
-        public int[] starScoreThresholds = { 100, 250, 500 };
+        public int[] starScoreThresholds = { 100, 250, 500, 1500 };
 
         public int CellCount => Math.Max(0, width) * Math.Max(0, height);
         public int DisplayLevelNumber => displayLevelNumber > 0 ? displayLevelNumber : 1;
@@ -72,7 +72,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
         {
             if (starScoreThresholds == null || starScoreThresholds.Length == 0)
             {
-                return new[] { 100, 250, 500 };
+                return new[] { 100, 250, 500, 1500 };
             }
 
             int[] clone = new int[starScoreThresholds.Length];

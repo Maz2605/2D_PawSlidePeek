@@ -13,14 +13,16 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Blockers
                 return;
             }
 
-            int previousHp = cell.CurrentTile.CurrentHP;
-            cell.CurrentTile.TakeDamage(1);
-            fxContext?.RecordDamage(cell.CurrentTile, cell, previousHp, cell.CurrentTile.CurrentHP, cell.CurrentTile.IsDead);
-            if (cell.CurrentTile.IsDead)
+            var tile = cell.CurrentTile;
+            int previousHp = tile.CurrentHP;
+            tile.TakeDamage(1);
+            fxContext?.RecordDamage(tile, cell, previousHp, tile.CurrentHP, tile.IsDead);
+            if (tile.IsDead)
             {
-                fxContext?.RecordClear(cell.CurrentTile, cell, false);
+                fxContext?.RecordClear(tile, cell, false);
                 cell.ClearTile();
                 board.AddScore(50);
+                fxContext?.RecordScore(tile, cell, 50, board.CurrentScore);
             }
         }
     }

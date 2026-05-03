@@ -33,7 +33,7 @@ namespace _PawSlidePopGame._Scripts.Core.System.Boostrap
         private IEnumerator RunInitFlowRoutine(bool isEditorAutoInject)
         {
             DontDestroyOnLoad(gameObject);
-            EnsureUIManagerExists();
+            // EnsureUIManagerExists();
 
             foreach (MonoBehaviour mono in coreServices)
             {

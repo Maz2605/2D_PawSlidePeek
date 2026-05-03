@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
@@ -41,6 +42,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         private Match3LevelData _levelData;
         private Match3TileDatabaseSO _tileDatabase;
         private bool _isIdleEnabled = true;
+
+        public event Action<TileClearOp, Vector3> OnTileClearPlaybackStarted;
+        public event Action<ScoreGainOp> OnScoreGainPlaybackStarted;
 
         public void Bind(BoardModel board, Match3LevelData levelData, Match3TileDatabaseSO tileDatabase)
         {
@@ -525,6 +529,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             }
 
             List<IEnumerator> routines = new List<IEnumerator>();
+            List<ScoreGainOp> pendingScoreGains = clearPhase.ScoreGainOps != null
+                ? new List<ScoreGainOp>(clearPhase.ScoreGainOps)
+                : new List<ScoreGainOp>();
 
             for (int i = 0; i < clearPhase.ActivateOps.Count; i++)
             {
@@ -562,6 +569,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             for (int i = 0; i < clearPhase.ClearOps.Count; i++)
             {
                 TileClearOp op = clearPhase.ClearOps[i];
+                OnTileClearPlaybackStarted?.Invoke(op, ResolveWorldPosition(op));
+                DispatchScoreGainsForClearOp(op, pendingScoreGains);
+
                 if (_tileViews.TryGetValue(op.TileInstanceId, out Match3TileView tileView) && tileView != null)
                 {
                     routines.Add(tileView.PlayClearAsync());
@@ -579,9 +589,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             for (int i = 0; i < clearPhase.SpecialCreateOps.Count; i++)
             {
                 SpecialCreateOp op = clearPhase.SpecialCreateOps[i];
+                DispatchScoreGainsForSpecialCreateOp(op, pendingScoreGains);
                 routines.Add(PlaySpecialCreateOp(op));
             }
 
+            DispatchRemainingScoreGains(pendingScoreGains);
             yield return StartCoroutine(RunParallel(routines));
             routines.Clear();
 
@@ -858,6 +870,61 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             onComplete?.Invoke();
         }
 
+        private void DispatchScoreGainsForClearOp(TileClearOp clearOp, List<ScoreGainOp> pendingScoreGains)
+        {
+            if (clearOp == null || pendingScoreGains == null || pendingScoreGains.Count == 0)
+            {
+                return;
+            }
+
+            for (int i = pendingScoreGains.Count - 1; i >= 0; i--)
+            {
+                ScoreGainOp scoreGainOp = pendingScoreGains[i];
+                if (!MatchesClearOp(scoreGainOp, clearOp))
+                {
+                    continue;
+                }
+
+                OnScoreGainPlaybackStarted?.Invoke(scoreGainOp);
+                pendingScoreGains.RemoveAt(i);
+            }
+        }
+
+        private void DispatchScoreGainsForSpecialCreateOp(SpecialCreateOp specialCreateOp, List<ScoreGainOp> pendingScoreGains)
+        {
+            if (specialCreateOp == null || pendingScoreGains == null || pendingScoreGains.Count == 0)
+            {
+                return;
+            }
+
+            for (int i = pendingScoreGains.Count - 1; i >= 0; i--)
+            {
+                ScoreGainOp scoreGainOp = pendingScoreGains[i];
+                if (!MatchesSpecialCreateOp(scoreGainOp, specialCreateOp))
+                {
+                    continue;
+                }
+
+                OnScoreGainPlaybackStarted?.Invoke(scoreGainOp);
+                pendingScoreGains.RemoveAt(i);
+            }
+        }
+
+        private void DispatchRemainingScoreGains(List<ScoreGainOp> pendingScoreGains)
+        {
+            if (pendingScoreGains == null || pendingScoreGains.Count == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < pendingScoreGains.Count; i++)
+            {
+                OnScoreGainPlaybackStarted?.Invoke(pendingScoreGains[i]);
+            }
+
+            pendingScoreGains.Clear();
+        }
+
         private Vector3 GetTileLocalPosition(CellModel cell)
         {
             if (cell != null && _cellViews.TryGetValue(cell, out Match3CellView cellView) && cellView != null)
@@ -866,6 +933,18 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             }
 
             return GetLocalPosition(cell.X, cell.Y);
+        }
+
+        private Vector3 ResolveWorldPosition(TileClearOp clearOp)
+        {
+            if (clearOp != null &&
+                _tileViews.TryGetValue(clearOp.TileInstanceId, out Match3TileView tileView) &&
+                tileView != null)
+            {
+                return tileView.transform.position;
+            }
+
+            return transform.TransformPoint(GetLocalPosition(clearOp.Cell.X, clearOp.Cell.Y));
         }
 
         private Vector3 GetWrapExitPosition(BoardCellPosition fromCell, MoveAxis axis, LineSlideDirection direction)
@@ -890,6 +969,22 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             float offsetX = _board != null ? -((_board.Width - 1) * cellStepX) * 0.5f : 0f;
             float offsetY = _board != null ? ((_board.Height - 1) * cellStepY) * 0.5f : 0f;
             return new Vector3(boardOffset.x + offsetX + (x * cellStepX), boardOffset.y + offsetY - (y * cellStepY), 0f);
+        }
+
+        private static bool MatchesClearOp(ScoreGainOp scoreGainOp, TileClearOp clearOp)
+        {
+            return scoreGainOp != null &&
+                   clearOp != null &&
+                   scoreGainOp.TileInstanceId == clearOp.TileInstanceId &&
+                   scoreGainOp.Cell.Equals(clearOp.Cell);
+        }
+
+        private static bool MatchesSpecialCreateOp(ScoreGainOp scoreGainOp, SpecialCreateOp specialCreateOp)
+        {
+            return scoreGainOp != null &&
+                   specialCreateOp != null &&
+                   scoreGainOp.TileInstanceId == specialCreateOp.SourceTileInstanceId &&
+                   scoreGainOp.Cell.Equals(specialCreateOp.Cell);
         }
 
         private void OnValidate()

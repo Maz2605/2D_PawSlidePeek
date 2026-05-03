@@ -28,4 +28,4 @@ MonoBehaviour:
       requiredCount: 24
     - tileId: 103
       requiredCount: 24
-    starScoreThresholds: 78000000f000000058020000
+    starScoreThresholds: f0000000f4010000e8030000dc050000

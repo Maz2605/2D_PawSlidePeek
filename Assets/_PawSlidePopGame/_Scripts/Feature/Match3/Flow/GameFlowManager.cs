@@ -89,7 +89,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
             }
 
             SetInGameSubState(InGameSubState.ResolvingBoard);
-            return gameManager.ExecuteMove(request);
+            int previousMoves = _lastSnapshot != null ? _lastSnapshot.remainingMoves : gameManager.Board.RemainingMoves;
+            BoardMoveExecutionResult executionResult = gameManager.ExecuteMove(request);
+            if (executionResult.IsAccepted)
+            {
+                PublishMovesChanged(previousMoves, gameManager.Board.RemainingMoves);
+            }
+
+            return executionResult;
         }
 
         public BoardMoveExecutionResult RequestTileActivation(int x, int y)
@@ -100,7 +107,76 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
             }
 
             SetInGameSubState(InGameSubState.ResolvingBoard);
-            return gameManager.ExecuteTileActivation(x, y);
+            int previousMoves = _lastSnapshot != null ? _lastSnapshot.remainingMoves : gameManager.Board.RemainingMoves;
+            BoardMoveExecutionResult executionResult = gameManager.ExecuteTileActivation(x, y);
+            if (executionResult.IsAccepted)
+            {
+                PublishMovesChanged(previousMoves, gameManager.Board.RemainingMoves);
+            }
+
+            return executionResult;
+        }
+
+        public void NotifyTileClearedDuringPlayback(TileClearOp clearOp, Vector3 worldPosition)
+        {
+            if (CurrentInGameSubState != InGameSubState.ResolvingBoard || clearOp == null || _objectiveTracker == null || _lastSnapshot == null)
+            {
+                return;
+            }
+
+            if (!_objectiveTracker.TryApplyClearOp(clearOp, out TargetProgressChangedPayload targetChange))
+            {
+                return;
+            }
+
+            UpdateSnapshotTargetProgress(targetChange);
+            EventManager<VisualGameEvent>.Post(VisualGameEvent.TopHudTargetProgressFx, targetChange);
+            EventManager<VisualGameEvent>.Post(
+                VisualGameEvent.TopHudTargetCollectedFx,
+                new TargetCollectedFxPayload(
+                    clearOp.TileId,
+                    clearOp.TileInstanceId,
+                    clearOp.Cell,
+                    worldPosition,
+                    targetChange.PreviousCount,
+                    targetChange.CurrentCount,
+                    targetChange.RequiredCount,
+                    targetChange.JustCompleted));
+
+            if (_objectiveTracker.TryConsumeTargetsCompletedFx())
+            {
+                EventManager<VisualGameEvent>.Post(VisualGameEvent.TopHudTargetsCompletedFx);
+            }
+        }
+
+        public void NotifyScoreGainedDuringPlayback(ScoreGainOp scoreGainOp)
+        {
+            if (CurrentInGameSubState != InGameSubState.ResolvingBoard || scoreGainOp == null || _lastSnapshot == null)
+            {
+                return;
+            }
+
+            int previousScore = _lastSnapshot.currentScore;
+            if (scoreGainOp.RunningScore <= previousScore)
+            {
+                return;
+            }
+
+            _lastSnapshot.currentScore = scoreGainOp.RunningScore;
+            EventManager<LogicGameEvent>.Post(
+                LogicGameEvent.GameplayScoreChanged,
+                new ScoreChangedPayload(previousScore, _lastSnapshot.currentScore, scoreGainOp.Amount));
+
+            int previousStars = _lastSnapshot.reachedStars;
+            int currentStars = GameplayHudSnapshotBuilder.CountReachedStars(_lastSnapshot.currentScore, _lastSnapshot.starScoreThresholds);
+            _lastSnapshot.reachedStars = currentStars;
+
+            for (int starIndex = previousStars + 1; starIndex <= currentStars; starIndex++)
+            {
+                EventManager<VisualGameEvent>.Post(
+                    VisualGameEvent.TopHudStarReachedFx,
+                    new StarReachedPayload(starIndex, _lastSnapshot.currentScore));
+            }
         }
 
         public void NotifyResolutionPlaybackComplete(BoardMoveExecutionResult executionResult)
@@ -110,7 +186,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
                 return;
             }
 
-            ApplyExecutionResultToHud(executionResult);
+            ReconcileRuntimeSnapshot();
             SetInGameSubState(InGameSubState.CheckingResult);
             EvaluateBoardResult();
         }
@@ -185,36 +261,6 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
         {
             _lastSnapshot = GameplayHudSnapshotBuilder.Build(gameManager.LevelData, gameManager.Board, _objectiveTracker);
             EventManager<LogicGameEvent>.Post(LogicGameEvent.GameplayHudInitialized, _lastSnapshot.Clone());
-        }
-
-        private void ApplyExecutionResultToHud(BoardMoveExecutionResult executionResult)
-        {
-            GameplayHudSnapshot previousSnapshot = _lastSnapshot != null ? _lastSnapshot.Clone() : null;
-            List<TargetProgressChangedPayload> targetChanges = _objectiveTracker != null
-                ? _objectiveTracker.ApplyExecutionResult(executionResult)
-                : new List<TargetProgressChangedPayload>();
-
-            _lastSnapshot = GameplayHudSnapshotBuilder.Build(gameManager.LevelData, gameManager.Board, _objectiveTracker);
-            EventManager<LogicGameEvent>.Post(LogicGameEvent.GameplayHudStateChanged, _lastSnapshot.Clone());
-
-            for (int i = 0; i < targetChanges.Count; i++)
-            {
-                EventManager<VisualGameEvent>.Post(VisualGameEvent.TopHudTargetProgressFx, targetChanges[i]);
-            }
-
-            int previousStars = previousSnapshot != null ? previousSnapshot.reachedStars : 0;
-            for (int starIndex = previousStars + 1; starIndex <= _lastSnapshot.reachedStars; starIndex++)
-            {
-                EventManager<VisualGameEvent>.Post(
-                    VisualGameEvent.TopHudStarReachedFx,
-                    new StarReachedPayload(starIndex, _lastSnapshot.currentScore));
-            }
-
-            bool hadCompletedTargets = previousSnapshot != null && previousSnapshot.AreAllTargetsCompleted;
-            if (!hadCompletedTargets && _lastSnapshot.AreAllTargetsCompleted)
-            {
-                EventManager<VisualGameEvent>.Post(VisualGameEvent.TopHudTargetsCompletedFx);
-            }
         }
 
         private bool SetGameState(GameState nextState)
@@ -304,6 +350,51 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
                 default:
                     return false;
             }
+        }
+
+        private void PublishMovesChanged(int previousMoves, int currentMoves)
+        {
+            if (_lastSnapshot == null || previousMoves == currentMoves)
+            {
+                return;
+            }
+
+            _lastSnapshot.remainingMoves = currentMoves;
+            EventManager<LogicGameEvent>.Post(
+                LogicGameEvent.GameplayMovesChanged,
+                new RemainingMovesChangedPayload(previousMoves, currentMoves));
+        }
+
+        private void UpdateSnapshotTargetProgress(TargetProgressChangedPayload payload)
+        {
+            if (_lastSnapshot?.targets == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _lastSnapshot.targets.Count; i++)
+            {
+                TargetProgressData target = _lastSnapshot.targets[i];
+                if (target == null || target.tileId != payload.TileId)
+                {
+                    continue;
+                }
+
+                target.currentCount = payload.CurrentCount;
+                target.requiredCount = payload.RequiredCount;
+                target.isCompleted = payload.CurrentCount >= payload.RequiredCount;
+                return;
+            }
+        }
+
+        private void ReconcileRuntimeSnapshot()
+        {
+            if (gameManager == null)
+            {
+                return;
+            }
+
+            _lastSnapshot = GameplayHudSnapshotBuilder.Build(gameManager.LevelData, gameManager.Board, _objectiveTracker);
         }
     }
 }

@@ -9,92 +9,186 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 {
     public class LevelProgressView : MonoBehaviour
     {
+        [Header("--- UI References ---")]
         [SerializeField] private TMP_Text levelText;
         [SerializeField] private Slider progressSlider;
-        [SerializeField] private List<Image> starImages = new List<Image>();
-        [SerializeField] private Color lockedStarColor = new Color(1f, 1f, 1f, 0.55f);
-        [SerializeField] private Color unlockedStarColor = Color.white;
+        [SerializeField] private List<StarItemView> starViews = new List<StarItemView>(); 
 
-        private void OnValidate()
+        [Header("--- Super State (Sao 4) ---")]
+        [Tooltip("Kéo Image nằm trong phần Fill của Slider vào đây")]
+        [SerializeField] private Image sliderFillImage; 
+        [SerializeField] private Sprite normalFillSprite; // Hình thanh bar lúc bình thường (Vàng/Cam)
+        [SerializeField] private Sprite superFillSprite;  // Hình thanh bar lúc đạt sao 4 (Xanh lá)
+
+        [Header("--- Animation Settings ---")]
+        [SerializeField] private float sliderAnimDuration = 0.5f;
+
+        private int _visualMaxStars = 3; // Giới hạn số sao vật lý hiện trên thanh
+        private int _totalStarsConfigured;
+        private int _visualMaxScore = 1;
+        private int _superScore = -1;
+        private int _currentScore;
+        private Tween _sliderTween;
+
+        public void SetData(GameplayHudSnapshot snapshot)
         {
-            if (levelText == null)
-            {
-                levelText = GetComponentInChildren<TMP_Text>(true);
-            }
+            if (snapshot == null) return;
 
-            if (progressSlider == null)
-            {
-                progressSlider = GetComponentInChildren<Slider>(true);
-            }
+            if (levelText != null) levelText.SetText("Level {0}", snapshot.levelNumber);
 
-            if (starImages.Count == 0)
+            _totalStarsConfigured = snapshot.starScoreThresholds != null ? snapshot.starScoreThresholds.Length : 0;
+            _currentScore = snapshot.currentScore;
+            
+            // 1. Xác định mốc điểm để render UI
+            _visualMaxScore = 1;
+            _superScore = -1; // Điểm cần để đạt sao 4
+
+            if (_totalStarsConfigured >= _visualMaxStars)
             {
-                Image[] images = GetComponentsInChildren<Image>(true);
-                for (int i = 0; i < images.Length; i++)
+                // Mốc max của thanh Slider = điểm của sao thứ 3
+                _visualMaxScore = Mathf.Max(1, snapshot.starScoreThresholds[_visualMaxStars - 1]);
+                
+                // Nếu data có cấu hình sao thứ 4
+                if (_totalStarsConfigured > _visualMaxStars)
                 {
-                    if (images[i] != null && images[i].name.Contains("Star"))
-                    {
-                        starImages.Add(images[i]);
-                    }
+                    _superScore = snapshot.starScoreThresholds[_visualMaxStars];
+                }
+            }
+
+            // 2. Chạy thanh Slider (Chỉ chạy tối đa đến mốc sao 3 là full 100%)
+            UpdateSliderVisual(snapshot.currentScore, true);
+
+            // 3. Align vị trí 3 ngôi sao theo chuẩn điểm của sao thứ 3
+            AlignStarsToThresholds(snapshot.starScoreThresholds, _visualMaxScore);
+
+            // 4. Xử lý trạng thái hiển thị của Sao và Slider
+            bool isSuperReached = _superScore > 0 && snapshot.currentScore >= _superScore;
+            
+            // Đổi hình Slider
+            if (sliderFillImage != null)
+            {
+                sliderFillImage.sprite = isSuperReached ? superFillSprite : normalFillSprite;
+            }
+
+            // Khôi phục trạng thái cho các sao
+            for (int i = 0; i < starViews.Count; i++)
+            {
+                if (starViews[i] != null)
+                {
+                    bool isUnlocked = i < snapshot.reachedStars;
+                    StarVisualState targetState = DetermineStarState(i, isUnlocked, isSuperReached);
+                    starViews[i].SetState(targetState, instant: true);
                 }
             }
         }
 
-        public void SetData(GameplayHudSnapshot snapshot)
+        public void PlayScoreChangedFx(ScoreChangedPayload payload)
         {
-            if (snapshot == null)
-            {
-                return;
-            }
+            _currentScore = payload.CurrentScore;
+            UpdateSliderVisual(_currentScore, true);
+        }
 
-            if (levelText != null)
-            {
-                levelText.text = $"Level {snapshot.levelNumber}";
-            }
+        // ... Hàm AlignStarsToThresholds giữ nguyên logic như bản trước ...
+        private void AlignStarsToThresholds(int[] thresholds, int maxScore)
+        {
+            if (thresholds == null || maxScore <= 0) return;
 
-            if (progressSlider != null)
+            for (int i = 0; i < starViews.Count; i++)
             {
-                int maxThreshold = 1;
-                if (snapshot.starScoreThresholds != null && snapshot.starScoreThresholds.Length > 0)
+                if (starViews[i] == null) continue;
+
+                // Chỉ xử lý 3 sao vật lý. Các sao dư thừa trong list sẽ bị ẩn.
+                if (i >= _visualMaxStars || i >= thresholds.Length)
                 {
-                    maxThreshold = Mathf.Max(1, snapshot.starScoreThresholds[snapshot.starScoreThresholds.Length - 1]);
+                    starViews[i].gameObject.SetActive(false);
+                    continue;
                 }
 
-                progressSlider.minValue = 0f;
-                progressSlider.maxValue = maxThreshold;
-                progressSlider.SetValueWithoutNotify(Mathf.Clamp(snapshot.currentScore, 0, maxThreshold));
-            }
+                starViews[i].gameObject.SetActive(true);
+                float ratio = Mathf.Clamp01((float)thresholds[i] / maxScore);
 
-            RefreshStars(snapshot.reachedStars);
+                RectTransform starRect = starViews[i].GetComponent<RectTransform>();
+                if (starRect != null)
+                {
+                    starRect.anchorMin = new Vector2(ratio, 0.5f);
+                    starRect.anchorMax = new Vector2(ratio, 0.5f);
+                    starRect.anchoredPosition = Vector2.zero;
+                }
+            }
         }
 
         public void PlayStarReachedFx(StarReachedPayload payload)
         {
-            int starListIndex = payload.StarIndex - 1;
-            if (starListIndex < 0 || starListIndex >= starImages.Count || starImages[starListIndex] == null)
+            int starIndex = payload.StarIndex; 
+
+            if (starIndex > _visualMaxStars)
+            {
+                TriggerSuperStateFx();
+                return;
+            }
+
+            int viewIndex = starIndex - 1;
+            if (viewIndex < 0 || viewIndex >= starViews.Count || starViews[viewIndex] == null) return;
+
+            StarVisualState newState = DetermineStarState(viewIndex, true, false);
+            starViews[viewIndex].PlayUnlockFx(newState, delay: sliderAnimDuration);
+        }
+
+        private void TriggerSuperStateFx()
+        {
+            if (sliderFillImage != null)
+            {
+                DOVirtual.DelayedCall(sliderAnimDuration, () => 
+                {
+                    sliderFillImage.sprite = superFillSprite;
+                    
+                    progressSlider.transform.DOKill();
+                    progressSlider.transform.localScale = Vector3.one;
+                    progressSlider.transform.DOPunchScale(new Vector3(0.05f, 0.1f, 0f), 0.3f, 5)
+                        .SetLink(progressSlider.gameObject, LinkBehaviour.KillOnDisable);
+
+                    // 2. Ép toàn bộ 3 sao vật lý chuyển sang trạng thái xanh (ReachedMax)
+                    for (int i = 0; i < starViews.Count; i++)
+                    {
+                        if (starViews[i] != null && starViews[i].gameObject.activeSelf)
+                        {
+                            starViews[i].PlayUnlockFx(StarVisualState.ReachedMax, delay: 0f);
+                        }
+                    }
+                }).SetLink(gameObject, LinkBehaviour.KillOnDisable);
+            }
+        }
+
+        private StarVisualState DetermineStarState(int index, bool isUnlocked, bool isSuperReached)
+        {
+            if (!isUnlocked) return StarVisualState.Locked;
+            
+            if (isSuperReached) return StarVisualState.ReachedMax;
+
+            return StarVisualState.ReachedNormal; 
+        }
+
+        private void UpdateSliderVisual(int score, bool animate)
+        {
+            if (progressSlider == null)
             {
                 return;
             }
 
-            Image star = starImages[starListIndex];
-            star.DOKill();
-            star.color = unlockedStarColor;
-            star.transform.localScale = Vector3.one;
-            star.transform.DOPunchScale(Vector3.one * 0.2f, 0.25f, 5)
-                .SetLink(star.gameObject, LinkBehaviour.KillOnDisable);
-        }
+            progressSlider.minValue = 0f;
+            progressSlider.maxValue = _visualMaxScore;
 
-        private void RefreshStars(int reachedStars)
-        {
-            for (int i = 0; i < starImages.Count; i++)
+            float targetValue = Mathf.Clamp(score, 0, _visualMaxScore);
+            _sliderTween?.Kill();
+            if (!animate)
             {
-                if (starImages[i] == null)
-                {
-                    continue;
-                }
-
-                starImages[i].color = i < reachedStars ? unlockedStarColor : lockedStarColor;
+                progressSlider.value = targetValue;
+                return;
             }
+
+            _sliderTween = progressSlider.DOValue(targetValue, sliderAnimDuration)
+                .SetEase(Ease.OutQuad)
+                .SetLink(progressSlider.gameObject, LinkBehaviour.KillOnDisable);
         }
     }
 }

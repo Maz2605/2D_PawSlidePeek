@@ -12,16 +12,20 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Tiles
 
         public void OnMatched(BoardModel board, CellModel cell, BoardFxContext fxContext)
         {
-            fxContext?.RecordClear(cell?.CurrentTile, cell, true);
+            var tile = cell?.CurrentTile;
+            fxContext?.RecordClear(tile, cell, true);
             cell.ClearTile();
             board.AddScore(10);
+            fxContext?.RecordScore(tile, cell, 10, board.CurrentScore);
         }
 
         public void OnExploded(BoardModel board, CellModel cell, BoardFxContext fxContext)
         {
-            fxContext?.RecordClear(cell?.CurrentTile, cell, false);
+            var tile = cell?.CurrentTile;
+            fxContext?.RecordClear(tile, cell, false);
             cell.ClearTile();
             board.AddScore(10);
+            fxContext?.RecordScore(tile, cell, 10, board.CurrentScore);
         }
 
         public void OnActivated(BoardModel board, CellModel cell, BoardFxContext fxContext)

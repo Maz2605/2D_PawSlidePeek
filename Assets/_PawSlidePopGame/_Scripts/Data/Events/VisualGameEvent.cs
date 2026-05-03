@@ -6,6 +6,7 @@ namespace _PawSlidePopGame._Scripts.Data.Events
         TopHudStarReachedFx = 2,
         TopHudTargetsCompletedFx = 3,
         GameplayPausedFx = 4,
-        GameplayResumedFx = 5
+        GameplayResumedFx = 5,
+        TopHudTargetCollectedFx = 6
     }
 }

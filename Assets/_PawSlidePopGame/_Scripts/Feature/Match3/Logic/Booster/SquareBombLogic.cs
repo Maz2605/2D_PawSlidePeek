@@ -30,11 +30,13 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Booster
 
             int index = fxContext?.Random != null ? fxContext.Random.Next(0, candidates.Count) : UnityEngine.Random.Range(0, candidates.Count);
             CellModel targetCell = candidates[index];
-            fxContext?.RecordActivate(cell.CurrentTile, cell);
-            fxContext?.RecordTargetSelection(cell.CurrentTile, targetCell);
-            fxContext?.RecordClear(cell.CurrentTile, cell, false);
+            var sourceTile = cell.CurrentTile;
+            fxContext?.RecordActivate(sourceTile, cell);
+            fxContext?.RecordTargetSelection(sourceTile, targetCell);
+            fxContext?.RecordClear(sourceTile, cell, false);
             cell.ClearTile();
             board.AddScore(30);
+            fxContext?.RecordScore(sourceTile, cell, 30, board.CurrentScore);
 
             for (int x = targetCell.X - 1; x <= targetCell.X + 1; x++)
             {

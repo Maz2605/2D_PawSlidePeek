@@ -228,6 +228,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                         if (cell.CurrentTile.CanMatch())
                         {
                             board.AddScore(10);
+                            fxContext?.RecordScore(cell.CurrentTile, cell, 10, board.CurrentScore);
                         }
 
                         continue;

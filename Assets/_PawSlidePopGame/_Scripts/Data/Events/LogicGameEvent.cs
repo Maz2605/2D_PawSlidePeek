@@ -7,6 +7,8 @@ namespace _PawSlidePopGame._Scripts.Data.Events
         GameplayHudInitialized = 3,
         GameplayHudStateChanged = 4,
         GameplayWon = 5,
-        GameplayLost = 6
+        GameplayLost = 6,
+        GameplayMovesChanged = 7,
+        GameplayScoreChanged = 8
     }
 }

@@ -423,6 +423,26 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1550300928618700752}
     m_Modifications:
+    - target: {fileID: 1086749891344868097, guid: 59d70c445c22f8c4e963d98f9e0a6c91, type: 3}
+      propertyPath: elasticCurve.m_Curve.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1086749891344868097, guid: 59d70c445c22f8c4e963d98f9e0a6c91, type: 3}
+      propertyPath: elasticCurve.m_Curve.Array.data[1].time
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1086749891344868097, guid: 59d70c445c22f8c4e963d98f9e0a6c91, type: 3}
+      propertyPath: elasticCurve.m_Curve.Array.data[1].value
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1086749891344868097, guid: 59d70c445c22f8c4e963d98f9e0a6c91, type: 3}
+      propertyPath: elasticCurve.m_Curve.Array.data[0].inSlope
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1086749891344868097, guid: 59d70c445c22f8c4e963d98f9e0a6c91, type: 3}
+      propertyPath: elasticCurve.m_Curve.Array.data[0].outSlope
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3394655827335139164, guid: 59d70c445c22f8c4e963d98f9e0a6c91, type: 3}
       propertyPath: m_Pivot.x
       value: 0
@@ -683,7 +703,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2840294417951128018, guid: 3f6dde7d1d626ec4c82b6721ad5d9564, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 300
+      value: 200
       objectReference: {fileID: 0}
     - target: {fileID: 2840294417951128018, guid: 3f6dde7d1d626ec4c82b6721ad5d9564, type: 3}
       propertyPath: m_LocalPosition.x
