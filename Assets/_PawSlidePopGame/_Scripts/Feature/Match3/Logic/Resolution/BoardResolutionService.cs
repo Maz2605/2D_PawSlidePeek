@@ -224,6 +224,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                         continue;
                     }
 
+                    ClearMatchedBubbleOverlay(cell, board, fxContext);
+
                     if (decision != null && cell == decision.SpawnCell)
                     {
                         pendingCreates.Add(new PendingSpecialCreate(decision, cell.BaseTile, cell));
@@ -263,6 +265,16 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             }
 
             return clearedTiles;
+        }
+
+        private static void ClearMatchedBubbleOverlay(CellModel cell, BoardModel board, BoardFxContext fxContext)
+        {
+            if (cell == null || !cell.HasOverlayLogic(TileLogicType.BubbleBlocker))
+            {
+                return;
+            }
+
+            cell.OverlayTile?.Match(board, cell, fxContext);
         }
 
         private static void ApplyAdjacentIceBreaks(BoardModel board, BoardMatchAnalysis matchAnalysis, BoardFxContext fxContext)

@@ -588,6 +588,138 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
                 Is.False);
         }
 
+        [Test]
+        public void BubbleOverlay_DoesNotBlockBaseMatchAndClearsWhenUnderlyingTileMatches()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBlockerTile(302, 1, TileLogicType.BubbleBlocker));
+
+            Match3LevelData levelData = CreateLevelData(3, 1, new[] { 101, 101, 101 });
+            levelData.overlayLayout = new[] { 0, 302, 0 };
+
+            BoardModel board = CreateBoard(levelData, database);
+            BoardMoveExecutionResult result = BoardResolutionService.ExecuteMove(
+                board,
+                new BoardMoveRequest(MoveAxis.Row, 0, LineSlideDirection.Right, 1, 0),
+                levelData,
+                database,
+                new System.Random(0));
+
+            Assert.That(result.IsAccepted, Is.True);
+            Assert.That(result.PresentationTrace.Cascades.Count, Is.EqualTo(1));
+            Assert.That(result.PresentationTrace.Cascades[0].ClearPhase.ClearOps.Exists(op =>
+                op.Cell.Equals(new BoardCellPosition(1, 0)) &&
+                op.Layer == TileStackLayer.Overlay &&
+                op.TileId == 302), Is.True);
+            Assert.That(result.PresentationTrace.Cascades[0].ClearPhase.ClearOps.Exists(op =>
+                op.Cell.Equals(new BoardCellPosition(1, 0)) &&
+                op.Layer == TileStackLayer.Base &&
+                op.TileId == 101), Is.True);
+        }
+
+        [Test]
+        public void LineSlideMoveRule_BubbleOverlayDoesNotLockItsRowOrColumn()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateNormalTile(102, AnimalTileId.Dog),
+                CreateBlockerTile(302, 1, TileLogicType.BubbleBlocker));
+            Match3LevelData levelData = CreateLevelData(3, 3, new[]
+            {
+                101, 102, 101,
+                102, 101, 102,
+                101, 102, 101
+            });
+            levelData.overlayLayout = new[]
+            {
+                0, 0, 0,
+                0, 302, 0,
+                0, 0, 0
+            };
+
+            BoardModel board = CreateBoard(levelData, database);
+            LineSlideMoveRule rule = new LineSlideMoveRule();
+
+            Assert.That(rule.TryApply(board, new BoardMoveRequest(MoveAxis.Row, 1, LineSlideDirection.Right, 1, 1), out _), Is.True);
+            Assert.That(rule.TryApply(board, new BoardMoveRequest(MoveAxis.Column, 1, LineSlideDirection.Down, 1, 1), out _), Is.True);
+        }
+
+        [Test]
+        public void BombActivation_ClearsBubbleAndUnderlyingBaseTile()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBoosterTile(201, TileLogicType.BombBooster),
+                CreateBlockerTile(302, 1, TileLogicType.BubbleBlocker));
+
+            Match3LevelData levelData = CreateLevelData(3, 3, new[]
+            {
+                101, 101, 101,
+                101, 201, 101,
+                101, 101, 101
+            });
+            levelData.overlayLayout = new[]
+            {
+                0, 0, 0,
+                0, 0, 0,
+                0, 302, 0
+            };
+
+            BoardModel board = CreateBoard(levelData, database);
+            CascadeTrace cascadeTrace = new CascadeTrace();
+            BoardFxContext fxContext = new BoardFxContext(cascadeTrace, new System.Random(0));
+            CellModel centerCell = board.GetCell(1, 1);
+            CellModel bubbleCell = board.GetCell(1, 2);
+
+            centerCell.CurrentTile.Activate(board, centerCell, fxContext);
+
+            Assert.That(cascadeTrace.ClearPhase.ClearOps.Exists(op =>
+                op.Cell.Equals(new BoardCellPosition(1, 2)) &&
+                op.Layer == TileStackLayer.Overlay &&
+                op.TileId == 302), Is.True);
+            Assert.That(cascadeTrace.ClearPhase.ClearOps.Exists(op =>
+                op.Cell.Equals(new BoardCellPosition(1, 2)) &&
+                op.Layer == TileStackLayer.Base &&
+                op.TileId == 101), Is.True);
+            Assert.That(bubbleCell.OverlayTile, Is.Null);
+            Assert.That(bubbleCell.BaseTile, Is.Null);
+        }
+
+        [Test]
+        public void BubbleCoveredBooster_CanActivateNormally()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBoosterTile(201, TileLogicType.BombBooster),
+                CreateBlockerTile(302, 1, TileLogicType.BubbleBlocker));
+
+            Match3LevelData levelData = CreateLevelData(3, 3, new[]
+            {
+                101, 101, 101,
+                101, 201, 101,
+                101, 101, 101
+            });
+            levelData.overlayLayout = new[]
+            {
+                0, 0, 0,
+                0, 302, 0,
+                0, 0, 0
+            };
+
+            BoardModel board = CreateBoard(levelData, database);
+            BoardMoveExecutionResult result = BoardResolutionService.ExecuteTileActivation(
+                board,
+                1,
+                1,
+                levelData,
+                database,
+                new System.Random(0));
+
+            Assert.That(result.IsApplied, Is.True);
+            Assert.That(result.IsAccepted, Is.True);
+        }
+
         private static Match3LevelData CreateFilledLevel(int width, int height, int tileId)
         {
             int[] layout = new int[width * height];
@@ -647,11 +779,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             return tile;
         }
 
-        private static BlockerTileDefinitionSO CreateBlockerTile(int tileId, int defaultHp)
+        private static BlockerTileDefinitionSO CreateBlockerTile(int tileId, int defaultHp, TileLogicType logicType = TileLogicType.IceBlocker)
         {
             BlockerTileDefinitionSO tile = ScriptableObject.CreateInstance<BlockerTileDefinitionSO>();
             SetPrivateField(tile, "tileId", tileId);
-            SetPrivateField(tile, "blockerLogicType", TileLogicType.IceBlocker);
+            SetPrivateField(tile, "blockerLogicType", logicType);
             SetPrivateField(tile, "defaultHP", defaultHp);
             SetPrivateField(tile, "canSpawnOnRefill", false);
             SetPrivateField(tile, "spawnWeight", 0);

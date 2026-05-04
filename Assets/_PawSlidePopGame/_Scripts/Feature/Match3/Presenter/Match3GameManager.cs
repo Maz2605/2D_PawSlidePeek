@@ -11,7 +11,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 {
     public class Match3GameManager : MonoBehaviour
     {
-        [Header("Data")]
+        [Header("Data")]    
         [SerializeField] private Match3LevelDefinitionSO levelDefinition;
         [SerializeField] private Match3TileDatabaseSO tileDatabase;
 
