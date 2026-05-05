@@ -20,5 +20,6 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum
         
         //Blocker
         BubbleBlocker = 8,
+        ChocolateBlocker = 9,
     }
 }

@@ -12,6 +12,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
         public int Height { get; }
         public int CurrentScore { get; private set; }
         public int RemainingMoves { get; private set; }
+        public int ChocolateGrowthTurnsSinceLastBreak { get; private set; }
 
         private readonly CellModel[,] _grid;
         private int _tileInstanceCounter;
@@ -275,6 +276,29 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
             {
                 RemainingMoves--;
             }
+        }
+
+        public void ResetChocolateGrowthCounter()
+        {
+            ChocolateGrowthTurnsSinceLastBreak = 0;
+        }
+
+        public bool AdvanceChocolateGrowthCounter(int requiredTurns)
+        {
+            if (requiredTurns <= 1)
+            {
+                ChocolateGrowthTurnsSinceLastBreak = 0;
+                return true;
+            }
+
+            ChocolateGrowthTurnsSinceLastBreak++;
+            if (ChocolateGrowthTurnsSinceLastBreak < requiredTurns)
+            {
+                return false;
+            }
+
+            ChocolateGrowthTurnsSinceLastBreak = 0;
+            return true;
         }
     }
 }

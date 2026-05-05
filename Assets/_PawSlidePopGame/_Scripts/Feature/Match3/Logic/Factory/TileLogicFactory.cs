@@ -38,6 +38,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Factory
                     return new IceLogic();
                 case TileLogicType.BubbleBlocker: 
                     return new BubbleLogic();
+                case TileLogicType.ChocolateBlocker:
+                    return new ChocolateLogic();
                 case TileLogicType.NormalAnimal:
                 case TileLogicType.None:
                 default:

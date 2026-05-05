@@ -71,6 +71,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                 initialAnalysis.HasMatches ? initialAnalysis : null,
                 traceBuilder,
                 moveRequest);
+            ApplyChocolateGrowth(board, tileDatabase, random, resolutionResult, traceBuilder);
             resolutionResult.ScoreDelta = board.CurrentScore - scoreBefore;
 
             executionResult.ResolutionResult = resolutionResult;
@@ -143,6 +144,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             resolutionResult.SpawnedTiles += BoardRefillService.Apply(board, levelData, tileDatabase, random, activationCascade.RefillPhase.SpawnOps);
 
             ResolveBoard(board, levelData, tileDatabase, random, resolutionResult, activeRuleSet.MatchRule, null, traceBuilder, null);
+            ApplyChocolateGrowth(board, tileDatabase, random, resolutionResult, traceBuilder);
             resolutionResult.ScoreDelta = board.CurrentScore - scoreBefore;
 
             executionResult.ResolutionResult = resolutionResult;
@@ -209,7 +211,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
 
             int clearedTiles = 0;
             List<PendingSpecialCreate> pendingCreates = new List<PendingSpecialCreate>();
-            ApplyAdjacentIceBreaks(board, matchAnalysis, fxContext);
+            ApplyAdjacentSolidBlockerBreaks(board, matchAnalysis, fxContext);
 
             for (int groupIndex = 0; groupIndex < matchAnalysis.Groups.Count; groupIndex++)
             {
@@ -277,14 +279,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             cell.OverlayTile?.Match(board, cell, fxContext);
         }
 
-        private static void ApplyAdjacentIceBreaks(BoardModel board, BoardMatchAnalysis matchAnalysis, BoardFxContext fxContext)
+        private static void ApplyAdjacentSolidBlockerBreaks(BoardModel board, BoardMatchAnalysis matchAnalysis, BoardFxContext fxContext)
         {
             if (board == null || matchAnalysis?.Groups == null || matchAnalysis.Groups.Count == 0)
             {
                 return;
             }
 
-            HashSet<CellModel> iceCellsToBreak = new HashSet<CellModel>();
+            HashSet<CellModel> blockerCellsToBreak = new HashSet<CellModel>();
             for (int groupIndex = 0; groupIndex < matchAnalysis.Groups.Count; groupIndex++)
             {
                 MatchGroup group = matchAnalysis.Groups[groupIndex];
@@ -295,39 +297,237 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
 
                 for (int cellIndex = 0; cellIndex < group.Cells.Count; cellIndex++)
                 {
-                    CollectAdjacentIceCells(board, group.Cells[cellIndex], iceCellsToBreak);
+                    CollectAdjacentSolidBlockerCells(board, group.Cells[cellIndex], blockerCellsToBreak);
                 }
             }
 
-            List<CellModel> orderedIceCells = new List<CellModel>(iceCellsToBreak);
-            orderedIceCells.Sort(CompareCells);
-            for (int i = 0; i < orderedIceCells.Count; i++)
+            List<CellModel> orderedBlockerCells = new List<CellModel>(blockerCellsToBreak);
+            orderedBlockerCells.Sort(CompareCells);
+            for (int i = 0; i < orderedBlockerCells.Count; i++)
             {
-                CellModel iceCell = orderedIceCells[i];
-                iceCell?.OverlayTile?.Match(board, iceCell, fxContext);
+                CellModel blockerCell = orderedBlockerCells[i];
+                blockerCell?.OverlayTile?.Match(board, blockerCell, fxContext);
             }
         }
 
-        private static void CollectAdjacentIceCells(BoardModel board, CellModel sourceCell, HashSet<CellModel> iceCellsToBreak)
+        private static void CollectAdjacentSolidBlockerCells(BoardModel board, CellModel sourceCell, HashSet<CellModel> blockerCellsToBreak)
         {
-            if (board == null || sourceCell == null || iceCellsToBreak == null)
+            if (board == null || sourceCell == null || blockerCellsToBreak == null)
             {
                 return;
             }
 
-            TryAddAdjacentIceCell(board, sourceCell.X + 1, sourceCell.Y, iceCellsToBreak);
-            TryAddAdjacentIceCell(board, sourceCell.X - 1, sourceCell.Y, iceCellsToBreak);
-            TryAddAdjacentIceCell(board, sourceCell.X, sourceCell.Y + 1, iceCellsToBreak);
-            TryAddAdjacentIceCell(board, sourceCell.X, sourceCell.Y - 1, iceCellsToBreak);
+            TryAddAdjacentSolidBlockerCell(board, sourceCell.X + 1, sourceCell.Y, blockerCellsToBreak);
+            TryAddAdjacentSolidBlockerCell(board, sourceCell.X - 1, sourceCell.Y, blockerCellsToBreak);
+            TryAddAdjacentSolidBlockerCell(board, sourceCell.X, sourceCell.Y + 1, blockerCellsToBreak);
+            TryAddAdjacentSolidBlockerCell(board, sourceCell.X, sourceCell.Y - 1, blockerCellsToBreak);
         }
 
-        private static void TryAddAdjacentIceCell(BoardModel board, int x, int y, HashSet<CellModel> iceCellsToBreak)
+        private static void TryAddAdjacentSolidBlockerCell(BoardModel board, int x, int y, HashSet<CellModel> blockerCellsToBreak)
         {
             CellModel adjacentCell = board.GetCell(x, y);
-            if (adjacentCell != null && adjacentCell.HasOverlayLogic(TileLogicType.IceBlocker))
+            if (adjacentCell != null &&
+                (adjacentCell.HasOverlayLogic(TileLogicType.IceBlocker) ||
+                 adjacentCell.HasOverlayLogic(TileLogicType.ChocolateBlocker)))
             {
-                iceCellsToBreak.Add(adjacentCell);
+                blockerCellsToBreak.Add(adjacentCell);
             }
+        }
+
+        private static void ApplyChocolateGrowth(
+            BoardModel board,
+            Match3TileDatabaseSO tileDatabase,
+            Random random,
+            BoardResolutionResult resolutionResult,
+            BoardPresentationTraceBuilder traceBuilder)
+        {
+            if (board == null || tileDatabase == null || random == null || traceBuilder == null)
+            {
+                return;
+            }
+
+            BoardPresentationTrace trace = traceBuilder.Build();
+            if (HasChocolateClears(trace, tileDatabase))
+            {
+                board.ResetChocolateGrowthCounter();
+                return;
+            }
+
+            List<CellModel> chocolateCells = GetLivingChocolateCells(board);
+            if (chocolateCells.Count == 0)
+            {
+                board.ResetChocolateGrowthCounter();
+                return;
+            }
+
+            BlockerTileDefinitionSO chocolateDefinition = GetChocolateDefinition(chocolateCells, tileDatabase);
+            int configuredGrowthCount = chocolateDefinition != null ? chocolateDefinition.GrowthPerTurn : 0;
+            if (configuredGrowthCount <= 0)
+            {
+                return;
+            }
+
+            int growthTurnInterval = chocolateDefinition != null ? chocolateDefinition.GrowthTurnInterval : 1;
+            if (!board.AdvanceChocolateGrowthCounter(growthTurnInterval))
+            {
+                return;
+            }
+
+            List<ChocolateGrowthCandidate> candidates = CollectChocolateGrowthCandidates(board, chocolateCells);
+            if (candidates.Count == 0)
+            {
+                return;
+            }
+
+            int targetSpawnCount = Math.Min(configuredGrowthCount, candidates.Count);
+            if (targetSpawnCount <= 0)
+            {
+                return;
+            }
+
+            CascadeTrace growthCascade = traceBuilder.BeginCascade();
+            BoardFxContext growthFxContext = new BoardFxContext(growthCascade, random);
+            int spawnedCount = 0;
+            for (int i = 0; i < targetSpawnCount; i++)
+            {
+                int selectedIndex = random.Next(0, candidates.Count);
+                ChocolateGrowthCandidate selectedCandidate = candidates[selectedIndex];
+                candidates.RemoveAt(selectedIndex);
+
+                TileModel createdTile = board.CreateTileFromDefinitionId(chocolateDefinition.TileId, tileDatabase);
+                if (createdTile == null)
+                {
+                    continue;
+                }
+
+                board.SetTile(selectedCandidate.TargetCell, TileStackLayer.Overlay, createdTile);
+                growthFxContext.RecordSpecialCreate(
+                    selectedCandidate.SourceTile,
+                    createdTile,
+                    selectedCandidate.TargetCell,
+                    TileStackLayer.Overlay,
+                    false);
+                spawnedCount++;
+            }
+
+            if (spawnedCount <= 0)
+            {
+                return;
+            }
+
+            if (resolutionResult != null)
+            {
+                resolutionResult.CascadesResolved += CountCascadeAsResolved(growthCascade);
+                resolutionResult.SpawnedTiles += spawnedCount;
+            }
+        }
+
+        private static BlockerTileDefinitionSO GetChocolateDefinition(IReadOnlyList<CellModel> chocolateCells, Match3TileDatabaseSO tileDatabase)
+        {
+            if (chocolateCells != null)
+            {
+                for (int i = 0; i < chocolateCells.Count; i++)
+                {
+                    if (chocolateCells[i]?.OverlayTile?.Definition is BlockerTileDefinitionSO blockerDefinition &&
+                        blockerDefinition.LogicType == TileLogicType.ChocolateBlocker)
+                    {
+                        return blockerDefinition;
+                    }
+                }
+            }
+
+            TileDefinitionSO fallbackDefinition = tileDatabase?.GetTileDefinition(303);
+            return fallbackDefinition as BlockerTileDefinitionSO;
+        }
+
+        private static bool HasChocolateClears(BoardPresentationTrace trace, Match3TileDatabaseSO tileDatabase)
+        {
+            if (trace?.Cascades == null || tileDatabase == null)
+            {
+                return false;
+            }
+
+            for (int cascadeIndex = 0; cascadeIndex < trace.Cascades.Count; cascadeIndex++)
+            {
+                List<TileClearOp> clearOps = trace.Cascades[cascadeIndex]?.ClearPhase?.ClearOps;
+                if (clearOps == null)
+                {
+                    continue;
+                }
+
+                for (int clearIndex = 0; clearIndex < clearOps.Count; clearIndex++)
+                {
+                    TileDefinitionSO definition = tileDatabase.GetTileDefinition(clearOps[clearIndex].TileId);
+                    if (definition != null && definition.LogicType == TileLogicType.ChocolateBlocker)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static List<CellModel> GetLivingChocolateCells(BoardModel board)
+        {
+            List<CellModel> chocolateCells = new List<CellModel>();
+            foreach (CellModel cell in board.GetAllCells())
+            {
+                if (cell != null && cell.HasOverlayLogic(TileLogicType.ChocolateBlocker))
+                {
+                    chocolateCells.Add(cell);
+                }
+            }
+
+            return chocolateCells;
+        }
+
+        private static List<ChocolateGrowthCandidate> CollectChocolateGrowthCandidates(BoardModel board, IReadOnlyList<CellModel> chocolateCells)
+        {
+            Dictionary<int, ChocolateGrowthCandidate> candidatesByCell = new Dictionary<int, ChocolateGrowthCandidate>();
+            for (int i = 0; i < chocolateCells.Count; i++)
+            {
+                CellModel sourceCell = chocolateCells[i];
+                if (sourceCell?.OverlayTile == null)
+                {
+                    continue;
+                }
+
+                TryAddChocolateGrowthCandidate(board, sourceCell, sourceCell.X + 1, sourceCell.Y, candidatesByCell);
+                TryAddChocolateGrowthCandidate(board, sourceCell, sourceCell.X - 1, sourceCell.Y, candidatesByCell);
+                TryAddChocolateGrowthCandidate(board, sourceCell, sourceCell.X, sourceCell.Y + 1, candidatesByCell);
+                TryAddChocolateGrowthCandidate(board, sourceCell, sourceCell.X, sourceCell.Y - 1, candidatesByCell);
+            }
+
+            List<ChocolateGrowthCandidate> candidates = new List<ChocolateGrowthCandidate>(candidatesByCell.Values);
+            candidates.Sort((left, right) => CompareCells(left.TargetCell, right.TargetCell));
+            return candidates;
+        }
+
+        private static void TryAddChocolateGrowthCandidate(
+            BoardModel board,
+            CellModel sourceCell,
+            int targetX,
+            int targetY,
+            Dictionary<int, ChocolateGrowthCandidate> candidatesByCell)
+        {
+            CellModel targetCell = board.GetCell(targetX, targetY);
+            if (targetCell == null ||
+                !targetCell.IsPlayable ||
+                targetCell.BaseTile == null ||
+                !targetCell.CanAcceptOverlay() ||
+                targetCell.OverlayTile != null)
+            {
+                return;
+            }
+
+            int key = (targetCell.Y * board.Width) + targetCell.X;
+            if (candidatesByCell.ContainsKey(key))
+            {
+                return;
+            }
+
+            candidatesByCell[key] = new ChocolateGrowthCandidate(sourceCell, targetCell, sourceCell.OverlayTile);
         }
 
         private static bool ApplyPostMoveRules(
@@ -473,6 +673,20 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                 Decision = decision;
                 SourceTile = sourceTile;
                 Cell = cell;
+            }
+        }
+
+        private readonly struct ChocolateGrowthCandidate
+        {
+            public CellModel SourceCell { get; }
+            public CellModel TargetCell { get; }
+            public TileModel SourceTile { get; }
+
+            public ChocolateGrowthCandidate(CellModel sourceCell, CellModel targetCell, TileModel sourceTile)
+            {
+                SourceCell = sourceCell;
+                TargetCell = targetCell;
+                SourceTile = sourceTile;
             }
         }
     }

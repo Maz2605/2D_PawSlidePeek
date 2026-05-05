@@ -117,7 +117,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Booster
             if (cell.OverlayTile != null)
             {
                 TileModel overlayTile = cell.OverlayTile;
-                bool stopsExplosionAtOverlay = overlayTile.LogicType == TileLogicType.IceBlocker;
+                bool stopsExplosionAtOverlay =
+                    overlayTile.LogicType == TileLogicType.IceBlocker ||
+                    overlayTile.LogicType == TileLogicType.ChocolateBlocker;
                 overlayTile.Explode(board, cell, fxContext);
                 if (stopsExplosionAtOverlay || cell.OverlayTile != null)
                 {

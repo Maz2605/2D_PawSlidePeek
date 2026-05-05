@@ -23,7 +23,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move
             bool hasAnyMovableState = false;
             for (int i = 0; i < affectedCells.Count; i++)
             {
-                if (affectedCells[i].HasOverlayLogic(TileLogicType.IceBlocker))
+                if (LocksLineMovement(affectedCells[i]))
                 {
                     return false;
                 }
@@ -49,6 +49,13 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move
             board.RotateTiles(affectedCells, request.GetRotationStep());
             moveContext = new BoardMoveContext(request, affectedCells, snapshot);
             return true;
+        }
+
+        private static bool LocksLineMovement(CellModel cell)
+        {
+            return cell != null &&
+                   (cell.HasOverlayLogic(TileLogicType.IceBlocker) ||
+                    cell.HasOverlayLogic(TileLogicType.ChocolateBlocker));
         }
     }
 }

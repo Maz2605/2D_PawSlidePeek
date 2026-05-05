@@ -786,7 +786,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 yield return StartCoroutine(sourceTileView.PlaySpecialCreateAsync());
             }
 
-            DestroyTileView(createOp.SourceTileInstanceId);
+            if (createOp.ReplaceSourceTileView)
+            {
+                DestroyTileView(createOp.SourceTileInstanceId);
+            }
 
             CellModel boardCell = _board != null ? _board.GetCell(createOp.Cell.X, createOp.Cell.Y) : null;
             TileModel boardTile = boardCell?.GetTile(createOp.Layer);

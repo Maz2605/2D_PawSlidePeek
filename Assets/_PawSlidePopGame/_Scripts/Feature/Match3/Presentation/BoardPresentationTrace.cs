@@ -186,6 +186,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
         public TileDefinitionSO Definition { get; set; }
         public TileLogicType LogicType { get; set; }
         public BoardCellPosition Cell { get; set; }
+        public bool ReplaceSourceTileView { get; set; } = true;
     }
 
     [Serializable]
@@ -302,7 +303,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
             });
         }
 
-        public void RecordSpecialCreate(TileModel sourceTile, TileModel createdTile, CellModel cell)
+        public void RecordSpecialCreate(
+            TileModel sourceTile,
+            TileModel createdTile,
+            CellModel cell,
+            TileStackLayer layer = TileStackLayer.Base,
+            bool replaceSourceTileView = true)
         {
             if (sourceTile == null || createdTile == null || cell == null)
             {
@@ -315,10 +321,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
                 FromTileId = sourceTile.TileId,
                 NewTileInstanceId = createdTile.InstanceId,
                 ToTileId = createdTile.TileId,
-                Layer = TileStackLayer.Base,
+                Layer = layer,
                 Definition = createdTile.Definition,
                 LogicType = createdTile.LogicType,
-                Cell = BoardCellPosition.FromCell(cell)
+                Cell = BoardCellPosition.FromCell(cell),
+                ReplaceSourceTileView = replaceSourceTileView
             });
         }
 
