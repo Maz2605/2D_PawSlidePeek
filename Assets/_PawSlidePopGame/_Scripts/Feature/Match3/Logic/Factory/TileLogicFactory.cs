@@ -17,11 +17,6 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Factory
                 return null;
             }
 
-            if (definition.TileKind == TileKind.Mechanic)
-            {
-                return new MechanicPlaceholderLogic();
-            }
-
             switch (definition.LogicType)
             {
                 case TileLogicType.BombBooster:
@@ -40,10 +35,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Factory
                     return new BubbleLogic();
                 case TileLogicType.ChocolateBlocker:
                     return new ChocolateLogic();
+                case TileLogicType.CakeDelivery:
+                    return new CakeDeliveryLogic();
                 case TileLogicType.NormalAnimal:
                 case TileLogicType.None:
                 default:
-                    return new NormalAnimalTileLogic();
+                    return definition.TileKind == TileKind.Mechanic
+                        ? new MechanicPlaceholderLogic()
+                        : new NormalAnimalTileLogic();
             }
         }
     }

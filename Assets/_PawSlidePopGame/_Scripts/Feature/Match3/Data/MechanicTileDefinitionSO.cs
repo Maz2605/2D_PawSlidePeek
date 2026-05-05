@@ -20,11 +20,6 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
         {
             base.OnValidate();
             MigrateLegacyTileViewPrefab(ref tileViewPrefab);
-
-            if (mechanicLogicType != TileLogicType.None)
-            {
-                mechanicLogicType = TileLogicType.None;
-            }
         }
     }
 }

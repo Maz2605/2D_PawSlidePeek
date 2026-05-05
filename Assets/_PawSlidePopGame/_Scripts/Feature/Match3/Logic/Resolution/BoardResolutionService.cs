@@ -71,6 +71,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                 initialAnalysis.HasMatches ? initialAnalysis : null,
                 traceBuilder,
                 moveRequest);
+            ApplyDeliveryMechanics(board, levelData, tileDatabase, random, resolutionResult, activeRuleSet.MatchRule, traceBuilder);
             ApplyChocolateGrowth(board, tileDatabase, random, resolutionResult, traceBuilder);
             resolutionResult.ScoreDelta = board.CurrentScore - scoreBefore;
 
@@ -144,6 +145,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             resolutionResult.SpawnedTiles += BoardRefillService.Apply(board, levelData, tileDatabase, random, activationCascade.RefillPhase.SpawnOps);
 
             ResolveBoard(board, levelData, tileDatabase, random, resolutionResult, activeRuleSet.MatchRule, null, traceBuilder, null);
+            ApplyDeliveryMechanics(board, levelData, tileDatabase, random, resolutionResult, activeRuleSet.MatchRule, traceBuilder);
             ApplyChocolateGrowth(board, tileDatabase, random, resolutionResult, traceBuilder);
             resolutionResult.ScoreDelta = board.CurrentScore - scoreBefore;
 
@@ -466,6 +468,106 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             }
 
             return false;
+        }
+
+        private static void ApplyDeliveryMechanics(
+            BoardModel board,
+            Match3LevelData levelData,
+            Match3TileDatabaseSO tileDatabase,
+            Random random,
+            BoardResolutionResult resolutionResult,
+            IBoardMatchRule matchRule,
+            BoardPresentationTraceBuilder traceBuilder)
+        {
+            if (board == null || levelData == null || tileDatabase == null || matchRule == null || traceBuilder == null)
+            {
+                return;
+            }
+
+            bool deliveredAny;
+            do
+            {
+                List<CellModel> deliveredCells = CollectDeliveredMechanicCells(board);
+                int deliveredCount = deliveredCells.Count;
+                deliveredAny = deliveredCount > 0;
+                if (!deliveredAny)
+                {
+                    continue;
+                }
+
+                CascadeTrace deliveryCascade = traceBuilder.BeginCascade();
+                BoardFxContext fxContext = new BoardFxContext(deliveryCascade, random);
+                ApplyDeliveredMechanicClears(deliveredCells, fxContext);
+
+                resolutionResult.CascadesResolved += CountCascadeAsResolved(deliveryCascade);
+                resolutionResult.ClearedTiles += deliveredCount;
+
+                BoardGravityService.Apply(board, deliveryCascade.GravityPhase.TravelOps);
+                resolutionResult.SpawnedTiles += BoardRefillService.Apply(board, levelData, tileDatabase, random, deliveryCascade.RefillPhase.SpawnOps);
+                ResolveBoard(board, levelData, tileDatabase, random, resolutionResult, matchRule, null, traceBuilder, null);
+            } while (deliveredAny);
+        }
+
+        private static List<CellModel> CollectDeliveredMechanicCells(BoardModel board)
+        {
+            List<CellModel> deliveredCells = new List<CellModel>();
+            if (board == null)
+            {
+                return deliveredCells;
+            }
+
+            for (int x = 0; x < board.Width; x++)
+            {
+                CellModel exitCell = GetBottomPlayableCell(board, x);
+                if (exitCell?.BaseTile == null || exitCell.OverlayTile != null || exitCell.BaseTile.LogicType != TileLogicType.CakeDelivery)
+                {
+                    continue;
+                }
+
+                deliveredCells.Add(exitCell);
+            }
+
+            return deliveredCells;
+        }
+
+        private static void ApplyDeliveredMechanicClears(IReadOnlyList<CellModel> deliveredCells, BoardFxContext fxContext)
+        {
+            if (deliveredCells == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < deliveredCells.Count; i++)
+            {
+                CellModel deliveredCell = deliveredCells[i];
+                TileModel deliveredTile = deliveredCell?.BaseTile;
+                if (deliveredCell == null || deliveredTile == null)
+                {
+                    continue;
+                }
+
+                fxContext?.RecordClear(deliveredTile, deliveredCell, false);
+                deliveredCell.ClearBaseTile();
+            }
+        }
+
+        private static CellModel GetBottomPlayableCell(BoardModel board, int column)
+        {
+            if (board == null || column < 0 || column >= board.Width)
+            {
+                return null;
+            }
+
+            for (int y = board.Height - 1; y >= 0; y--)
+            {
+                CellModel cell = board.GetCell(column, y);
+                if (cell != null && cell.IsPlayable)
+                {
+                    return cell;
+                }
+            }
+
+            return null;
         }
 
         private static List<CellModel> GetLivingChocolateCells(BoardModel board)
