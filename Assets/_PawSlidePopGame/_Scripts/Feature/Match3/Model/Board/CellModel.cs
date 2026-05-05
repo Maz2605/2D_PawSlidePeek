@@ -35,6 +35,21 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
 
         public void SetOverlayTile(TileModel newTile)
         {
+            if (newTile != null && newTile.TileKind == TileKind.Mechanic)
+            {
+                OverlayTile = null;
+                BaseTile = newTile;
+                OnTileChanged?.Invoke(BaseTile);
+                return;
+            }
+
+            if (newTile != null && !CanAcceptOverlay())
+            {
+                OverlayTile = null;
+                OnTileChanged?.Invoke(BaseTile);
+                return;
+            }
+
             OverlayTile = newTile;
             OnTileChanged?.Invoke(BaseTile);
         }
@@ -79,6 +94,16 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
         public bool HasOverlayTile()
         {
             return OverlayTile != null;
+        }
+
+        public bool HasMechanicBaseTile()
+        {
+            return BaseTile != null && BaseTile.TileKind == TileKind.Mechanic;
+        }
+
+        public bool CanAcceptOverlay()
+        {
+            return !HasMechanicBaseTile();
         }
 
         public bool HasBlockingOverlay()

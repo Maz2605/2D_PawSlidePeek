@@ -214,6 +214,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
             }
 
             TileModel tile = CreateTileFromDefinitionId(tileId, tileDatabase);
+            if (tile != null && !cell.CanAcceptOverlay())
+            {
+                cell.ClearOverlayTile();
+                return;
+            }
+
             cell.SetOverlayTile(tile);
         }
 

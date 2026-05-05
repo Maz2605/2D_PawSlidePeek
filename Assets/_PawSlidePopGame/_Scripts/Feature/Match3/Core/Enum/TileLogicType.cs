@@ -24,5 +24,6 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum
 
         //Mechanic
         CakeDelivery = 10,
+        StoneMechanic = 11,
     }
 }

@@ -467,6 +467,137 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(completedCount, Is.EqualTo(1));
         }
 
+        [Test]
+        public void GameFlowManager_PlaybackCallbacks_CountChocolateTargetsByTileId()
+        {
+            Match3LevelData levelData = CreateLevelData(1, 1, new[] { 101 });
+            levelData.overlayLayout = new[] { 303 };
+            levelData.targets = new List<LevelTargetData> { new LevelTargetData(303, 1) };
+
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker));
+
+            GameFlowManager flowManager = CreateFlowManager(levelData, database);
+            BoardMoveExecutionResult result = new BoardMoveExecutionResult
+            {
+                IsApplied = true,
+                IsAccepted = true,
+                PresentationTrace = new BoardPresentationTrace()
+            };
+            CascadeTrace cascade = new CascadeTrace();
+            cascade.ClearPhase.ClearOps.Add(new TileClearOp
+            {
+                TileId = 303,
+                TileInstanceId = 99,
+                Layer = TileStackLayer.Overlay,
+                Cell = new BoardCellPosition(0, 0)
+            });
+            result.PresentationTrace.Cascades.Add(cascade);
+
+            TargetProgressChangedPayload targetPayload = default;
+            int completedCount = 0;
+            EventManager<VisualGameEvent>.AddListener<TargetProgressChangedPayload>(
+                VisualGameEvent.TopHudTargetProgressFx,
+                payload => targetPayload = payload);
+            EventManager<VisualGameEvent>.AddListener(
+                VisualGameEvent.TopHudTargetsCompletedFx,
+                () => completedCount++);
+
+            flowManager.RequestMove(new BoardMoveRequest(MoveAxis.Row, 0, LineSlideDirection.Right, 0, 0));
+            flowManager.NotifyTileClearedDuringPlayback(cascade.ClearPhase.ClearOps[0], Vector3.zero);
+
+            Assert.That(targetPayload.TileId, Is.EqualTo(303));
+            Assert.That(targetPayload.CurrentCount, Is.EqualTo(1));
+            Assert.That(completedCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void GameFlowManager_PlaybackCallbacks_CountCakeTargetsByTileId()
+        {
+            Match3LevelData levelData = CreateLevelData(1, 1, new[] { 401 });
+            levelData.targets = new List<LevelTargetData> { new LevelTargetData(401, 1) };
+
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateMechanicTile(401, TileLogicType.CakeDelivery));
+
+            GameFlowManager flowManager = CreateFlowManager(levelData, database);
+            BoardMoveExecutionResult result = new BoardMoveExecutionResult
+            {
+                IsApplied = true,
+                IsAccepted = true,
+                PresentationTrace = new BoardPresentationTrace()
+            };
+            CascadeTrace cascade = new CascadeTrace();
+            cascade.ClearPhase.ClearOps.Add(new TileClearOp
+            {
+                TileId = 401,
+                TileInstanceId = 123,
+                Layer = TileStackLayer.Base,
+                Cell = new BoardCellPosition(0, 0)
+            });
+            result.PresentationTrace.Cascades.Add(cascade);
+
+            TargetProgressChangedPayload targetPayload = default;
+            int completedCount = 0;
+            EventManager<VisualGameEvent>.AddListener<TargetProgressChangedPayload>(
+                VisualGameEvent.TopHudTargetProgressFx,
+                payload => targetPayload = payload);
+            EventManager<VisualGameEvent>.AddListener(
+                VisualGameEvent.TopHudTargetsCompletedFx,
+                () => completedCount++);
+
+            flowManager.RequestMove(new BoardMoveRequest(MoveAxis.Row, 0, LineSlideDirection.Right, 0, 0));
+            flowManager.NotifyTileClearedDuringPlayback(cascade.ClearPhase.ClearOps[0], Vector3.zero);
+
+            Assert.That(targetPayload.TileId, Is.EqualTo(401));
+            Assert.That(targetPayload.CurrentCount, Is.EqualTo(1));
+            Assert.That(completedCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void GameFlowManager_PlaybackCallbacks_CountStoneTargetsByTileId()
+        {
+            Match3LevelData levelData = CreateLevelData(1, 1, new[] { 402 });
+            levelData.targets = new List<LevelTargetData> { new LevelTargetData(402, 1) };
+
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateMechanicTile(402, TileLogicType.StoneMechanic));
+
+            GameFlowManager flowManager = CreateFlowManager(levelData, database);
+            BoardMoveExecutionResult result = new BoardMoveExecutionResult
+            {
+                IsApplied = true,
+                IsAccepted = true,
+                PresentationTrace = new BoardPresentationTrace()
+            };
+            CascadeTrace cascade = new CascadeTrace();
+            cascade.ClearPhase.ClearOps.Add(new TileClearOp
+            {
+                TileId = 402,
+                TileInstanceId = 124,
+                Layer = TileStackLayer.Base,
+                Cell = new BoardCellPosition(0, 0)
+            });
+            result.PresentationTrace.Cascades.Add(cascade);
+
+            TargetProgressChangedPayload targetPayload = default;
+            int completedCount = 0;
+            EventManager<VisualGameEvent>.AddListener<TargetProgressChangedPayload>(
+                VisualGameEvent.TopHudTargetProgressFx,
+                payload => targetPayload = payload);
+            EventManager<VisualGameEvent>.AddListener(
+                VisualGameEvent.TopHudTargetsCompletedFx,
+                () => completedCount++);
+
+            flowManager.RequestMove(new BoardMoveRequest(MoveAxis.Row, 0, LineSlideDirection.Right, 0, 0));
+            flowManager.NotifyTileClearedDuringPlayback(cascade.ClearPhase.ClearOps[0], Vector3.zero);
+
+            Assert.That(targetPayload.TileId, Is.EqualTo(402));
+            Assert.That(targetPayload.CurrentCount, Is.EqualTo(1));
+            Assert.That(completedCount, Is.EqualTo(1));
+        }
+
         private static BoardMoveExecutionResult CreateExecutionResult(params int[] clearedTileIds)
         {
             BoardMoveExecutionResult result = new BoardMoveExecutionResult
@@ -548,12 +679,24 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             return tile;
         }
 
-        private static BlockerTileDefinitionSO CreateBlockerTile(int tileId, int defaultHp, TileLogicType logicType = TileLogicType.IceBlocker)
+        private static BlockerTileDefinitionSO CreateBlockerTile(int tileId, int defaultHp, TileLogicType logicType = TileLogicType.IceBlocker, int growthPerTurn = 1, int growthTurnInterval = 1)
         {
             BlockerTileDefinitionSO tile = ScriptableObject.CreateInstance<BlockerTileDefinitionSO>();
             SetPrivateField(tile, "tileId", tileId);
             SetPrivateField(tile, "blockerLogicType", logicType);
             SetPrivateField(tile, "defaultHP", defaultHp);
+            SetPrivateField(tile, "growthPerTurn", growthPerTurn);
+            SetPrivateField(tile, "growthTurnInterval", growthTurnInterval);
+            SetPrivateField(tile, "canSpawnOnRefill", false);
+            SetPrivateField(tile, "spawnWeight", 0);
+            return tile;
+        }
+
+        private static MechanicTileDefinitionSO CreateMechanicTile(int tileId, TileLogicType logicType)
+        {
+            MechanicTileDefinitionSO tile = ScriptableObject.CreateInstance<MechanicTileDefinitionSO>();
+            SetPrivateField(tile, "tileId", tileId);
+            SetPrivateField(tile, "mechanicLogicType", logicType);
             SetPrivateField(tile, "canSpawnOnRefill", false);
             SetPrivateField(tile, "spawnWeight", 0);
             return tile;

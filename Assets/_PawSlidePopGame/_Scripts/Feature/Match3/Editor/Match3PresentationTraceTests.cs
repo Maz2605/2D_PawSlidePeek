@@ -720,6 +720,658 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(result.IsAccepted, Is.True);
         }
 
+        [Test]
+        public void LineSlideMoveRule_ChocolateOverlayLocksItsRowAndColumn()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateNormalTile(102, AnimalTileId.Dog),
+                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker));
+            Match3LevelData levelData = CreateLevelData(3, 3, new[]
+            {
+                101, 102, 101,
+                102, 101, 102,
+                101, 102, 101
+            });
+            levelData.overlayLayout = new[]
+            {
+                0, 0, 0,
+                0, 303, 0,
+                0, 0, 0
+            };
+
+            BoardModel board = CreateBoard(levelData, database);
+            LineSlideMoveRule rule = new LineSlideMoveRule();
+
+            Assert.That(rule.TryApply(board, new BoardMoveRequest(MoveAxis.Row, 1, LineSlideDirection.Right, 1, 1), out _), Is.False);
+            Assert.That(rule.TryApply(board, new BoardMoveRequest(MoveAxis.Column, 1, LineSlideDirection.Down, 1, 1), out _), Is.False);
+            Assert.That(rule.TryApply(board, new BoardMoveRequest(MoveAxis.Row, 0, LineSlideDirection.Right, 1, 0), out _), Is.True);
+        }
+
+        [Test]
+        public void ResolveBoard_MatchAdjacentToChocolate_BreaksChocolateAndKeepsBaseTile()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateNormalTile(102, AnimalTileId.Dog),
+                CreateNormalTile(103, AnimalTileId.Fox),
+                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker));
+
+            Match3LevelData levelData = CreateLevelData(3, 2, new[]
+            {
+                101, 101, 101,
+                102, 102, 103
+            });
+            levelData.overlayLayout = new[]
+            {
+                0, 0, 0,
+                0, 303, 0
+            };
+
+            BoardModel board = CreateBoard(levelData, database);
+
+            BoardResolutionService.ResolveBoard(board, levelData, database, new System.Random(0));
+
+            CellModel chocolateCell = board.GetCell(1, 1);
+            Assert.That(chocolateCell.OverlayTile, Is.Null);
+            Assert.That(chocolateCell.BaseTile, Is.Not.Null);
+            Assert.That(chocolateCell.BaseTile.TileId, Is.EqualTo(102));
+        }
+
+        [Test]
+        public void BombActivation_BreaksChocolateAndPreservesBaseTile()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBoosterTile(201, TileLogicType.BombBooster),
+                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker));
+
+            Match3LevelData levelData = CreateLevelData(3, 3, new[]
+            {
+                101, 101, 101,
+                101, 201, 101,
+                101, 101, 101
+            });
+            levelData.overlayLayout = new[]
+            {
+                0, 0, 0,
+                0, 0, 0,
+                0, 303, 0
+            };
+
+            BoardModel board = CreateBoard(levelData, database);
+            CascadeTrace cascadeTrace = new CascadeTrace();
+            BoardFxContext fxContext = new BoardFxContext(cascadeTrace, new System.Random(0));
+            CellModel centerCell = board.GetCell(1, 1);
+            CellModel chocolateCell = board.GetCell(1, 2);
+
+            centerCell.CurrentTile.Activate(board, centerCell, fxContext);
+
+            Assert.That(cascadeTrace.ClearPhase.DamageOps.Exists(op =>
+                op.Cell.Equals(new BoardCellPosition(1, 2)) &&
+                op.Layer == TileStackLayer.Overlay &&
+                op.TileId == 303), Is.True);
+            Assert.That(cascadeTrace.ClearPhase.ClearOps.Exists(op =>
+                op.Cell.Equals(new BoardCellPosition(1, 2)) &&
+                op.Layer == TileStackLayer.Overlay &&
+                op.TileId == 303), Is.True);
+            Assert.That(chocolateCell.OverlayTile, Is.Null);
+            Assert.That(chocolateCell.BaseTile, Is.Not.Null);
+            Assert.That(chocolateCell.BaseTile.TileId, Is.EqualTo(101));
+            Assert.That(cascadeTrace.ClearPhase.ClearOps.Exists(op =>
+                op.Cell.Equals(new BoardCellPosition(1, 2)) &&
+                op.Layer == TileStackLayer.Base),
+                Is.False);
+        }
+
+        [Test]
+        public void ExecuteTileActivation_NoChocolateCleared_GrowsOneChocolateAtEndOfTurn()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateNormalTile(102, AnimalTileId.Dog),
+                CreateBoosterTile(201, TileLogicType.BombBooster),
+                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker));
+
+            Match3LevelData levelData = CreateLevelData(3, 3, new[]
+            {
+                101, 102, 101,
+                101, 101, 101,
+                101, 101, 201
+            });
+            levelData.playableMask = new[]
+            {
+                true, true, true,
+                false, true, true,
+                true, true, true
+            };
+            levelData.overlayLayout = new[]
+            {
+                303, 0, 0,
+                0, 0, 0,
+                0, 0, 0
+            };
+            levelData.spawnableTileIds = new List<int> { 101, 102 };
+
+            BoardModel board = CreateBoard(levelData, database);
+            BoardMoveExecutionResult result = BoardResolutionService.ExecuteTileActivation(
+                board,
+                2,
+                2,
+                levelData,
+                database,
+                new System.Random(0));
+
+            Assert.That(result.IsApplied, Is.True);
+            Assert.That(result.IsAccepted, Is.True);
+            SpecialCreateOp createOp = null;
+            for (int i = 0; i < result.PresentationTrace.Cascades.Count && createOp == null; i++)
+            {
+                for (int j = 0; j < result.PresentationTrace.Cascades[i].ClearPhase.SpecialCreateOps.Count; j++)
+                {
+                    SpecialCreateOp candidate = result.PresentationTrace.Cascades[i].ClearPhase.SpecialCreateOps[j];
+                    if (candidate.ToTileId == 303)
+                    {
+                        createOp = candidate;
+                        break;
+                    }
+                }
+            }
+
+            Assert.That(createOp, Is.Not.Null);
+            Assert.That(createOp.ToTileId, Is.EqualTo(303));
+            Assert.That(createOp.Layer, Is.EqualTo(TileStackLayer.Overlay));
+            Assert.That(createOp.ReplaceSourceTileView, Is.False);
+            Assert.That(createOp.Cell, Is.EqualTo(new BoardCellPosition(1, 0)));
+
+            Assert.That(board.GetCell(0, 0).OverlayTile, Is.Not.Null);
+            Assert.That(board.GetCell(0, 0).OverlayTile.TileId, Is.EqualTo(303));
+            Assert.That(board.GetCell(1, 0).OverlayTile, Is.Not.Null);
+            Assert.That(board.GetCell(1, 0).OverlayTile.TileId, Is.EqualTo(303));
+        }
+
+        [Test]
+        public void ExecuteTileActivation_NoChocolateCleared_GrowsConfiguredNumberOfChocolatesAtEndOfTurn()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateNormalTile(102, AnimalTileId.Dog),
+                CreateBoosterTile(201, TileLogicType.BombBooster),
+                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker, 2));
+
+            Match3LevelData levelData = CreateLevelData(3, 3, new[]
+            {
+                101, 102, 101,
+                101, 101, 101,
+                101, 101, 201
+            });
+            levelData.playableMask = new[]
+            {
+                true, true, true,
+                false, true, true,
+                true, true, true
+            };
+            levelData.overlayLayout = new[]
+            {
+                303, 0, 0,
+                0, 0, 0,
+                0, 0, 0
+            };
+            levelData.spawnableTileIds = new List<int> { 101, 102 };
+
+            BoardModel board = CreateBoard(levelData, database);
+            BoardMoveExecutionResult result = BoardResolutionService.ExecuteTileActivation(
+                board,
+                2,
+                2,
+                levelData,
+                database,
+                new System.Random(0));
+
+            List<SpecialCreateOp> createOps = new List<SpecialCreateOp>();
+            for (int i = 0; i < result.PresentationTrace.Cascades.Count; i++)
+            {
+                for (int j = 0; j < result.PresentationTrace.Cascades[i].ClearPhase.SpecialCreateOps.Count; j++)
+                {
+                    SpecialCreateOp candidate = result.PresentationTrace.Cascades[i].ClearPhase.SpecialCreateOps[j];
+                    if (candidate.ToTileId == 303)
+                    {
+                        createOps.Add(candidate);
+                    }
+                }
+            }
+
+            Assert.That(result.IsApplied, Is.True);
+            Assert.That(result.IsAccepted, Is.True);
+            Assert.That(createOps.Count, Is.EqualTo(2));
+            Assert.That(board.GetCell(0, 0).OverlayTile, Is.Not.Null);
+            Assert.That(board.GetCell(0, 0).OverlayTile.TileId, Is.EqualTo(303));
+            Assert.That(board.GetCell(1, 0).OverlayTile, Is.Not.Null);
+            Assert.That(board.GetCell(1, 0).OverlayTile.TileId, Is.EqualTo(303));
+            Assert.That(board.GetCell(2, 0).OverlayTile, Is.Not.Null);
+            Assert.That(board.GetCell(2, 0).OverlayTile.TileId, Is.EqualTo(303));
+        }
+
+        [Test]
+        public void ExecuteTileActivation_ChocolateGrowthIntervalTwo_WaitsOneTurnBeforeGrowing()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateNormalTile(102, AnimalTileId.Dog),
+                CreateBoosterTile(201, TileLogicType.BombBooster),
+                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker, 1, 2));
+
+            Match3LevelData levelData = CreateLevelData(3, 3, new[]
+            {
+                101, 102, 101,
+                101, 101, 101,
+                101, 101, 201
+            });
+            levelData.playableMask = new[]
+            {
+                true, true, true,
+                false, true, true,
+                true, true, true
+            };
+            levelData.overlayLayout = new[]
+            {
+                303, 0, 0,
+                0, 0, 0,
+                0, 0, 0
+            };
+            levelData.spawnableTileIds = new List<int> { 101, 102 };
+
+            BoardModel board = CreateBoard(levelData, database);
+
+            BoardMoveExecutionResult firstResult = BoardResolutionService.ExecuteTileActivation(
+                board,
+                2,
+                2,
+                levelData,
+                database,
+                new System.Random(0));
+
+            Assert.That(firstResult.IsAccepted, Is.True);
+            Assert.That(firstResult.PresentationTrace.Cascades.TrueForAll(cascade =>
+                cascade.ClearPhase.SpecialCreateOps.TrueForAll(op => op.ToTileId != 303)), Is.True);
+            Assert.That(board.GetCell(1, 0).OverlayTile, Is.Null);
+
+            BoardMoveExecutionResult secondResult = BoardResolutionService.ExecuteTileActivation(
+                board,
+                2,
+                2,
+                levelData,
+                database,
+                new System.Random(1));
+
+            Assert.That(secondResult.IsAccepted, Is.True);
+            Assert.That(secondResult.PresentationTrace.Cascades.Exists(cascade =>
+                cascade.ClearPhase.SpecialCreateOps.Exists(op => op.ToTileId == 303)), Is.True);
+            Assert.That(board.GetCell(1, 0).OverlayTile, Is.Not.Null);
+            Assert.That(board.GetCell(1, 0).OverlayTile.TileId, Is.EqualTo(303));
+        }
+
+        [Test]
+        public void ExecuteTileActivation_ChocolateCleared_DoesNotGrowReplacementChocolate()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBoosterTile(201, TileLogicType.BombBooster),
+                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker));
+
+            Match3LevelData levelData = CreateLevelData(3, 3, new[]
+            {
+                101, 101, 101,
+                101, 201, 101,
+                101, 101, 101
+            });
+            levelData.overlayLayout = new[]
+            {
+                0, 0, 0,
+                0, 0, 0,
+                0, 303, 0
+            };
+            levelData.spawnableTileIds = new List<int> { 101 };
+
+            BoardModel board = CreateBoard(levelData, database);
+            BoardMoveExecutionResult result = BoardResolutionService.ExecuteTileActivation(
+                board,
+                1,
+                1,
+                levelData,
+                database,
+                new System.Random(0));
+
+            Assert.That(result.IsApplied, Is.True);
+            Assert.That(result.IsAccepted, Is.True);
+            Assert.That(result.PresentationTrace.Cascades.TrueForAll(cascade =>
+                cascade.ClearPhase.SpecialCreateOps.TrueForAll(op => op.ToTileId != 303)), Is.True);
+            Assert.That(board.GetCell(1, 2).OverlayTile, Is.Null);
+        }
+
+        [Test]
+        public void ResolveBoard_DoesNotGrowChocolateOutsideTurnResolution()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateNormalTile(102, AnimalTileId.Dog),
+                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker));
+
+            Match3LevelData levelData = CreateLevelData(4, 2, new[]
+            {
+                101, 102, 102, 101,
+                101, 101, 101, 101
+            });
+            levelData.playableMask = new[]
+            {
+                true, true, true, true,
+                false, true, true, true
+            };
+            levelData.overlayLayout = new[]
+            {
+                303, 0, 0, 0,
+                0, 0, 0, 0
+            };
+            levelData.spawnableTileIds = new List<int> { 101, 102 };
+
+            BoardModel board = CreateBoard(levelData, database);
+
+            BoardResolutionService.ResolveBoard(board, levelData, database, new System.Random(0));
+
+            Assert.That(board.GetCell(0, 0).OverlayTile, Is.Not.Null);
+            Assert.That(board.GetCell(0, 0).OverlayTile.TileId, Is.EqualTo(303));
+            Assert.That(board.GetCell(1, 0).OverlayTile, Is.Null);
+        }
+
+        [Test]
+        public void LineSlideMoveRule_CakeBaseTileCanMoveWithLine()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateMechanicTile(401, TileLogicType.CakeDelivery),
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateNormalTile(102, AnimalTileId.Dog));
+
+            Match3LevelData levelData = CreateLevelData(3, 2, new[]
+            {
+                401, 101, 102,
+                101, 101, 101
+            });
+
+            BoardModel board = CreateBoard(levelData, database);
+            LineSlideMoveRule rule = new LineSlideMoveRule();
+
+            Assert.That(rule.TryApply(board, new BoardMoveRequest(MoveAxis.Row, 0, LineSlideDirection.Right, 1, 0), out _), Is.True);
+        }
+
+        [Test]
+        public void BoardMatchFinder_CakeDoesNotParticipateInMatches()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateMechanicTile(401, TileLogicType.CakeDelivery),
+                CreateNormalTile(101, AnimalTileId.Cat));
+
+            Match3LevelData levelData = CreateLevelData(3, 1, new[] { 101, 401, 101 });
+            BoardModel board = CreateBoard(levelData, database);
+
+            BoardMatchAnalysis analysis = new BoardMatchFinder().Analyze(board);
+
+            Assert.That(analysis.HasMatches, Is.False);
+        }
+
+        [Test]
+        public void BombActivation_DoesNotDestroyCakeDirectly()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateMechanicTile(401, TileLogicType.CakeDelivery),
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBoosterTile(201, TileLogicType.BombBooster));
+
+            Match3LevelData levelData = CreateLevelData(3, 3, new[]
+            {
+                101, 401, 101,
+                101, 201, 101,
+                101, 101, 101
+            });
+
+            BoardModel board = CreateBoard(levelData, database);
+            CascadeTrace cascadeTrace = new CascadeTrace();
+            BoardFxContext fxContext = new BoardFxContext(cascadeTrace, new System.Random(0));
+            CellModel centerCell = board.GetCell(1, 1);
+            CellModel cakeCell = board.GetCell(1, 0);
+
+            centerCell.CurrentTile.Activate(board, centerCell, fxContext);
+
+            Assert.That(cakeCell.BaseTile, Is.Not.Null);
+            Assert.That(cakeCell.BaseTile.TileId, Is.EqualTo(401));
+            Assert.That(cascadeTrace.ClearPhase.ClearOps.Exists(op => op.TileId == 401), Is.False);
+        }
+
+        [Test]
+        public void ExecuteTileActivation_CakeAtBottomAfterGravity_IsDeliveredAndClearedForTarget()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateMechanicTile(401, TileLogicType.CakeDelivery),
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBoosterTile(201, TileLogicType.BombBooster));
+
+            Match3LevelData levelData = CreateLevelData(3, 3, new[]
+            {
+                101, 401, 101,
+                101, 201, 101,
+                101, 101, 101
+            });
+            levelData.spawnableTileIds = new List<int> { 101 };
+
+            BoardModel board = CreateBoard(levelData, database);
+            BoardMoveExecutionResult result = BoardResolutionService.ExecuteTileActivation(
+                board,
+                1,
+                1,
+                levelData,
+                database,
+                new System.Random(0));
+
+            Assert.That(result.IsApplied, Is.True);
+            Assert.That(result.IsAccepted, Is.True);
+            Assert.That(result.PresentationTrace.Cascades.Exists(cascade =>
+                cascade.ClearPhase.ClearOps.Exists(op =>
+                    op.TileId == 401 &&
+                    op.Layer == TileStackLayer.Base &&
+                    op.Cell.Equals(new BoardCellPosition(1, 2)))), Is.True);
+            Assert.That(board.GetCell(1, 2).BaseTile, Is.Not.Null);
+            Assert.That(board.GetCell(1, 2).BaseTile.TileId, Is.EqualTo(101));
+            Assert.That(AllCells(board, tileId: 401), Is.False);
+        }
+
+        [Test]
+        public void ResolveBoard_DoesNotAutoDeliverCakeOutsideTurnResolution()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateMechanicTile(401, TileLogicType.CakeDelivery),
+                CreateNormalTile(101, AnimalTileId.Cat));
+
+            Match3LevelData levelData = CreateLevelData(1, 2, new[]
+            {
+                101,
+                401
+            });
+            levelData.spawnableTileIds = new List<int> { 101 };
+
+            BoardModel board = CreateBoard(levelData, database);
+
+            BoardResolutionService.ResolveBoard(board, levelData, database, new System.Random(0));
+
+            Assert.That(board.GetCell(0, 1).BaseTile, Is.Not.Null);
+            Assert.That(board.GetCell(0, 1).BaseTile.TileId, Is.EqualTo(401));
+        }
+
+        [Test]
+        public void LineSlideMoveRule_StoneBaseTileCanMoveWithLine()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateMechanicTile(402, TileLogicType.StoneMechanic),
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateNormalTile(102, AnimalTileId.Dog));
+
+            Match3LevelData levelData = CreateLevelData(3, 2, new[]
+            {
+                402, 101, 102,
+                101, 101, 101
+            });
+
+            BoardModel board = CreateBoard(levelData, database);
+            LineSlideMoveRule rule = new LineSlideMoveRule();
+
+            Assert.That(rule.TryApply(board, new BoardMoveRequest(MoveAxis.Row, 0, LineSlideDirection.Right, 1, 0), out _), Is.True);
+        }
+
+        [Test]
+        public void BoardMatchFinder_StoneDoesNotParticipateInMatches()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateMechanicTile(402, TileLogicType.StoneMechanic),
+                CreateNormalTile(101, AnimalTileId.Cat));
+
+            Match3LevelData levelData = CreateLevelData(3, 1, new[] { 101, 402, 101 });
+            BoardModel board = CreateBoard(levelData, database);
+
+            BoardMatchAnalysis analysis = new BoardMatchFinder().Analyze(board);
+
+            Assert.That(analysis.HasMatches, Is.False);
+        }
+
+        [Test]
+        public void ResolveBoard_MatchAdjacentToStone_DoesNotDestroyStone()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateMechanicTile(402, TileLogicType.StoneMechanic),
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateNormalTile(102, AnimalTileId.Dog),
+                CreateNormalTile(103, AnimalTileId.Fox));
+
+            Match3LevelData levelData = CreateLevelData(3, 2, new[]
+            {
+                101, 101, 101,
+                102, 402, 103
+            });
+            levelData.spawnableTileIds = new List<int> { 102, 103 };
+
+            BoardModel board = CreateBoard(levelData, database);
+
+            BoardResolutionService.ResolveBoard(board, levelData, database, new System.Random(0));
+
+            Assert.That(board.GetCell(1, 1).BaseTile, Is.Not.Null);
+            Assert.That(board.GetCell(1, 1).BaseTile.TileId, Is.EqualTo(402));
+        }
+
+        [Test]
+        public void BombActivation_DestroysStoneDirectly()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateMechanicTile(402, TileLogicType.StoneMechanic),
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBoosterTile(201, TileLogicType.BombBooster));
+
+            Match3LevelData levelData = CreateLevelData(3, 3, new[]
+            {
+                101, 402, 101,
+                101, 201, 101,
+                101, 101, 101
+            });
+
+            BoardModel board = CreateBoard(levelData, database);
+            CascadeTrace cascadeTrace = new CascadeTrace();
+            BoardFxContext fxContext = new BoardFxContext(cascadeTrace, new System.Random(0));
+            CellModel centerCell = board.GetCell(1, 1);
+            CellModel stoneCell = board.GetCell(1, 0);
+
+            centerCell.CurrentTile.Activate(board, centerCell, fxContext);
+
+            Assert.That(cascadeTrace.ClearPhase.DamageOps.Exists(op =>
+                op.TileId == 402 &&
+                op.Layer == TileStackLayer.Base &&
+                op.Cell.Equals(new BoardCellPosition(1, 0))), Is.True);
+            Assert.That(cascadeTrace.ClearPhase.ClearOps.Exists(op =>
+                op.TileId == 402 &&
+                op.Layer == TileStackLayer.Base &&
+                op.Cell.Equals(new BoardCellPosition(1, 0))), Is.True);
+            Assert.That(stoneCell.BaseTile, Is.Null);
+        }
+
+        [Test]
+        public void BoardModel_PopulateBoard_MechanicOverlayIdsArePromotedToBaseTiles()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateMechanicTile(401, TileLogicType.CakeDelivery),
+                CreateMechanicTile(402, TileLogicType.StoneMechanic),
+                CreateBlockerTile(301, 1),
+                CreateBlockerTile(302, 1, TileLogicType.BubbleBlocker));
+
+            Match3LevelData levelData = CreateLevelData(2, 1, new[] { 401, 402 });
+            levelData.overlayLayout = new[]
+            {
+                301, 302
+            };
+
+            BoardModel board = CreateBoard(levelData, database);
+
+            Assert.That(board.GetCell(0, 0).BaseTile, Is.Not.Null);
+            Assert.That(board.GetCell(0, 0).BaseTile.TileId, Is.EqualTo(401));
+            Assert.That(board.GetCell(0, 0).OverlayTile, Is.Null);
+            Assert.That(board.GetCell(1, 0).BaseTile, Is.Not.Null);
+            Assert.That(board.GetCell(1, 0).BaseTile.TileId, Is.EqualTo(402));
+            Assert.That(board.GetCell(1, 0).OverlayTile, Is.Null);
+        }
+
+        [Test]
+        public void ExecuteTileActivation_NoChocolateCleared_DoesNotGrowOntoMechanicBaseTile()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateMechanicTile(401, TileLogicType.CakeDelivery),
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBoosterTile(201, TileLogicType.BombBooster),
+                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker));
+
+            Match3LevelData levelData = CreateLevelData(3, 3, new[]
+            {
+                101, 401, 0,
+                0, 0, 101,
+                101, 101, 201
+            });
+            levelData.playableMask = new[]
+            {
+                true, true, false,
+                false, false, true,
+                true, true, true
+            };
+            levelData.overlayLayout = new[]
+            {
+                303, 0, 0,
+                0, 0, 0,
+                0, 0, 0
+            };
+            levelData.spawnableTileIds = new List<int> { 101 };
+
+            BoardModel board = CreateBoard(levelData, database);
+            BoardMoveExecutionResult result = BoardResolutionService.ExecuteTileActivation(
+                board,
+                2,
+                2,
+                levelData,
+                database,
+                new System.Random(0));
+
+            Assert.That(result.IsApplied, Is.True);
+            Assert.That(result.IsAccepted, Is.True);
+            Assert.That(result.PresentationTrace.Cascades.Exists(cascade =>
+                cascade.ClearPhase.SpecialCreateOps.Exists(op => op.ToTileId == 303)), Is.False);
+            Assert.That(board.GetCell(1, 0).BaseTile, Is.Not.Null);
+            Assert.That(board.GetCell(1, 0).BaseTile.TileId, Is.EqualTo(401));
+            Assert.That(board.GetCell(1, 0).OverlayTile, Is.Null);
+            Assert.That(board.GetCell(0, 0).OverlayTile, Is.Not.Null);
+            Assert.That(board.GetCell(0, 0).OverlayTile.TileId, Is.EqualTo(303));
+        }
+
         private static Match3LevelData CreateFilledLevel(int width, int height, int tileId)
         {
             int[] layout = new int[width * height];
@@ -779,15 +1431,40 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             return tile;
         }
 
-        private static BlockerTileDefinitionSO CreateBlockerTile(int tileId, int defaultHp, TileLogicType logicType = TileLogicType.IceBlocker)
+        private static BlockerTileDefinitionSO CreateBlockerTile(int tileId, int defaultHp, TileLogicType logicType = TileLogicType.IceBlocker, int growthPerTurn = 1, int growthTurnInterval = 1)
         {
             BlockerTileDefinitionSO tile = ScriptableObject.CreateInstance<BlockerTileDefinitionSO>();
             SetPrivateField(tile, "tileId", tileId);
             SetPrivateField(tile, "blockerLogicType", logicType);
             SetPrivateField(tile, "defaultHP", defaultHp);
+            SetPrivateField(tile, "growthPerTurn", growthPerTurn);
+            SetPrivateField(tile, "growthTurnInterval", growthTurnInterval);
             SetPrivateField(tile, "canSpawnOnRefill", false);
             SetPrivateField(tile, "spawnWeight", 0);
             return tile;
+        }
+
+        private static MechanicTileDefinitionSO CreateMechanicTile(int tileId, TileLogicType logicType)
+        {
+            MechanicTileDefinitionSO tile = ScriptableObject.CreateInstance<MechanicTileDefinitionSO>();
+            SetPrivateField(tile, "tileId", tileId);
+            SetPrivateField(tile, "mechanicLogicType", logicType);
+            SetPrivateField(tile, "canSpawnOnRefill", false);
+            SetPrivateField(tile, "spawnWeight", 0);
+            return tile;
+        }
+
+        private static bool AllCells(BoardModel board, int tileId)
+        {
+            foreach (CellModel cell in board.GetAllCells())
+            {
+                if (cell?.BaseTile != null && cell.BaseTile.TileId == tileId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static int[] CaptureBoard(BoardModel board)

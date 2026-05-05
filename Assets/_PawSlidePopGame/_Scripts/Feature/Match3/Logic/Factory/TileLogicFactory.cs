@@ -37,6 +37,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Factory
                     return new ChocolateLogic();
                 case TileLogicType.CakeDelivery:
                     return new CakeDeliveryLogic();
+                case TileLogicType.StoneMechanic:
+                    return new StoneLogic();
                 case TileLogicType.NormalAnimal:
                 case TileLogicType.None:
                 default:

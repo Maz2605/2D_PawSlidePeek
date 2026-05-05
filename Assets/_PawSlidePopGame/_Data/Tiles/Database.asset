@@ -33,4 +33,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 1f977bf04b0145af934de8ed890cb0c2, type: 2}
   mechanicTiles:
   - {fileID: 11400000, guid: 9798d861bd754b48b76dc197a972d5e4, type: 2}
+  - {fileID: 11400000, guid: 30509fd770f34d6497d45b0d1de8610f, type: 2}
   tiles: []
