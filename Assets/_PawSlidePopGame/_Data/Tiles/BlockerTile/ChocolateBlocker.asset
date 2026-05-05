@@ -21,4 +21,4 @@ MonoBehaviour:
   blockerLogicType: 9
   defaultHP: 1
   growthPerTurn: 1
-  growthTurnInterval: 1
+  growthTurnInterval: 2
