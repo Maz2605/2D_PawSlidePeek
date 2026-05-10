@@ -7,3 +7,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move
         bool TryApply(BoardModel board, BoardMoveRequest request, out BoardMoveContext moveContext);
     }
 }
+

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1eb9f5a1cb664c0fa694ef38b594486b, type: 3}
   m_Name: AreaBoomMed
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Match3.Data.BoosterTileDefinitionSO
-  tileId: 203
+  tileId: 153
   canSpawnOnRefill: 0
   spawnWeight: 1
   tileViewPrefab: {fileID: 992112012440129399, guid: 2a378bb36ef0a024081308f35309fd39, type: 3}

@@ -37,7 +37,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         [SerializeField] private float landingPunchScale = 0.08f;
 
         private TileModel _tile;
-        private TileDefinitionSO _definition;
+        private BoardContentDefinitionSO _definition;
         private bool _isIdleEnabled;
         private Coroutine _blinkRoutine;
         private Tween _pulseTween;
@@ -49,7 +49,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
         public int TileInstanceId => _tile != null ? _tile.InstanceId : 0;
         public TileModel Tile => _tile;
-        protected TileDefinitionSO Definition => _definition;
+        protected BoardContentDefinitionSO Definition => _definition;
         protected SpriteRenderer BodyRenderer => bodyRenderer;
         protected SpriteRenderer ShadowRenderer => shadowRenderer;
         protected Vector3 InitialScale => _initialScale;
@@ -120,7 +120,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             _definition = null;
         }
 
-        public virtual void Bind(TileModel tile, TileDefinitionSO definition)
+        public virtual void Bind(TileModel tile, BoardContentDefinitionSO definition)
         {
             _tile = tile;
             _definition = definition;
@@ -584,3 +584,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         }
     }
 }
+

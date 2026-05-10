@@ -32,6 +32,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         public BoardResolutionResult LastMoveResult => _lastMoveResult;
         public BoardMoveExecutionResult LastExecutionResult => _lastExecutionResult;
         public bool IsInitialized => _isInitialized;
+        public System.Random Random => _random;
 
         public event Action<BoardModel> OnBoardInitialized;
         public event Action<BoardMoveExecutionResult> OnMoveExecuted;
@@ -66,7 +67,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             _ruleSet = BoardRuleSet.Default;
             _board = new BoardModel(levelData);
             tileDatabase.RebuildCache();
-            _board.PopulateBoard(levelData.gridLayout, levelData.overlayLayout, tileDatabase);
+            _board.PopulateBoard(levelData.underlayLayout, levelData.tileLayout, levelData.overlayLayout, tileDatabase);
 
             if (resolveBoardOnStart)
             {
@@ -140,3 +141,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         }
     }
 }
+

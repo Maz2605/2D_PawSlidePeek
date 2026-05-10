@@ -25,7 +25,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                         continue;
                     }
 
-                    TileModel tile = cell.BaseTile;
+                    TileModel tile = cell.Tile;
                     if (tile == null)
                     {
                         continue;
@@ -40,7 +40,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                     while (writeY > y)
                     {
                         CellModel destination = board.GetCell(x, writeY);
-                        if (destination != null && destination.IsPlayable && destination.IsBaseEmpty())
+                        if (destination != null && destination.IsPlayable && destination.IsEmpty())
                         {
                             break;
                         }
@@ -61,8 +61,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                             Distance = target.Y - cell.Y,
                             IsWrapAround = false
                         });
-                        target.SetBaseTile(tile);
-                        cell.ClearBaseTile();
+                        target.SetTile(tile);
+                        cell.ClearTile();
                         movedTiles++;
                     }
 
@@ -74,3 +74,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
         }
     }
 }
+

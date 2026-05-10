@@ -57,12 +57,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
                 targets = new List<LevelTargetData>
                 {
                     new LevelTargetData(101, 2),
-                    new LevelTargetData(202, 1)
+                    new LevelTargetData(152, 1)
                 }
             };
 
             Match3ObjectiveTracker tracker = new Match3ObjectiveTracker(levelData, null);
-            BoardMoveExecutionResult result = CreateExecutionResult(101, 202, 101, 999);
+            BoardMoveExecutionResult result = CreateExecutionResult(101, 152, 101, 999);
 
             List<TargetProgressChangedPayload> changes = tracker.ApplyExecutionResult(result);
 
@@ -155,29 +155,125 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         }
 
         [Test]
-        public void BoardModel_PopulateBoard_NullGridStillCreatesOverlayTiles()
+        public void ChargedAbilityTracker_ApplyAcceptedTurn_AwardsWeightedEnergyAndIgnoresSelfActivation()
+        {
+            Match3LevelData levelData = new Match3LevelData();
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBoosterTile(152, TileLogicType.CrossBomb),
+                CreateBoosterTile(155, TileLogicType.ChargedSweepBooster),
+                CreateOverlayTile(301, 1),
+                CreateMechanicTile(231, TileLogicType.StoneMechanic));
+
+            ChargedAbilityTracker tracker = new ChargedAbilityTracker(levelData, database);
+            BoardMoveExecutionResult result = new BoardMoveExecutionResult
+            {
+                IsAccepted = true,
+                PresentationTrace = new BoardPresentationTrace()
+            };
+
+            CascadeTrace cascade = new CascadeTrace();
+            cascade.ClearPhase.ActivateOps.Add(new TileActivateOp { TileId = 152, LogicType = TileLogicType.CrossBomb });
+            cascade.ClearPhase.ActivateOps.Add(new TileActivateOp { TileId = 155, LogicType = TileLogicType.ChargedSweepBooster });
+            cascade.ClearPhase.ClearOps.Add(new TileClearOp { TileId = 301 });
+            cascade.ClearPhase.ClearOps.Add(new TileClearOp { TileId = 231 });
+            result.PresentationTrace.Cascades.Add(cascade);
+
+            bool changed = tracker.ApplyAcceptedTurn(result);
+
+            Assert.That(changed, Is.True);
+            Assert.That(tracker.CurrentEnergy, Is.EqualTo(5));
+            Assert.That(tracker.AvailableCharges, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void ChargedAbilityTracker_ChocolateOverlayClear_UsesMechanicEnergyWeight()
+        {
+            Match3LevelData levelData = new Match3LevelData();
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateBoosterTile(155, TileLogicType.ChargedSweepBooster),
+                CreateChocolateOverlayTile(303, 1));
+
+            ChargedAbilityTracker tracker = new ChargedAbilityTracker(levelData, database);
+            BoardMoveExecutionResult result = new BoardMoveExecutionResult
+            {
+                IsAccepted = true,
+                PresentationTrace = new BoardPresentationTrace()
+            };
+
+            CascadeTrace cascade = new CascadeTrace();
+            cascade.ClearPhase.ClearOps.Add(new TileClearOp { TileId = 303 });
+            result.PresentationTrace.Cascades.Add(cascade);
+
+            bool changed = tracker.ApplyAcceptedTurn(result);
+
+            Assert.That(changed, Is.True);
+            Assert.That(tracker.CurrentEnergy, Is.EqualTo(levelData.GetChargedAbilityConfig().energyFromMechanicClear));
+            Assert.That(tracker.AvailableCharges, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void GameplayHudSnapshotBuilder_Build_IncludesChargedAbilityState()
+        {
+            Match3LevelData levelData = new Match3LevelData();
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBoosterTile(152, TileLogicType.CrossBomb),
+                CreateBoosterTile(155, TileLogicType.ChargedSweepBooster),
+                CreateOverlayTile(301, 1),
+                CreateMechanicTile(231, TileLogicType.StoneMechanic));
+            ChargedAbilityTracker tracker = new ChargedAbilityTracker(levelData, database);
+            tracker.ApplyAcceptedTurn(CreateChargedEnergyResult());
+
+            GameplayHudSnapshot snapshot = GameplayHudSnapshotBuilder.Build(levelData, new BoardModel(levelData), null, tracker, true, false);
+
+            Assert.That(snapshot.chargedAbility, Is.Not.Null);
+            Assert.That(snapshot.chargedAbility.tileId, Is.EqualTo(155));
+            Assert.That(snapshot.chargedAbility.currentEnergy, Is.EqualTo(12));
+            Assert.That(snapshot.chargedAbility.availableCharges, Is.EqualTo(1));
+            Assert.That(snapshot.chargedAbility.isPlacementMode, Is.True);
+        }
+
+        [Test]
+        public void BoardModel_PopulateBoard_NullGridStillCreatesOverlays()
         {
             Match3LevelData levelData = new Match3LevelData
             {
                 width = 2,
                 height = 2,
-                overlayLayout = new[] { 301, 0, 0, 301 }
+                overlayLayout = new[] { 303, 0, 0, 303 }
             };
 
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBlockerTile(301, 1));
+                CreateChocolateOverlayTile(303, 1));
 
             BoardModel board = new BoardModel(levelData);
 
-            board.PopulateBoard(null, levelData.overlayLayout, database);
+            board.PopulateBoard(null, null, levelData.overlayLayout, database);
 
-            Assert.That(board.GetCell(0, 0).OverlayTile, Is.Not.Null);
-            Assert.That(board.GetCell(0, 0).OverlayTile.TileId, Is.EqualTo(301));
-            Assert.That(board.GetCell(1, 1).OverlayTile, Is.Not.Null);
-            Assert.That(board.GetCell(1, 1).OverlayTile.TileId, Is.EqualTo(301));
-            Assert.That(board.GetCell(1, 0).OverlayTile, Is.Null);
-            Assert.That(board.GetCell(0, 0).BaseTile, Is.Null);
+            Assert.That(board.GetCell(0, 0).Overlay, Is.Not.Null);
+            Assert.That(board.GetCell(0, 0).Overlay.TileId, Is.EqualTo(303));
+            Assert.That(board.GetCell(1, 1).Overlay, Is.Not.Null);
+            Assert.That(board.GetCell(1, 1).Overlay.TileId, Is.EqualTo(303));
+            Assert.That(board.GetCell(1, 0).Overlay, Is.Null);
+            Assert.That(board.GetCell(0, 0).Tile, Is.Null);
+        }
+
+        [Test]
+        public void Match3TileDatabase_ChocolateOverlay_IsRegisteredAsOverlayTile()
+        {
+            ChocolateOverlayDefinitionSO chocolate = CreateChocolateOverlayTile(303, 1);
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                chocolate);
+
+            OverlayDefinitionSO definition = database.GetOverlayDefinition(303);
+
+            Assert.That(definition, Is.SameAs(chocolate));
+            Assert.That(definition.LogicType, Is.EqualTo(OverlayLogicType.Chocolate));
+            Assert.That(database.OverlayDefinitionCount, Is.EqualTo(1));
+            Assert.That(database.TileDefinitionCount, Is.EqualTo(9));
         }
 
         [TestCase(0, 0)]
@@ -289,14 +385,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
                 101, 101, 101,
-                101, 202, 101,
+                101, 152, 101,
                 101, 101, 101
             });
             levelData.spawnableTileIds = new List<int> { 101 };
 
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(202, TileLogicType.CrossBomb));
+                CreateBoosterTile(152, TileLogicType.CrossBomb));
 
             GameFlowManager flowManager = CreateFlowManager(levelData, database);
             RemainingMovesChangedPayload publishedPayload = default;
@@ -323,7 +419,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
                 101, 101, 101,
-                101, 202, 101,
+                101, 152, 101,
                 101, 101, 101
             });
             levelData.spawnableTileIds = new List<int> { 101 };
@@ -332,7 +428,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
 
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(202, TileLogicType.CrossBomb));
+                CreateBoosterTile(152, TileLogicType.CrossBomb));
 
             GameFlowManager flowManager = CreateFlowManager(levelData, database);
             BoardMoveExecutionResult result = flowManager.RequestTileActivation(1, 1);
@@ -386,7 +482,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
 
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBlockerTile(301, 1));
+                CreateOverlayTile(301, 1));
 
             GameFlowManager flowManager = CreateFlowManager(levelData, database);
             BoardMoveExecutionResult result = new BoardMoveExecutionResult
@@ -431,7 +527,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
 
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBlockerTile(302, 1, TileLogicType.BubbleBlocker));
+                CreateOverlayTile(302, 1, TileLogicType.BubbleOverlay));
 
             GameFlowManager flowManager = CreateFlowManager(levelData, database);
             BoardMoveExecutionResult result = new BoardMoveExecutionResult
@@ -476,7 +572,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
 
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker));
+                CreateChocolateOverlayTile(303, 1));
 
             GameFlowManager flowManager = CreateFlowManager(levelData, database);
             BoardMoveExecutionResult result = new BoardMoveExecutionResult
@@ -515,11 +611,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         [Test]
         public void GameFlowManager_PlaybackCallbacks_CountCakeTargetsByTileId()
         {
-            Match3LevelData levelData = CreateLevelData(1, 1, new[] { 401 });
-            levelData.targets = new List<LevelTargetData> { new LevelTargetData(401, 1) };
+            Match3LevelData levelData = CreateLevelData(1, 1, new[] { 201 });
+            levelData.targets = new List<LevelTargetData> { new LevelTargetData(201, 1) };
 
             Match3TileDatabaseSO database = CreateDatabase(
-                CreateMechanicTile(401, TileLogicType.CakeDelivery));
+                CreateMechanicTile(201, TileLogicType.CakeDelivery));
 
             GameFlowManager flowManager = CreateFlowManager(levelData, database);
             BoardMoveExecutionResult result = new BoardMoveExecutionResult
@@ -531,7 +627,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             CascadeTrace cascade = new CascadeTrace();
             cascade.ClearPhase.ClearOps.Add(new TileClearOp
             {
-                TileId = 401,
+                TileId = 201,
                 TileInstanceId = 123,
                 Layer = TileStackLayer.Base,
                 Cell = new BoardCellPosition(0, 0)
@@ -550,7 +646,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             flowManager.RequestMove(new BoardMoveRequest(MoveAxis.Row, 0, LineSlideDirection.Right, 0, 0));
             flowManager.NotifyTileClearedDuringPlayback(cascade.ClearPhase.ClearOps[0], Vector3.zero);
 
-            Assert.That(targetPayload.TileId, Is.EqualTo(401));
+            Assert.That(targetPayload.TileId, Is.EqualTo(201));
             Assert.That(targetPayload.CurrentCount, Is.EqualTo(1));
             Assert.That(completedCount, Is.EqualTo(1));
         }
@@ -558,11 +654,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         [Test]
         public void GameFlowManager_PlaybackCallbacks_CountStoneTargetsByTileId()
         {
-            Match3LevelData levelData = CreateLevelData(1, 1, new[] { 402 });
-            levelData.targets = new List<LevelTargetData> { new LevelTargetData(402, 1) };
+            Match3LevelData levelData = CreateLevelData(1, 1, new[] { 231 });
+            levelData.targets = new List<LevelTargetData> { new LevelTargetData(231, 1) };
 
             Match3TileDatabaseSO database = CreateDatabase(
-                CreateMechanicTile(402, TileLogicType.StoneMechanic));
+                CreateMechanicTile(231, TileLogicType.StoneMechanic));
 
             GameFlowManager flowManager = CreateFlowManager(levelData, database);
             BoardMoveExecutionResult result = new BoardMoveExecutionResult
@@ -574,7 +670,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             CascadeTrace cascade = new CascadeTrace();
             cascade.ClearPhase.ClearOps.Add(new TileClearOp
             {
-                TileId = 402,
+                TileId = 231,
                 TileInstanceId = 124,
                 Layer = TileStackLayer.Base,
                 Cell = new BoardCellPosition(0, 0)
@@ -593,7 +689,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             flowManager.RequestMove(new BoardMoveRequest(MoveAxis.Row, 0, LineSlideDirection.Right, 0, 0));
             flowManager.NotifyTileClearedDuringPlayback(cascade.ClearPhase.ClearOps[0], Vector3.zero);
 
-            Assert.That(targetPayload.TileId, Is.EqualTo(402));
+            Assert.That(targetPayload.TileId, Is.EqualTo(231));
             Assert.That(targetPayload.CurrentCount, Is.EqualTo(1));
             Assert.That(completedCount, Is.EqualTo(1));
         }
@@ -616,6 +712,30 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
                 });
             }
 
+            result.PresentationTrace.Cascades.Add(cascade);
+            return result;
+        }
+
+        private static BoardMoveExecutionResult CreateChargedEnergyResult()
+        {
+            BoardMoveExecutionResult result = new BoardMoveExecutionResult
+            {
+                IsAccepted = true,
+                PresentationTrace = new BoardPresentationTrace()
+            };
+
+            CascadeTrace cascade = new CascadeTrace();
+            cascade.ClearPhase.ActivateOps.Add(new TileActivateOp
+            {
+                TileId = 152,
+                LogicType = TileLogicType.CrossBomb
+            });
+            cascade.ClearPhase.ClearOps.Add(new TileClearOp { TileId = 301 });
+            cascade.ClearPhase.ClearOps.Add(new TileClearOp { TileId = 231 });
+            cascade.ClearPhase.ClearOps.Add(new TileClearOp { TileId = 301 });
+            cascade.ClearPhase.ClearOps.Add(new TileClearOp { TileId = 231 });
+            cascade.ClearPhase.ClearOps.Add(new TileClearOp { TileId = 301 });
+            cascade.ClearPhase.ClearOps.Add(new TileClearOp { TileId = 231 });
             result.PresentationTrace.Cascades.Add(cascade);
             return result;
         }
@@ -645,16 +765,37 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
                 width = width,
                 height = height,
                 movesLimit = 20,
-                gridLayout = layout,
+                tileLayout = layout,
                 overlayLayout = new int[layout.Length],
                 spawnableTileIds = new List<int>()
             };
         }
 
-        private static Match3TileDatabaseSO CreateDatabase(params TileDefinitionSO[] tiles)
+        private static Match3TileDatabaseSO CreateDatabase(params BoardContentDefinitionSO[] definitions)
         {
             Match3TileDatabaseSO database = ScriptableObject.CreateInstance<Match3TileDatabaseSO>();
-            SetPrivateField(database, "tiles", new List<TileDefinitionSO>(tiles));
+            List<TileDefinitionSO> tileDefinitions = new List<TileDefinitionSO>();
+            List<OverlayDefinitionSO> overlayDefinitions = new List<OverlayDefinitionSO>();
+            List<UnderlayDefinitionSO> underlayDefinitions = new List<UnderlayDefinitionSO>();
+            for (int i = 0; i < definitions.Length; i++)
+            {
+                switch (definitions[i])
+                {
+                    case TileDefinitionSO tileDefinition:
+                        tileDefinitions.Add(tileDefinition);
+                        break;
+                    case OverlayDefinitionSO overlayDefinition:
+                        overlayDefinitions.Add(overlayDefinition);
+                        break;
+                    case UnderlayDefinitionSO underlayDefinition:
+                        underlayDefinitions.Add(underlayDefinition);
+                        break;
+                }
+            }
+
+            SetPrivateField(database, "tileDefinitions", tileDefinitions);
+            SetPrivateField(database, "overlayDefinitions", overlayDefinitions);
+            SetPrivateField(database, "underlayDefinitions", underlayDefinitions);
             database.RebuildCache();
             return database;
         }
@@ -679,11 +820,26 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             return tile;
         }
 
-        private static BlockerTileDefinitionSO CreateBlockerTile(int tileId, int defaultHp, TileLogicType logicType = TileLogicType.IceBlocker, int growthPerTurn = 1, int growthTurnInterval = 1)
+        private static OverlayDefinitionSO CreateOverlayTile(int tileId, int defaultHp, TileLogicType logicType = TileLogicType.IceOverlay, int growthPerTurn = 1, int growthTurnInterval = 1)
         {
-            BlockerTileDefinitionSO tile = ScriptableObject.CreateInstance<BlockerTileDefinitionSO>();
+            OverlayDefinitionSO tile = logicType == TileLogicType.BubbleOverlay
+                ? ScriptableObject.CreateInstance<BubbleOverlayDefinitionSO>()
+                : ScriptableObject.CreateInstance<IceOverlayDefinitionSO>();
             SetPrivateField(tile, "tileId", tileId);
-            SetPrivateField(tile, "blockerLogicType", logicType);
+            SetPrivateField(tile, "defaultHP", defaultHp);
+            SetPrivateField(tile, "canSpawnOnRefill", false);
+            SetPrivateField(tile, "spawnWeight", 0);
+            return tile;
+        }
+
+        private static ChocolateOverlayDefinitionSO CreateChocolateOverlayTile(
+            int tileId,
+            int defaultHp,
+            int growthPerTurn = 1,
+            int growthTurnInterval = 1)
+        {
+            ChocolateOverlayDefinitionSO tile = ScriptableObject.CreateInstance<ChocolateOverlayDefinitionSO>();
+            SetPrivateField(tile, "tileId", tileId);
             SetPrivateField(tile, "defaultHP", defaultHp);
             SetPrivateField(tile, "growthPerTurn", growthPerTurn);
             SetPrivateField(tile, "growthTurnInterval", growthTurnInterval);
@@ -692,11 +848,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             return tile;
         }
 
-        private static MechanicTileDefinitionSO CreateMechanicTile(int tileId, TileLogicType logicType)
+        private static TileDefinitionSO CreateMechanicTile(int tileId, TileLogicType logicType)
         {
-            MechanicTileDefinitionSO tile = ScriptableObject.CreateInstance<MechanicTileDefinitionSO>();
+            TileDefinitionSO tile = logicType == TileLogicType.StoneMechanic
+                ? ScriptableObject.CreateInstance<StoneTileDefinitionSO>()
+                : ScriptableObject.CreateInstance<DeliveryTileDefinitionSO>();
             SetPrivateField(tile, "tileId", tileId);
-            SetPrivateField(tile, "mechanicLogicType", logicType);
             SetPrivateField(tile, "canSpawnOnRefill", false);
             SetPrivateField(tile, "spawnWeight", 0);
             return tile;
@@ -717,3 +874,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         }
     }
 }
+

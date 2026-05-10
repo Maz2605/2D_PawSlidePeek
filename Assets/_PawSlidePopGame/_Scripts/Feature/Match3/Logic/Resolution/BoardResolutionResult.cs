@@ -10,3 +10,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
         public bool HasTriggeredPostMoveRule { get; set; }
     }
 }
+

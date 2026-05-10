@@ -27,6 +27,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                     canvasGroup = gameObject.AddComponent<CanvasGroup>();
                 }
             }
+
         }
 
         private void OnValidate()
@@ -55,6 +56,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         private void OnEnable()
         {
             EventManager<LogicGameEvent>.AddListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudInitialized, HandleHudSnapshot);
+            EventManager<LogicGameEvent>.AddListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudStateChanged, HandleHudSnapshot);
             EventManager<LogicGameEvent>.AddListener<RemainingMovesChangedPayload>(LogicGameEvent.GameplayMovesChanged, HandleMovesChanged);
             EventManager<LogicGameEvent>.AddListener<ScoreChangedPayload>(LogicGameEvent.GameplayScoreChanged, HandleScoreChanged);
             EventManager<LogicGameEvent>.AddListener<InGameSubStateChangedPayload>(LogicGameEvent.InGameSubStateChanged, HandleSubStateChanged);
@@ -66,6 +68,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         private void OnDisable()
         {
             EventManager<LogicGameEvent>.RemoveListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudInitialized, HandleHudSnapshot);
+            EventManager<LogicGameEvent>.RemoveListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudStateChanged, HandleHudSnapshot);
             EventManager<LogicGameEvent>.RemoveListener<RemainingMovesChangedPayload>(LogicGameEvent.GameplayMovesChanged, HandleMovesChanged);
             EventManager<LogicGameEvent>.RemoveListener<ScoreChangedPayload>(LogicGameEvent.GameplayScoreChanged, HandleScoreChanged);
             EventManager<LogicGameEvent>.RemoveListener<InGameSubStateChangedPayload>(LogicGameEvent.InGameSubStateChanged, HandleSubStateChanged);

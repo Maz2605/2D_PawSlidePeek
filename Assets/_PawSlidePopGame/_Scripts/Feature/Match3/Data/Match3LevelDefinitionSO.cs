@@ -10,3 +10,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
         public Match3LevelData LevelData => levelData;
     }
 }
+

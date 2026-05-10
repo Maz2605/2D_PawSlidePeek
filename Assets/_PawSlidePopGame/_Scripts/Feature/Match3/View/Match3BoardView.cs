@@ -182,6 +182,26 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             _previewedTileIds.Clear();
         }
 
+        public void ShowPlacementCandidates(IReadOnlyList<CellModel> cells)
+        {
+            ClearPreview();
+            HighlightCellTiles(cells, TileShadowState.Preview);
+        }
+
+        public void ShowChargedComboSelection(CellModel sourceCell, IReadOnlyList<CellModel> partnerCells)
+        {
+            ClearPreview();
+            HighlightCellTiles(partnerCells, TileShadowState.Preview);
+
+            if (sourceCell?.Tile != null &&
+                _tileViews.TryGetValue(sourceCell.Tile.InstanceId, out Match3TileView tileView) &&
+                tileView != null)
+            {
+                tileView.SetShadowState(TileShadowState.Active);
+                _previewedTileIds.Add(sourceCell.Tile.InstanceId);
+            }
+        }
+
         public IEnumerator PlayMoveExecution(BoardMoveExecutionResult executionResult)
         {
             if (executionResult == null || executionResult.PresentationTrace == null)
@@ -231,8 +251,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                     continue;
                 }
 
-                SyncTileView(cell, cell.BaseTile, TileStackLayer.Base, aliveTileIds);
-                SyncTileView(cell, cell.OverlayTile, TileStackLayer.Overlay, aliveTileIds);
+                SyncTileView(cell, cell.Tile, TileStackLayer.Base, aliveTileIds);
+                SyncTileView(cell, cell.Overlay, TileStackLayer.Overlay, aliveTileIds);
             }
 
             List<int> staleTileIds = new List<int>();
@@ -331,7 +351,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             }
         }
 
-        private Match3TileView CreateTileView(TileModel tile, _PawSlidePopGame._Scripts.Feature.Match3.Data.TileDefinitionSO definition, Vector3 localPosition)
+        private Match3TileView CreateTileView(TileModel tile, _PawSlidePopGame._Scripts.Feature.Match3.Data.BoardContentDefinitionSO definition, Vector3 localPosition)
         {
             if (tile == null || definition == null || definition.TileViewPrefab == null)
             {
@@ -461,8 +481,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             {
                 foreach (CellModel cell in _board.GetAllCells())
                 {
-                    AccumulatePrewarmCount(counts, cell?.BaseTile?.Definition);
-                    AccumulatePrewarmCount(counts, cell?.OverlayTile?.Definition);
+                    AccumulatePrewarmCount(counts, cell?.Tile?.Definition);
+                    AccumulatePrewarmCount(counts, cell?.Overlay?.Definition);
                 }
             }
 
@@ -474,7 +494,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             HashSet<GameObject> reservedPrefabs = new HashSet<GameObject>();
             for (int i = 0; i < _levelData.spawnableTileIds.Count; i++)
             {
-                TileDefinitionSO definition = _tileDatabase.GetTileDefinition(_levelData.spawnableTileIds[i]);
+                BoardContentDefinitionSO definition = _tileDatabase.GetContentDefinition(_levelData.spawnableTileIds[i]);
                 Match3TileView prefab = definition?.TileViewPrefab;
                 if (prefab == null)
                 {
@@ -844,6 +864,27 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             }
         }
 
+        private void HighlightCellTiles(IReadOnlyList<CellModel> cells, TileShadowState state)
+        {
+            if (cells == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < cells.Count; i++)
+            {
+                CellModel cell = cells[i];
+                TileModel tile = cell?.Tile;
+                if (tile == null || !_tileViews.TryGetValue(tile.InstanceId, out Match3TileView tileView) || tileView == null)
+                {
+                    continue;
+                }
+
+                tileView.SetShadowState(state);
+                _previewedTileIds.Add(tile.InstanceId);
+            }
+        }
+
         private IEnumerator WrapRoutine(IEnumerator routine, System.Action onComplete)
         {
             yield return StartCoroutine(routine);
@@ -1004,7 +1045,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             }
         }
 
-        private static void AccumulatePrewarmCount(Dictionary<GameObject, int> counts, TileDefinitionSO definition)
+        private static void AccumulatePrewarmCount(Dictionary<GameObject, int> counts, BoardContentDefinitionSO definition)
         {
             Match3TileView prefab = definition?.TileViewPrefab;
             if (prefab == null)
@@ -1055,3 +1096,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         }
     }
 }
+

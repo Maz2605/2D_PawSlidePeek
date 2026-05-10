@@ -9,6 +9,7 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.Gameplay
     public class GameplayScreen : BaseScreen
     {
         [SerializeField] private TopHUDPresenter topHUDPresenter;
+        [SerializeField] private BottomHUDPresenter bottomHUDPresenter;
         [SerializeField] private Button pauseButton;
 
         protected override void OnBeforeShow()
@@ -19,6 +20,19 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.Gameplay
         private void HandlePausePressed()
         {
             GameFlowManager.Instance?.PauseGameplay();
+        }
+
+        private void OnValidate()
+        {
+            if (topHUDPresenter == null)
+            {
+                topHUDPresenter = GetComponentInChildren<TopHUDPresenter>(true);
+            }
+
+            if (bottomHUDPresenter == null)
+            {
+                bottomHUDPresenter = GetComponentInChildren<BottomHUDPresenter>(true);
+            }
         }
     }
 }

@@ -26,7 +26,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                 for (int y = board.Height - 1; y >= 0; y--)
                 {
                     CellModel cell = board.GetCell(x, y);
-                    if (cell == null || !cell.IsPlayable || cell.HasBaseTile())
+                    if (cell == null || !cell.IsPlayable || cell.HasTile())
                     {
                         continue;
                     }
@@ -90,17 +90,17 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
 
         private static void AddNeighborRestriction(CellModel first, CellModel second, List<int> restrictedIds)
         {
-            if (first?.BaseTile == null || second?.BaseTile == null)
+            if (first?.Tile == null || second?.Tile == null)
             {
                 return;
             }
 
-            if (!first.BaseTile.IsMatchableWith(second.BaseTile))
+            if (!first.Tile.IsMatchableWith(second.Tile))
             {
                 return;
             }
 
-            restrictedIds.Add(first.BaseTile.TileId);
+            restrictedIds.Add(first.Tile.TileId);
         }
 
         private static bool IsRestricted(int tileId, List<int> restrictedIds)
@@ -117,3 +117,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
         }
     }
 }
+

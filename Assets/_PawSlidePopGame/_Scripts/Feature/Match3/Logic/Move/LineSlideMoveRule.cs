@@ -23,20 +23,23 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move
             bool hasAnyMovableState = false;
             for (int i = 0; i < affectedCells.Count; i++)
             {
-                if (LocksLineMovement(affectedCells[i]))
+                CellModel cell = affectedCells[i];
+                if (cell?.Tile != null)
                 {
-                    return false;
+                    hasAnyMovableState = true;
+                    if (!cell.Tile.CanBeMoved())
+                    {
+                        return false;
+                    }
                 }
 
-                if (affectedCells[i].BaseTile == null)
+                if (cell?.Overlay != null)
                 {
-                    continue;
-                }
-
-                hasAnyMovableState = true;
-                if (!affectedCells[i].BaseTile.CanBeMoved())
-                {
-                    return false;
+                    hasAnyMovableState = true;
+                    if (!cell.Overlay.CanBeMoved())
+                    {
+                        return false;
+                    }
                 }
             }
 
@@ -50,12 +53,6 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move
             moveContext = new BoardMoveContext(request, affectedCells, snapshot);
             return true;
         }
-
-        private static bool LocksLineMovement(CellModel cell)
-        {
-            return cell != null &&
-                   (cell.HasOverlayLogic(TileLogicType.IceBlocker) ||
-                    cell.HasOverlayLogic(TileLogicType.ChocolateBlocker));
-        }
     }
 }
+

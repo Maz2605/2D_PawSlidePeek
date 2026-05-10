@@ -1,9 +1,9 @@
 using _PawSlidePopGame._Scripts.Feature.Match3.Core;
 using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
 using _PawSlidePopGame._Scripts.Feature.Match3.Data;
-using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Blockers;
 using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Booster;
 using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Mechanics;
+using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Overlays;
 using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Tiles;
 
 namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Factory
@@ -29,23 +29,24 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Factory
                     return new AreaBombMediumLogic();
                 case TileLogicType.AreaBombLarge:
                     return new AreaBombLargeLogic();
-                case TileLogicType.IceBlocker:
-                    return new IceLogic();
-                case TileLogicType.BubbleBlocker: 
-                    return new BubbleLogic();
-                case TileLogicType.ChocolateBlocker:
-                    return new ChocolateLogic();
-                case TileLogicType.CakeDelivery:
+                case TileLogicType.ChargedSweepBooster:
+                    return new ChargedSweepBoosterLogic();
+                case TileLogicType.IceOverlay:
+                    return new IceOverlayLogic();
+                case TileLogicType.BubbleOverlay:
+                    return new BubbleOverlayLogic();
+                case TileLogicType.ChocolateOverlay:
+                    return new ChocolateOverlayLogic();
+                case TileLogicType.CakeTarget:
                     return new CakeDeliveryLogic();
-                case TileLogicType.StoneMechanic:
+                case TileLogicType.StoneBlocker:
                     return new StoneLogic();
                 case TileLogicType.NormalAnimal:
                 case TileLogicType.None:
                 default:
-                    return definition.TileKind == TileKind.Mechanic
-                        ? new MechanicPlaceholderLogic()
-                        : new NormalAnimalTileLogic();
+                    return new NormalAnimalTileLogic();
             }
         }
     }
 }
+

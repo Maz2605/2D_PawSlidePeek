@@ -10,7 +10,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
         public static GameplayHudSnapshot Build(
             Match3LevelData levelData,
             BoardModel board,
-            Match3ObjectiveTracker objectiveTracker)
+            Match3ObjectiveTracker objectiveTracker,
+            ChargedAbilityTracker chargedAbilityTracker = null,
+            bool isPlacementMode = false,
+            bool isComboSelectionMode = false)
         {
             GameplayHudSnapshot snapshot = new GameplayHudSnapshot
             {
@@ -28,6 +31,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
                     snapshot.targets.Add(objectiveTracker.Targets[i]?.Clone());
                 }
             }
+
+            snapshot.chargedAbility = chargedAbilityTracker != null
+                ? chargedAbilityTracker.BuildHudData(isPlacementMode, isComboSelectionMode)
+                : null;
 
             return snapshot;
         }
@@ -52,3 +59,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
         }
     }
 }
+

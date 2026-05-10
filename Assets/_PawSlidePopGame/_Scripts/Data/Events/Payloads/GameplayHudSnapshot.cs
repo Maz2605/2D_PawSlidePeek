@@ -29,12 +29,43 @@ namespace _PawSlidePopGame._Scripts.Data.Events.Payloads
     [Serializable]
     public sealed class GameplayHudSnapshot
     {
+        [Serializable]
+        public sealed class ChargedAbilityHudData
+        {
+            public bool isEnabled;
+            public int tileId;
+            public Sprite icon;
+            public int currentEnergy;
+            public int requiredEnergy;
+            public int availableCharges;
+            public int maxStoredCharges;
+            public bool isPlacementMode;
+            public bool isComboSelectionMode;
+
+            public ChargedAbilityHudData Clone()
+            {
+                return new ChargedAbilityHudData
+                {
+                    isEnabled = isEnabled,
+                    tileId = tileId,
+                    icon = icon,
+                    currentEnergy = currentEnergy,
+                    requiredEnergy = requiredEnergy,
+                    availableCharges = availableCharges,
+                    maxStoredCharges = maxStoredCharges,
+                    isPlacementMode = isPlacementMode,
+                    isComboSelectionMode = isComboSelectionMode
+                };
+            }
+        }
+
         public int levelNumber;
         public int remainingMoves;
         public int currentScore;
         public int[] starScoreThresholds;
         public int reachedStars;
         public List<TargetProgressData> targets = new List<TargetProgressData>();
+        public ChargedAbilityHudData chargedAbility;
 
         public bool HasTargets => targets != null && targets.Count > 0;
         public bool AreAllTargetsCompleted => HasTargets && targets.TrueForAll(target => target != null && target.isCompleted);
@@ -57,6 +88,8 @@ namespace _PawSlidePopGame._Scripts.Data.Events.Payloads
                     clone.targets.Add(targets[i]?.Clone());
                 }
             }
+
+            clone.chargedAbility = chargedAbility?.Clone();
 
             return clone;
         }

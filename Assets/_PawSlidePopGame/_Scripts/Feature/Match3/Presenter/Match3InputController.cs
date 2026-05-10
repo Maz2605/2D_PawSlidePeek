@@ -12,6 +12,13 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 {
     public class Match3InputController : MonoBehaviour
     {
+        public enum BoardInputMode
+        {
+            Disabled = 0,
+            Normal = 1,
+            TapOnly = 2
+        }
+
         [SerializeField] private float dragThresholdPixels = 24f;
         [SerializeField] private bool lockAxisAfterThreshold = true;
 
@@ -21,6 +28,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         private bool _isTrackingDrag;
         private MoveAxis? _lockedAxis;
         private bool _isInputLocked;
+        private BoardInputMode _inputMode = BoardInputMode.Normal;
 
         public event Action<BoardMoveRequest> OnMoveRequested;
         public event Action<CellModel> OnTileTapped;
@@ -40,6 +48,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             {
                 ClearPreviewAndResetGesture();
             }
+        }
+
+        public void SetInputMode(BoardInputMode inputMode)
+        {
+            _inputMode = inputMode;
+            SetInputLocked(inputMode == BoardInputMode.Disabled);
         }
 
         private void OnEnable()
@@ -96,7 +110,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             _pressScreenPosition = screenPosition;
             _isTrackingDrag = true;
             _lockedAxis = null;
-            OnPreviewStarted?.Invoke(_pressedCell);
+            if (_inputMode == BoardInputMode.Normal)
+            {
+                OnPreviewStarted?.Invoke(_pressedCell);
+            }
         }
 
         private void HandleTouchMove(Vector2 screenPosition)
@@ -108,6 +125,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
             Vector2 delta = screenPosition - _pressScreenPosition;
             if (delta.magnitude < dragThresholdPixels)
+            {
+                return;
+            }
+
+            if (_inputMode != BoardInputMode.Normal)
             {
                 return;
             }
@@ -172,8 +194,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
         private void TryHandleTap()
         {
-            TileModel tile = _pressedCell?.BaseTile;
-            if (_pressedCell == null || !_pressedCell.CanBaseTileActivate() || tile == null || tile.TileKind != TileKind.Booster)
+            if (_pressedCell == null)
             {
                 return;
             }
@@ -182,3 +203,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         }
     }
 }
+

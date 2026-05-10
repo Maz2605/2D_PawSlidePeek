@@ -1,7 +1,7 @@
-﻿using _PawSlidePopGame._Scripts.Core.Audio;
+﻿using _PawSlidePopGame._Scripts.Data.Audio;
 using UnityEngine;
 
-namespace _PawSlidePopGame._Scripts.Data.Audio
+namespace _PawSlidePopGame._Scripts.Core.Audio
 {
     public class UIEventSound : MonoBehaviour
     {

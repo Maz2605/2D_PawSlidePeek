@@ -21,10 +21,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
             base.OnValidate();
             MigrateLegacyTileViewPrefab(ref tileViewPrefab);
 
-            if (boosterLogicType == TileLogicType.None || boosterLogicType == TileLogicType.NormalAnimal || boosterLogicType == TileLogicType.IceBlocker)
+            if (boosterLogicType == TileLogicType.None || boosterLogicType == TileLogicType.NormalAnimal || boosterLogicType == TileLogicType.IceOverlay)
             {
                 boosterLogicType = TileLogicType.BombBooster;
             }
         }
     }
 }
+

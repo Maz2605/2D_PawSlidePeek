@@ -50,6 +50,49 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         }
 
         [Test]
+        public void ExecuteMove_InvalidMoveWithChocolateOverlay_RestoresBaseAndOverlayStack()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateNormalTile(102, AnimalTileId.Dog),
+                CreateNormalTile(103, AnimalTileId.Fox),
+                CreateChocolateOverlayTile(303, 1));
+
+            Match3LevelData levelData = CreateLevelData(3, 3, new[]
+            {
+                101, 102, 103,
+                102, 103, 101,
+                103, 101, 102
+            });
+            levelData.overlayLayout = new[]
+            {
+                0, 0, 0,
+                0, 303, 0,
+                0, 0, 0
+            };
+
+            BoardModel board = CreateBoard(levelData, database);
+
+            BoardMoveExecutionResult result = BoardResolutionService.ExecuteMove(
+                board,
+                new BoardMoveRequest(MoveAxis.Row, 1, LineSlideDirection.Right, 1, 1),
+                levelData,
+                database,
+                new System.Random(17));
+
+            Assert.That(result.IsApplied, Is.True);
+            Assert.That(result.IsAccepted, Is.False);
+            Assert.That(result.PresentationTrace.MoveAttempt.TravelOps.Exists(op =>
+                op.TileId == 303 && op.Layer == TileStackLayer.Overlay), Is.True);
+            Assert.That(result.PresentationTrace.Rollback.TravelOps.Exists(op =>
+                op.TileId == 303 && op.Layer == TileStackLayer.Overlay), Is.True);
+            Assert.That(board.GetCell(1, 1).Tile, Is.Not.Null);
+            Assert.That(board.GetCell(1, 1).Tile.TileId, Is.EqualTo(103));
+            Assert.That(board.GetCell(1, 1).Overlay, Is.Not.Null);
+            Assert.That(board.GetCell(1, 1).Overlay.TileId, Is.EqualTo(303));
+        }
+
+        [Test]
         public void ExecuteMove_ValidCascade_ProducesClearGravityAndRefillTrace()
         {
             Match3TileDatabaseSO database = CreateDatabase(
@@ -115,10 +158,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(201, TileLogicType.BombBooster),
-                CreateBoosterTile(202, TileLogicType.SquareBomb),
-                CreateBoosterTile(203, TileLogicType.AreaBombMedium),
-                CreateBoosterTile(205, TileLogicType.AreaBombLarge));
+                CreateBoosterTile(151, TileLogicType.BombBooster),
+                CreateBoosterTile(152, TileLogicType.SquareBomb),
+                CreateBoosterTile(153, TileLogicType.AreaBombMedium),
+                CreateBoosterTile(155, TileLogicType.AreaBombLarge));
 
             Match3LevelData levelData = CreateLevelData(2, 3, new[]
             {
@@ -146,7 +189,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(205, TileLogicType.AreaBombLarge));
+                CreateBoosterTile(155, TileLogicType.AreaBombLarge));
 
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
@@ -172,7 +215,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(204, TileLogicType.AreaBombMedium));
+                CreateBoosterTile(154, TileLogicType.AreaBombMedium));
 
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
@@ -198,7 +241,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(202, TileLogicType.CrossBomb));
+                CreateBoosterTile(152, TileLogicType.CrossBomb));
 
             Match3LevelData levelData = CreateLevelData(4, 1, new[]
             {
@@ -229,8 +272,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
                 Is.True);
 
             CellModel sourceCell = board.GetCell(1, 0);
-            Assert.That(sourceCell.CurrentTile, Is.Not.Null);
-            Assert.That(sourceCell.CurrentTile.LogicType, Is.EqualTo(TileLogicType.CrossBomb));
+            Assert.That(sourceCell.Tile, Is.Not.Null);
+            Assert.That(sourceCell.Tile.LogicType, Is.EqualTo(TileLogicType.CrossBomb));
         }
 
         [Test]
@@ -238,7 +281,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(203, TileLogicType.SquareBomb));
+                CreateBoosterTile(153, TileLogicType.SquareBomb));
 
             Match3LevelData levelData = CreateLevelData(2, 2, new[]
             {
@@ -264,8 +307,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(createOp.LogicType, Is.EqualTo(TileLogicType.SquareBomb));
 
             CellModel sourceCell = board.GetCell(0, 0);
-            Assert.That(sourceCell.CurrentTile, Is.Not.Null);
-            Assert.That(sourceCell.CurrentTile.LogicType, Is.EqualTo(TileLogicType.SquareBomb));
+            Assert.That(sourceCell.Tile, Is.Not.Null);
+            Assert.That(sourceCell.Tile.LogicType, Is.EqualTo(TileLogicType.SquareBomb));
         }
 
         [Test]
@@ -273,10 +316,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(202, TileLogicType.CrossBomb));
+                CreateBoosterTile(152, TileLogicType.CrossBomb));
 
             Match3LevelData levelData = CreateFilledLevel(3, 3, 101);
-            levelData.gridLayout[4] = 202;
+            levelData.tileLayout[4] = 152;
             levelData.spawnableTileIds = new List<int> { 101 };
 
             BoardModel board = CreateBoard(levelData, database);
@@ -298,8 +341,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(result.PresentationTrace.Cascades[0].ClearPhase.ClearOps.Count, Is.EqualTo(5));
             Assert.That(result.PresentationTrace.Cascades[0].ClearPhase.ScoreGainOps.Count, Is.EqualTo(5));
             Assert.That(board.RemainingMoves, Is.EqualTo(movesBefore - 1));
-            Assert.That(board.GetCell(1, 1).BaseTile, Is.Not.Null);
-            Assert.That(board.GetCell(1, 1).BaseTile.TileKind, Is.EqualTo(TileKind.Normal));
+            Assert.That(board.GetCell(1, 1).Tile, Is.Not.Null);
+            Assert.That(board.GetCell(1, 1).Tile.TileKind, Is.EqualTo(TileKind.Normal));
         }
 
         [Test]
@@ -307,12 +350,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(201, TileLogicType.BombBooster));
+                CreateBoosterTile(151, TileLogicType.BombBooster));
 
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
                 101, 101, 101,
-                101, 201, 101,
+                101, 151, 101,
                 101, 101, 101
             });
 
@@ -321,12 +364,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             BoardFxContext fxContext = new BoardFxContext(cascadeTrace, new System.Random(0));
             CellModel centerCell = board.GetCell(1, 1);
 
-            centerCell.CurrentTile.Activate(board, centerCell, fxContext);
+            centerCell.Tile.Activate(board, centerCell, fxContext);
 
             Assert.That(cascadeTrace.ClearPhase.ActivateOps.Count, Is.EqualTo(1));
             Assert.That(cascadeTrace.ClearPhase.ClearOps.Count, Is.EqualTo(9));
             Assert.That(cascadeTrace.ClearPhase.ScoreGainOps.Count, Is.EqualTo(9));
-            Assert.That(centerCell.CurrentTile, Is.Null);
+            Assert.That(centerCell.Tile, Is.Null);
         }
 
         [Test]
@@ -334,13 +377,13 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(202, TileLogicType.CrossBomb));
+                CreateBoosterTile(152, TileLogicType.CrossBomb));
 
             Match3LevelData levelData = CreateLevelData(5, 5, new[]
             {
                 101, 101, 101, 101, 101,
                 101, 101, 101, 101, 101,
-                101, 101, 202, 101, 101,
+                101, 101, 152, 101, 101,
                 101, 101, 101, 101, 101,
                 101, 101, 101, 101, 101
             });
@@ -350,12 +393,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             BoardFxContext fxContext = new BoardFxContext(cascadeTrace, new System.Random(0));
             CellModel centerCell = board.GetCell(2, 2);
 
-            centerCell.CurrentTile.Activate(board, centerCell, fxContext);
+            centerCell.Tile.Activate(board, centerCell, fxContext);
 
             Assert.That(cascadeTrace.ClearPhase.ActivateOps.Count, Is.EqualTo(1));
             Assert.That(cascadeTrace.ClearPhase.ClearOps.Count, Is.EqualTo(9));
             Assert.That(cascadeTrace.ClearPhase.ScoreGainOps.Count, Is.EqualTo(9));
-            Assert.That(centerCell.CurrentTile, Is.Null);
+            Assert.That(centerCell.Tile, Is.Null);
         }
 
         [Test]
@@ -363,12 +406,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(203, TileLogicType.SquareBomb));
+                CreateBoosterTile(153, TileLogicType.SquareBomb));
 
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
                 101, 101, 101,
-                101, 203, 101,
+                101, 153, 101,
                 101, 101, 101
             });
 
@@ -377,9 +420,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             BoardFxContext fxContext = new BoardFxContext(cascadeTrace, new System.Random(0));
             CellModel centerCell = board.GetCell(1, 1);
             CellModel expectedTarget = board.GetCell(0, 2);
-            int expectedTargetInstanceId = expectedTarget.CurrentTile.InstanceId;
+            int expectedTargetInstanceId = expectedTarget.Tile.InstanceId;
 
-            centerCell.CurrentTile.Activate(board, centerCell, fxContext);
+            centerCell.Tile.Activate(board, centerCell, fxContext);
 
             Assert.That(cascadeTrace.ClearPhase.ActivateOps.Count, Is.EqualTo(1));
             Assert.That(cascadeTrace.ClearPhase.TargetSelectionOps.Count, Is.EqualTo(1));
@@ -387,7 +430,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(cascadeTrace.ClearPhase.TargetSelectionOps[0].TargetTileInstanceId, Is.EqualTo(expectedTargetInstanceId));
             Assert.That(cascadeTrace.ClearPhase.ClearOps.Count, Is.EqualTo(4));
             Assert.That(cascadeTrace.ClearPhase.ScoreGainOps.Count, Is.EqualTo(4));
-            Assert.That(centerCell.CurrentTile, Is.Null);
+            Assert.That(centerCell.Tile, Is.Null);
         }
 
         [Test]
@@ -395,20 +438,20 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(204, TileLogicType.AreaBombMedium));
+                CreateBoosterTile(154, TileLogicType.AreaBombMedium));
 
             Match3LevelData levelData = CreateFilledLevel(5, 5, 101);
-            levelData.gridLayout[12] = 204;
+            levelData.tileLayout[12] = 154;
 
             BoardModel board = CreateBoard(levelData, database);
             CascadeTrace cascadeTrace = new CascadeTrace();
             BoardFxContext fxContext = new BoardFxContext(cascadeTrace, new System.Random(0));
             CellModel centerCell = board.GetCell(2, 2);
 
-            centerCell.CurrentTile.Activate(board, centerCell, fxContext);
+            centerCell.Tile.Activate(board, centerCell, fxContext);
 
             Assert.That(cascadeTrace.ClearPhase.ClearOps.Count, Is.EqualTo(13));
-            Assert.That(centerCell.CurrentTile, Is.Null);
+            Assert.That(centerCell.Tile, Is.Null);
         }
 
         [Test]
@@ -416,20 +459,20 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(205, TileLogicType.AreaBombLarge));
+                CreateBoosterTile(155, TileLogicType.AreaBombLarge));
 
             Match3LevelData levelData = CreateFilledLevel(7, 7, 101);
-            levelData.gridLayout[24] = 205;
+            levelData.tileLayout[24] = 155;
 
             BoardModel board = CreateBoard(levelData, database);
             CascadeTrace cascadeTrace = new CascadeTrace();
             BoardFxContext fxContext = new BoardFxContext(cascadeTrace, new System.Random(0));
             CellModel centerCell = board.GetCell(3, 3);
 
-            centerCell.CurrentTile.Activate(board, centerCell, fxContext);
+            centerCell.Tile.Activate(board, centerCell, fxContext);
 
             Assert.That(cascadeTrace.ClearPhase.ClearOps.Count, Is.EqualTo(25));
-            Assert.That(centerCell.CurrentTile, Is.Null);
+            Assert.That(centerCell.Tile, Is.Null);
         }
 
         [Test]
@@ -437,7 +480,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBlockerTile(301, 1));
+                CreateOverlayTile(301, 1));
             Match3LevelData levelData = CreateLevelData(1, 1, new[] { 101 });
             levelData.overlayLayout = new[] { 301 };
 
@@ -446,7 +489,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             BoardFxContext fxContext = new BoardFxContext(cascadeTrace, new System.Random(0));
             CellModel cell = board.GetCell(0, 0);
 
-            cell.OverlayTile.Explode(board, cell, fxContext);
+            cell.Overlay.Explode(board, cell, fxContext);
 
             Assert.That(cascadeTrace.ClearPhase.DamageOps.Count, Is.EqualTo(1));
             Assert.That(cascadeTrace.ClearPhase.DamageOps[0].Destroyed, Is.True);
@@ -455,16 +498,16 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(cascadeTrace.ClearPhase.ClearOps[0].Layer, Is.EqualTo(TileStackLayer.Overlay));
             Assert.That(cascadeTrace.ClearPhase.ScoreGainOps.Count, Is.EqualTo(1));
             Assert.That(cascadeTrace.ClearPhase.ScoreGainOps[0].Amount, Is.EqualTo(50));
-            Assert.That(cell.OverlayTile, Is.Null);
-            Assert.That(cell.BaseTile, Is.Not.Null);
+            Assert.That(cell.Overlay, Is.Null);
+            Assert.That(cell.Tile, Is.Not.Null);
         }
 
         [Test]
-        public void OverlayTile_BlocksBaseMatchUntilDestroyed()
+        public void Overlay_BlocksBaseMatchUntilDestroyed()
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBlockerTile(301, 1));
+                CreateOverlayTile(301, 1));
             Match3LevelData levelData = CreateLevelData(3, 1, new[] { 101, 101, 101 });
             levelData.overlayLayout = new[] { 0, 301, 0 };
 
@@ -476,9 +519,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             CascadeTrace cascadeTrace = new CascadeTrace();
             BoardFxContext fxContext = new BoardFxContext(cascadeTrace, new System.Random(0));
             CellModel centerCell = board.GetCell(1, 0);
-            centerCell.OverlayTile.Explode(board, centerCell, fxContext);
+            centerCell.Overlay.Explode(board, centerCell, fxContext);
 
-            Assert.That(centerCell.OverlayTile, Is.Null);
+            Assert.That(centerCell.Overlay, Is.Null);
 
             BoardMatchAnalysis releasedAnalysis = new BoardMatchFinder().Analyze(board);
             Assert.That(releasedAnalysis.HasMatches, Is.True);
@@ -490,7 +533,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
                 CreateNormalTile(102, AnimalTileId.Dog),
-                CreateBlockerTile(301, 1));
+                CreateOverlayTile(301, 1));
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
                 101, 102, 101,
@@ -513,13 +556,13 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         }
 
         [Test]
-        public void ResolveBoard_MatchAdjacentToIce_BreaksIceAndKeepsBaseTile()
+        public void ResolveBoard_MatchAdjacentToIce_BreaksIceAndKeepsTile()
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
                 CreateNormalTile(102, AnimalTileId.Dog),
                 CreateNormalTile(103, AnimalTileId.Fox),
-                CreateBlockerTile(301, 1));
+                CreateOverlayTile(301, 1));
 
             Match3LevelData levelData = CreateLevelData(3, 2, new[]
             {
@@ -537,23 +580,23 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             BoardResolutionService.ResolveBoard(board, levelData, database, new System.Random(0));
 
             CellModel icedCell = board.GetCell(1, 1);
-            Assert.That(icedCell.OverlayTile, Is.Null);
-            Assert.That(icedCell.BaseTile, Is.Not.Null);
-            Assert.That(icedCell.BaseTile.TileId, Is.EqualTo(102));
+            Assert.That(icedCell.Overlay, Is.Null);
+            Assert.That(icedCell.Tile, Is.Not.Null);
+            Assert.That(icedCell.Tile.TileId, Is.EqualTo(102));
         }
 
         [Test]
-        public void BombActivation_BreaksIceAndPreservesBaseTile()
+        public void BombActivation_BreaksIceAndPreservesTile()
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(201, TileLogicType.BombBooster),
-                CreateBlockerTile(301, 1));
+                CreateBoosterTile(151, TileLogicType.BombBooster),
+                CreateOverlayTile(301, 1));
 
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
                 101, 101, 101,
-                101, 201, 101,
+                101, 151, 101,
                 101, 101, 101
             });
             levelData.overlayLayout = new[]
@@ -569,7 +612,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             CellModel centerCell = board.GetCell(1, 1);
             CellModel icedCell = board.GetCell(1, 2);
 
-            centerCell.CurrentTile.Activate(board, centerCell, fxContext);
+            centerCell.Tile.Activate(board, centerCell, fxContext);
 
             Assert.That(cascadeTrace.ClearPhase.DamageOps.Exists(op =>
                 op.Cell.Equals(new BoardCellPosition(1, 2)) &&
@@ -579,9 +622,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
                 op.Cell.Equals(new BoardCellPosition(1, 2)) &&
                 op.Layer == TileStackLayer.Overlay &&
                 op.TileId == 301), Is.True);
-            Assert.That(icedCell.OverlayTile, Is.Null);
-            Assert.That(icedCell.BaseTile, Is.Not.Null);
-            Assert.That(icedCell.BaseTile.TileId, Is.EqualTo(101));
+            Assert.That(icedCell.Overlay, Is.Null);
+            Assert.That(icedCell.Tile, Is.Not.Null);
+            Assert.That(icedCell.Tile.TileId, Is.EqualTo(101));
             Assert.That(cascadeTrace.ClearPhase.ClearOps.Exists(op =>
                 op.Cell.Equals(new BoardCellPosition(1, 2)) &&
                 op.Layer == TileStackLayer.Base),
@@ -593,7 +636,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBlockerTile(302, 1, TileLogicType.BubbleBlocker));
+                CreateOverlayTile(302, 1, TileLogicType.BubbleOverlay));
 
             Match3LevelData levelData = CreateLevelData(3, 1, new[] { 101, 101, 101 });
             levelData.overlayLayout = new[] { 0, 302, 0 };
@@ -624,7 +667,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
                 CreateNormalTile(102, AnimalTileId.Dog),
-                CreateBlockerTile(302, 1, TileLogicType.BubbleBlocker));
+                CreateOverlayTile(302, 1, TileLogicType.BubbleOverlay));
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
                 101, 102, 101,
@@ -646,17 +689,17 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         }
 
         [Test]
-        public void BombActivation_ClearsBubbleAndUnderlyingBaseTile()
+        public void BombActivation_ClearsBubbleAndUnderlyingTile()
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(201, TileLogicType.BombBooster),
-                CreateBlockerTile(302, 1, TileLogicType.BubbleBlocker));
+                CreateBoosterTile(151, TileLogicType.BombBooster),
+                CreateOverlayTile(302, 1, TileLogicType.BubbleOverlay));
 
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
                 101, 101, 101,
-                101, 201, 101,
+                101, 151, 101,
                 101, 101, 101
             });
             levelData.overlayLayout = new[]
@@ -672,7 +715,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             CellModel centerCell = board.GetCell(1, 1);
             CellModel bubbleCell = board.GetCell(1, 2);
 
-            centerCell.CurrentTile.Activate(board, centerCell, fxContext);
+            centerCell.Tile.Activate(board, centerCell, fxContext);
 
             Assert.That(cascadeTrace.ClearPhase.ClearOps.Exists(op =>
                 op.Cell.Equals(new BoardCellPosition(1, 2)) &&
@@ -682,8 +725,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
                 op.Cell.Equals(new BoardCellPosition(1, 2)) &&
                 op.Layer == TileStackLayer.Base &&
                 op.TileId == 101), Is.True);
-            Assert.That(bubbleCell.OverlayTile, Is.Null);
-            Assert.That(bubbleCell.BaseTile, Is.Null);
+            Assert.That(bubbleCell.Overlay, Is.Null);
+            Assert.That(bubbleCell.Tile, Is.Null);
         }
 
         [Test]
@@ -691,13 +734,13 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(201, TileLogicType.BombBooster),
-                CreateBlockerTile(302, 1, TileLogicType.BubbleBlocker));
+                CreateBoosterTile(151, TileLogicType.BombBooster),
+                CreateOverlayTile(302, 1, TileLogicType.BubbleOverlay));
 
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
                 101, 101, 101,
-                101, 201, 101,
+                101, 151, 101,
                 101, 101, 101
             });
             levelData.overlayLayout = new[]
@@ -721,12 +764,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         }
 
         [Test]
-        public void LineSlideMoveRule_ChocolateOverlayLocksItsRowAndColumn()
+        public void LineSlideMoveRule_ChocolateOverlayMovesWithItsRowAndColumn()
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
                 CreateNormalTile(102, AnimalTileId.Dog),
-                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker));
+                CreateChocolateOverlayTile(303, 1));
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
                 101, 102, 101,
@@ -740,22 +783,24 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
                 0, 0, 0
             };
 
-            BoardModel board = CreateBoard(levelData, database);
             LineSlideMoveRule rule = new LineSlideMoveRule();
+            BoardModel rowBoard = CreateBoard(levelData, database);
+            BoardModel columnBoard = CreateBoard(levelData, database);
+            BoardModel unaffectedBoard = CreateBoard(levelData, database);
 
-            Assert.That(rule.TryApply(board, new BoardMoveRequest(MoveAxis.Row, 1, LineSlideDirection.Right, 1, 1), out _), Is.False);
-            Assert.That(rule.TryApply(board, new BoardMoveRequest(MoveAxis.Column, 1, LineSlideDirection.Down, 1, 1), out _), Is.False);
-            Assert.That(rule.TryApply(board, new BoardMoveRequest(MoveAxis.Row, 0, LineSlideDirection.Right, 1, 0), out _), Is.True);
+            Assert.That(rule.TryApply(rowBoard, new BoardMoveRequest(MoveAxis.Row, 1, LineSlideDirection.Right, 1, 1), out _), Is.True);
+            Assert.That(rule.TryApply(columnBoard, new BoardMoveRequest(MoveAxis.Column, 1, LineSlideDirection.Down, 1, 1), out _), Is.True);
+            Assert.That(rule.TryApply(unaffectedBoard, new BoardMoveRequest(MoveAxis.Row, 0, LineSlideDirection.Right, 1, 0), out _), Is.True);
         }
 
         [Test]
-        public void ResolveBoard_MatchAdjacentToChocolate_BreaksChocolateAndKeepsBaseTile()
+        public void ResolveBoard_MatchAdjacentToChocolate_BreaksChocolateAndKeepsTile()
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
                 CreateNormalTile(102, AnimalTileId.Dog),
                 CreateNormalTile(103, AnimalTileId.Fox),
-                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker));
+                CreateChocolateOverlayTile(303, 1));
 
             Match3LevelData levelData = CreateLevelData(3, 2, new[]
             {
@@ -773,23 +818,23 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             BoardResolutionService.ResolveBoard(board, levelData, database, new System.Random(0));
 
             CellModel chocolateCell = board.GetCell(1, 1);
-            Assert.That(chocolateCell.OverlayTile, Is.Null);
-            Assert.That(chocolateCell.BaseTile, Is.Not.Null);
-            Assert.That(chocolateCell.BaseTile.TileId, Is.EqualTo(102));
+            Assert.That(chocolateCell.Overlay, Is.Null);
+            Assert.That(chocolateCell.Tile, Is.Not.Null);
+            Assert.That(chocolateCell.Tile.TileId, Is.EqualTo(102));
         }
 
         [Test]
-        public void BombActivation_BreaksChocolateAndPreservesBaseTile()
+        public void BombActivation_BreaksChocolateAndPreservesTile()
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(201, TileLogicType.BombBooster),
-                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker));
+                CreateBoosterTile(151, TileLogicType.BombBooster),
+                CreateChocolateOverlayTile(303, 1));
 
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
                 101, 101, 101,
-                101, 201, 101,
+                101, 151, 101,
                 101, 101, 101
             });
             levelData.overlayLayout = new[]
@@ -805,7 +850,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             CellModel centerCell = board.GetCell(1, 1);
             CellModel chocolateCell = board.GetCell(1, 2);
 
-            centerCell.CurrentTile.Activate(board, centerCell, fxContext);
+            centerCell.Tile.Activate(board, centerCell, fxContext);
 
             Assert.That(cascadeTrace.ClearPhase.DamageOps.Exists(op =>
                 op.Cell.Equals(new BoardCellPosition(1, 2)) &&
@@ -815,9 +860,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
                 op.Cell.Equals(new BoardCellPosition(1, 2)) &&
                 op.Layer == TileStackLayer.Overlay &&
                 op.TileId == 303), Is.True);
-            Assert.That(chocolateCell.OverlayTile, Is.Null);
-            Assert.That(chocolateCell.BaseTile, Is.Not.Null);
-            Assert.That(chocolateCell.BaseTile.TileId, Is.EqualTo(101));
+            Assert.That(chocolateCell.Overlay, Is.Null);
+            Assert.That(chocolateCell.Tile, Is.Not.Null);
+            Assert.That(chocolateCell.Tile.TileId, Is.EqualTo(101));
             Assert.That(cascadeTrace.ClearPhase.ClearOps.Exists(op =>
                 op.Cell.Equals(new BoardCellPosition(1, 2)) &&
                 op.Layer == TileStackLayer.Base),
@@ -830,14 +875,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
                 CreateNormalTile(102, AnimalTileId.Dog),
-                CreateBoosterTile(201, TileLogicType.BombBooster),
-                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker));
+                CreateBoosterTile(151, TileLogicType.BombBooster),
+                CreateChocolateOverlayTile(303, 1));
 
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
                 101, 102, 101,
                 101, 101, 101,
-                101, 101, 201
+                101, 101, 151
             });
             levelData.playableMask = new[]
             {
@@ -884,10 +929,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(createOp.ReplaceSourceTileView, Is.False);
             Assert.That(createOp.Cell, Is.EqualTo(new BoardCellPosition(1, 0)));
 
-            Assert.That(board.GetCell(0, 0).OverlayTile, Is.Not.Null);
-            Assert.That(board.GetCell(0, 0).OverlayTile.TileId, Is.EqualTo(303));
-            Assert.That(board.GetCell(1, 0).OverlayTile, Is.Not.Null);
-            Assert.That(board.GetCell(1, 0).OverlayTile.TileId, Is.EqualTo(303));
+            Assert.That(board.GetCell(0, 0).Overlay, Is.Not.Null);
+            Assert.That(board.GetCell(0, 0).Overlay.TileId, Is.EqualTo(303));
+            Assert.That(board.GetCell(1, 0).Overlay, Is.Not.Null);
+            Assert.That(board.GetCell(1, 0).Overlay.TileId, Is.EqualTo(303));
         }
 
         [Test]
@@ -896,14 +941,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
                 CreateNormalTile(102, AnimalTileId.Dog),
-                CreateBoosterTile(201, TileLogicType.BombBooster),
-                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker, 2));
+                CreateBoosterTile(151, TileLogicType.BombBooster),
+                CreateChocolateOverlayTile(303, 1, 2));
 
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
                 101, 102, 101,
                 101, 101, 101,
-                101, 101, 201
+                101, 101, 151
             });
             levelData.playableMask = new[]
             {
@@ -944,12 +989,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(result.IsApplied, Is.True);
             Assert.That(result.IsAccepted, Is.True);
             Assert.That(createOps.Count, Is.EqualTo(2));
-            Assert.That(board.GetCell(0, 0).OverlayTile, Is.Not.Null);
-            Assert.That(board.GetCell(0, 0).OverlayTile.TileId, Is.EqualTo(303));
-            Assert.That(board.GetCell(1, 0).OverlayTile, Is.Not.Null);
-            Assert.That(board.GetCell(1, 0).OverlayTile.TileId, Is.EqualTo(303));
-            Assert.That(board.GetCell(2, 0).OverlayTile, Is.Not.Null);
-            Assert.That(board.GetCell(2, 0).OverlayTile.TileId, Is.EqualTo(303));
+            Assert.That(board.GetCell(0, 0).Overlay, Is.Not.Null);
+            Assert.That(board.GetCell(0, 0).Overlay.TileId, Is.EqualTo(303));
+            Assert.That(board.GetCell(1, 0).Overlay, Is.Not.Null);
+            Assert.That(board.GetCell(1, 0).Overlay.TileId, Is.EqualTo(303));
+            Assert.That(board.GetCell(2, 0).Overlay, Is.Not.Null);
+            Assert.That(board.GetCell(2, 0).Overlay.TileId, Is.EqualTo(303));
         }
 
         [Test]
@@ -958,14 +1003,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
                 CreateNormalTile(102, AnimalTileId.Dog),
-                CreateBoosterTile(201, TileLogicType.BombBooster),
-                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker, 1, 2));
+                CreateBoosterTile(151, TileLogicType.BombBooster),
+                CreateChocolateOverlayTile(303, 1, 1, 2));
 
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
                 101, 102, 101,
                 101, 101, 101,
-                101, 101, 201
+                101, 101, 151
             });
             levelData.playableMask = new[]
             {
@@ -994,7 +1039,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(firstResult.IsAccepted, Is.True);
             Assert.That(firstResult.PresentationTrace.Cascades.TrueForAll(cascade =>
                 cascade.ClearPhase.SpecialCreateOps.TrueForAll(op => op.ToTileId != 303)), Is.True);
-            Assert.That(board.GetCell(1, 0).OverlayTile, Is.Null);
+            Assert.That(board.GetCell(1, 0).Overlay, Is.Null);
 
             BoardMoveExecutionResult secondResult = BoardResolutionService.ExecuteTileActivation(
                 board,
@@ -1007,8 +1052,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(secondResult.IsAccepted, Is.True);
             Assert.That(secondResult.PresentationTrace.Cascades.Exists(cascade =>
                 cascade.ClearPhase.SpecialCreateOps.Exists(op => op.ToTileId == 303)), Is.True);
-            Assert.That(board.GetCell(1, 0).OverlayTile, Is.Not.Null);
-            Assert.That(board.GetCell(1, 0).OverlayTile.TileId, Is.EqualTo(303));
+            Assert.That(board.GetCell(1, 0).Overlay, Is.Not.Null);
+            Assert.That(board.GetCell(1, 0).Overlay.TileId, Is.EqualTo(303));
         }
 
         [Test]
@@ -1016,13 +1061,13 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         {
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(201, TileLogicType.BombBooster),
-                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker));
+                CreateBoosterTile(151, TileLogicType.BombBooster),
+                CreateChocolateOverlayTile(303, 1));
 
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
                 101, 101, 101,
-                101, 201, 101,
+                101, 151, 101,
                 101, 101, 101
             });
             levelData.overlayLayout = new[]
@@ -1046,7 +1091,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(result.IsAccepted, Is.True);
             Assert.That(result.PresentationTrace.Cascades.TrueForAll(cascade =>
                 cascade.ClearPhase.SpecialCreateOps.TrueForAll(op => op.ToTileId != 303)), Is.True);
-            Assert.That(board.GetCell(1, 2).OverlayTile, Is.Null);
+            Assert.That(board.GetCell(1, 2).Overlay, Is.Null);
         }
 
         [Test]
@@ -1055,7 +1100,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Match3TileDatabaseSO database = CreateDatabase(
                 CreateNormalTile(101, AnimalTileId.Cat),
                 CreateNormalTile(102, AnimalTileId.Dog),
-                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker));
+                CreateChocolateOverlayTile(303, 1));
 
             Match3LevelData levelData = CreateLevelData(4, 2, new[]
             {
@@ -1078,22 +1123,22 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
 
             BoardResolutionService.ResolveBoard(board, levelData, database, new System.Random(0));
 
-            Assert.That(board.GetCell(0, 0).OverlayTile, Is.Not.Null);
-            Assert.That(board.GetCell(0, 0).OverlayTile.TileId, Is.EqualTo(303));
-            Assert.That(board.GetCell(1, 0).OverlayTile, Is.Null);
+            Assert.That(board.GetCell(0, 0).Overlay, Is.Not.Null);
+            Assert.That(board.GetCell(0, 0).Overlay.TileId, Is.EqualTo(303));
+            Assert.That(board.GetCell(1, 0).Overlay, Is.Null);
         }
 
         [Test]
-        public void LineSlideMoveRule_CakeBaseTileCanMoveWithLine()
+        public void LineSlideMoveRule_CakeTileCanMoveWithLine()
         {
             Match3TileDatabaseSO database = CreateDatabase(
-                CreateMechanicTile(401, TileLogicType.CakeDelivery),
+                CreateMechanicTile(201, TileLogicType.CakeDelivery),
                 CreateNormalTile(101, AnimalTileId.Cat),
                 CreateNormalTile(102, AnimalTileId.Dog));
 
             Match3LevelData levelData = CreateLevelData(3, 2, new[]
             {
-                401, 101, 102,
+                201, 101, 102,
                 101, 101, 101
             });
 
@@ -1107,10 +1152,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         public void BoardMatchFinder_CakeDoesNotParticipateInMatches()
         {
             Match3TileDatabaseSO database = CreateDatabase(
-                CreateMechanicTile(401, TileLogicType.CakeDelivery),
+                CreateMechanicTile(201, TileLogicType.CakeDelivery),
                 CreateNormalTile(101, AnimalTileId.Cat));
 
-            Match3LevelData levelData = CreateLevelData(3, 1, new[] { 101, 401, 101 });
+            Match3LevelData levelData = CreateLevelData(3, 1, new[] { 101, 201, 101 });
             BoardModel board = CreateBoard(levelData, database);
 
             BoardMatchAnalysis analysis = new BoardMatchFinder().Analyze(board);
@@ -1122,14 +1167,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         public void BombActivation_DoesNotDestroyCakeDirectly()
         {
             Match3TileDatabaseSO database = CreateDatabase(
-                CreateMechanicTile(401, TileLogicType.CakeDelivery),
+                CreateMechanicTile(201, TileLogicType.CakeDelivery),
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(201, TileLogicType.BombBooster));
+                CreateBoosterTile(151, TileLogicType.BombBooster));
 
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
-                101, 401, 101,
                 101, 201, 101,
+                101, 151, 101,
                 101, 101, 101
             });
 
@@ -1139,25 +1184,25 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             CellModel centerCell = board.GetCell(1, 1);
             CellModel cakeCell = board.GetCell(1, 0);
 
-            centerCell.CurrentTile.Activate(board, centerCell, fxContext);
+            centerCell.Tile.Activate(board, centerCell, fxContext);
 
-            Assert.That(cakeCell.BaseTile, Is.Not.Null);
-            Assert.That(cakeCell.BaseTile.TileId, Is.EqualTo(401));
-            Assert.That(cascadeTrace.ClearPhase.ClearOps.Exists(op => op.TileId == 401), Is.False);
+            Assert.That(cakeCell.Tile, Is.Not.Null);
+            Assert.That(cakeCell.Tile.TileId, Is.EqualTo(201));
+            Assert.That(cascadeTrace.ClearPhase.ClearOps.Exists(op => op.TileId == 201), Is.False);
         }
 
         [Test]
         public void ExecuteTileActivation_CakeAtBottomAfterGravity_IsDeliveredAndClearedForTarget()
         {
             Match3TileDatabaseSO database = CreateDatabase(
-                CreateMechanicTile(401, TileLogicType.CakeDelivery),
+                CreateMechanicTile(201, TileLogicType.CakeDelivery),
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(201, TileLogicType.BombBooster));
+                CreateBoosterTile(151, TileLogicType.BombBooster));
 
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
-                101, 401, 101,
                 101, 201, 101,
+                101, 151, 101,
                 101, 101, 101
             });
             levelData.spawnableTileIds = new List<int> { 101 };
@@ -1175,25 +1220,25 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(result.IsAccepted, Is.True);
             Assert.That(result.PresentationTrace.Cascades.Exists(cascade =>
                 cascade.ClearPhase.ClearOps.Exists(op =>
-                    op.TileId == 401 &&
+                    op.TileId == 201 &&
                     op.Layer == TileStackLayer.Base &&
                     op.Cell.Equals(new BoardCellPosition(1, 2)))), Is.True);
-            Assert.That(board.GetCell(1, 2).BaseTile, Is.Not.Null);
-            Assert.That(board.GetCell(1, 2).BaseTile.TileId, Is.EqualTo(101));
-            Assert.That(AllCells(board, tileId: 401), Is.False);
+            Assert.That(board.GetCell(1, 2).Tile, Is.Not.Null);
+            Assert.That(board.GetCell(1, 2).Tile.TileId, Is.EqualTo(101));
+            Assert.That(AllCells(board, tileId: 201), Is.False);
         }
 
         [Test]
         public void ResolveBoard_DoesNotAutoDeliverCakeOutsideTurnResolution()
         {
             Match3TileDatabaseSO database = CreateDatabase(
-                CreateMechanicTile(401, TileLogicType.CakeDelivery),
+                CreateMechanicTile(201, TileLogicType.CakeDelivery),
                 CreateNormalTile(101, AnimalTileId.Cat));
 
             Match3LevelData levelData = CreateLevelData(1, 2, new[]
             {
                 101,
-                401
+                201
             });
             levelData.spawnableTileIds = new List<int> { 101 };
 
@@ -1201,21 +1246,21 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
 
             BoardResolutionService.ResolveBoard(board, levelData, database, new System.Random(0));
 
-            Assert.That(board.GetCell(0, 1).BaseTile, Is.Not.Null);
-            Assert.That(board.GetCell(0, 1).BaseTile.TileId, Is.EqualTo(401));
+            Assert.That(board.GetCell(0, 1).Tile, Is.Not.Null);
+            Assert.That(board.GetCell(0, 1).Tile.TileId, Is.EqualTo(201));
         }
 
         [Test]
-        public void LineSlideMoveRule_StoneBaseTileCanMoveWithLine()
+        public void LineSlideMoveRule_StoneTileCanMoveWithLine()
         {
             Match3TileDatabaseSO database = CreateDatabase(
-                CreateMechanicTile(402, TileLogicType.StoneMechanic),
+                CreateMechanicTile(231, TileLogicType.StoneMechanic),
                 CreateNormalTile(101, AnimalTileId.Cat),
                 CreateNormalTile(102, AnimalTileId.Dog));
 
             Match3LevelData levelData = CreateLevelData(3, 2, new[]
             {
-                402, 101, 102,
+                231, 101, 102,
                 101, 101, 101
             });
 
@@ -1229,10 +1274,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         public void BoardMatchFinder_StoneDoesNotParticipateInMatches()
         {
             Match3TileDatabaseSO database = CreateDatabase(
-                CreateMechanicTile(402, TileLogicType.StoneMechanic),
+                CreateMechanicTile(231, TileLogicType.StoneMechanic),
                 CreateNormalTile(101, AnimalTileId.Cat));
 
-            Match3LevelData levelData = CreateLevelData(3, 1, new[] { 101, 402, 101 });
+            Match3LevelData levelData = CreateLevelData(3, 1, new[] { 101, 231, 101 });
             BoardModel board = CreateBoard(levelData, database);
 
             BoardMatchAnalysis analysis = new BoardMatchFinder().Analyze(board);
@@ -1244,7 +1289,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         public void ResolveBoard_MatchAdjacentToStone_DoesNotDestroyStone()
         {
             Match3TileDatabaseSO database = CreateDatabase(
-                CreateMechanicTile(402, TileLogicType.StoneMechanic),
+                CreateMechanicTile(231, TileLogicType.StoneMechanic),
                 CreateNormalTile(101, AnimalTileId.Cat),
                 CreateNormalTile(102, AnimalTileId.Dog),
                 CreateNormalTile(103, AnimalTileId.Fox));
@@ -1252,7 +1297,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Match3LevelData levelData = CreateLevelData(3, 2, new[]
             {
                 101, 101, 101,
-                102, 402, 103
+                102, 231, 103
             });
             levelData.spawnableTileIds = new List<int> { 102, 103 };
 
@@ -1260,22 +1305,22 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
 
             BoardResolutionService.ResolveBoard(board, levelData, database, new System.Random(0));
 
-            Assert.That(board.GetCell(1, 1).BaseTile, Is.Not.Null);
-            Assert.That(board.GetCell(1, 1).BaseTile.TileId, Is.EqualTo(402));
+            Assert.That(board.GetCell(1, 1).Tile, Is.Not.Null);
+            Assert.That(board.GetCell(1, 1).Tile.TileId, Is.EqualTo(231));
         }
 
         [Test]
         public void BombActivation_DestroysStoneDirectly()
         {
             Match3TileDatabaseSO database = CreateDatabase(
-                CreateMechanicTile(402, TileLogicType.StoneMechanic),
+                CreateMechanicTile(231, TileLogicType.StoneMechanic),
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(201, TileLogicType.BombBooster));
+                CreateBoosterTile(151, TileLogicType.BombBooster));
 
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
-                101, 402, 101,
-                101, 201, 101,
+                101, 231, 101,
+                101, 151, 101,
                 101, 101, 101
             });
 
@@ -1285,29 +1330,29 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             CellModel centerCell = board.GetCell(1, 1);
             CellModel stoneCell = board.GetCell(1, 0);
 
-            centerCell.CurrentTile.Activate(board, centerCell, fxContext);
+            centerCell.Tile.Activate(board, centerCell, fxContext);
 
             Assert.That(cascadeTrace.ClearPhase.DamageOps.Exists(op =>
-                op.TileId == 402 &&
+                op.TileId == 231 &&
                 op.Layer == TileStackLayer.Base &&
                 op.Cell.Equals(new BoardCellPosition(1, 0))), Is.True);
             Assert.That(cascadeTrace.ClearPhase.ClearOps.Exists(op =>
-                op.TileId == 402 &&
+                op.TileId == 231 &&
                 op.Layer == TileStackLayer.Base &&
                 op.Cell.Equals(new BoardCellPosition(1, 0))), Is.True);
-            Assert.That(stoneCell.BaseTile, Is.Null);
+            Assert.That(stoneCell.Tile, Is.Null);
         }
 
         [Test]
-        public void BoardModel_PopulateBoard_MechanicOverlayIdsArePromotedToBaseTiles()
+        public void BoardModel_PopulateBoard_MechanicOverlayIdsArePromotedToTiles()
         {
             Match3TileDatabaseSO database = CreateDatabase(
-                CreateMechanicTile(401, TileLogicType.CakeDelivery),
-                CreateMechanicTile(402, TileLogicType.StoneMechanic),
-                CreateBlockerTile(301, 1),
-                CreateBlockerTile(302, 1, TileLogicType.BubbleBlocker));
+                CreateMechanicTile(201, TileLogicType.CakeDelivery),
+                CreateMechanicTile(231, TileLogicType.StoneMechanic),
+                CreateOverlayTile(301, 1),
+                CreateOverlayTile(302, 1, TileLogicType.BubbleOverlay));
 
-            Match3LevelData levelData = CreateLevelData(2, 1, new[] { 401, 402 });
+            Match3LevelData levelData = CreateLevelData(2, 1, new[] { 201, 231 });
             levelData.overlayLayout = new[]
             {
                 301, 302
@@ -1315,28 +1360,28 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
 
             BoardModel board = CreateBoard(levelData, database);
 
-            Assert.That(board.GetCell(0, 0).BaseTile, Is.Not.Null);
-            Assert.That(board.GetCell(0, 0).BaseTile.TileId, Is.EqualTo(401));
-            Assert.That(board.GetCell(0, 0).OverlayTile, Is.Null);
-            Assert.That(board.GetCell(1, 0).BaseTile, Is.Not.Null);
-            Assert.That(board.GetCell(1, 0).BaseTile.TileId, Is.EqualTo(402));
-            Assert.That(board.GetCell(1, 0).OverlayTile, Is.Null);
+            Assert.That(board.GetCell(0, 0).Tile, Is.Not.Null);
+            Assert.That(board.GetCell(0, 0).Tile.TileId, Is.EqualTo(201));
+            Assert.That(board.GetCell(0, 0).Overlay, Is.Null);
+            Assert.That(board.GetCell(1, 0).Tile, Is.Not.Null);
+            Assert.That(board.GetCell(1, 0).Tile.TileId, Is.EqualTo(231));
+            Assert.That(board.GetCell(1, 0).Overlay, Is.Null);
         }
 
         [Test]
-        public void ExecuteTileActivation_NoChocolateCleared_DoesNotGrowOntoMechanicBaseTile()
+        public void ExecuteTileActivation_NoChocolateCleared_DoesNotGrowOntoTargetTile()
         {
             Match3TileDatabaseSO database = CreateDatabase(
-                CreateMechanicTile(401, TileLogicType.CakeDelivery),
+                CreateMechanicTile(201, TileLogicType.CakeDelivery),
                 CreateNormalTile(101, AnimalTileId.Cat),
-                CreateBoosterTile(201, TileLogicType.BombBooster),
-                CreateBlockerTile(303, 1, TileLogicType.ChocolateBlocker));
+                CreateBoosterTile(151, TileLogicType.BombBooster),
+                CreateChocolateOverlayTile(303, 1));
 
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
             {
-                101, 401, 0,
+                101, 201, 0,
                 0, 0, 101,
-                101, 101, 201
+                101, 101, 151
             });
             levelData.playableMask = new[]
             {
@@ -1365,11 +1410,132 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Assert.That(result.IsAccepted, Is.True);
             Assert.That(result.PresentationTrace.Cascades.Exists(cascade =>
                 cascade.ClearPhase.SpecialCreateOps.Exists(op => op.ToTileId == 303)), Is.False);
-            Assert.That(board.GetCell(1, 0).BaseTile, Is.Not.Null);
-            Assert.That(board.GetCell(1, 0).BaseTile.TileId, Is.EqualTo(401));
-            Assert.That(board.GetCell(1, 0).OverlayTile, Is.Null);
-            Assert.That(board.GetCell(0, 0).OverlayTile, Is.Not.Null);
-            Assert.That(board.GetCell(0, 0).OverlayTile.TileId, Is.EqualTo(303));
+            Assert.That(board.GetCell(1, 0).Tile, Is.Not.Null);
+            Assert.That(board.GetCell(1, 0).Tile.TileId, Is.EqualTo(201));
+            Assert.That(board.GetCell(1, 0).Overlay, Is.Null);
+            Assert.That(board.GetCell(0, 0).Overlay, Is.Not.Null);
+            Assert.That(board.GetCell(0, 0).Overlay.TileId, Is.EqualTo(303));
+        }
+
+        [Test]
+        public void ExecuteChargedPlacement_ReplacesNormalTileWithoutConsumingMove()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBoosterTile(155, TileLogicType.ChargedSweepBooster));
+
+            Match3LevelData levelData = CreateLevelData(1, 1, new[] { 101 });
+            BoardModel board = CreateBoard(levelData, database);
+            int movesBefore = board.RemainingMoves;
+
+            BoardMoveExecutionResult result = BoardResolutionService.ExecuteChargedPlacement(
+                board,
+                0,
+                0,
+                155,
+                database,
+                new System.Random(0));
+
+            Assert.That(result.IsApplied, Is.True);
+            Assert.That(result.IsAccepted, Is.True);
+            Assert.That(result.Kind, Is.EqualTo(BoardExecutionKind.ChargedPlacement));
+            Assert.That(result.PresentationTrace.Cascades.Count, Is.EqualTo(1));
+            Assert.That(result.PresentationTrace.Cascades[0].ClearPhase.SpecialCreateOps.Count, Is.EqualTo(1));
+            Assert.That(board.RemainingMoves, Is.EqualTo(movesBefore));
+            Assert.That(board.GetCell(0, 0).Tile, Is.Not.Null);
+            Assert.That(board.GetCell(0, 0).Tile.TileId, Is.EqualTo(155));
+        }
+
+        [Test]
+        public void ChargedSweepActivation_SelectsNormalAnimalAndRespectsBlockingOverlay()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBoosterTile(155, TileLogicType.ChargedSweepBooster),
+                CreateMechanicTile(201, TileLogicType.CakeDelivery),
+                CreateMechanicTile(231, TileLogicType.StoneMechanic),
+                CreateOverlayTile(301, 1, TileLogicType.IceOverlay));
+
+            Match3LevelData levelData = CreateLevelData(3, 3, new[]
+            {
+                101, 101, 0,
+                231, 155, 201,
+                0, 0, 0
+            });
+            levelData.overlayLayout = new[]
+            {
+                301, 0, 0,
+                0, 0, 0,
+                0, 0, 0
+            };
+
+            BoardModel board = CreateBoard(levelData, database);
+            CascadeTrace cascadeTrace = new CascadeTrace();
+            BoardFxContext fxContext = new BoardFxContext(cascadeTrace, new System.Random(0));
+            CellModel sourceCell = board.GetCell(1, 1);
+
+            sourceCell.Tile.Activate(board, sourceCell, fxContext);
+
+            Assert.That(cascadeTrace.ClearPhase.ActivateOps.Count, Is.EqualTo(1));
+            Assert.That(cascadeTrace.ClearPhase.TargetSelectionOps.Count, Is.EqualTo(1));
+            Assert.That(cascadeTrace.ClearPhase.TargetSelectionOps[0].TargetCell, Is.EqualTo(new BoardCellPosition(1, 0)));
+            Assert.That(cascadeTrace.ClearPhase.ClearOps.Exists(op => op.TileId == 155), Is.True);
+            Assert.That(cascadeTrace.ClearPhase.ClearOps.Exists(op =>
+                op.TileId == 101 &&
+                op.Layer == TileStackLayer.Base &&
+                op.Cell.Equals(new BoardCellPosition(1, 0))), Is.True);
+            Assert.That(cascadeTrace.ClearPhase.ClearOps.Exists(op =>
+                op.TileId == 101 &&
+                op.Layer == TileStackLayer.Base &&
+                op.Cell.Equals(new BoardCellPosition(0, 0))), Is.False);
+            Assert.That(cascadeTrace.ClearPhase.ClearOps.Exists(op =>
+                op.TileId == 301 &&
+                op.Layer == TileStackLayer.Overlay &&
+                op.Cell.Equals(new BoardCellPosition(0, 0))), Is.True);
+            Assert.That(board.GetCell(0, 0).Tile, Is.Not.Null);
+            Assert.That(board.GetCell(0, 0).Tile.TileId, Is.EqualTo(101));
+        }
+
+        [Test]
+        public void ExecuteChargedCombo_ClearsFullBoardIncludingBlockersAndMechanics()
+        {
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateBoosterTile(155, TileLogicType.ChargedSweepBooster),
+                CreateOverlayTile(301, 1),
+                CreateMechanicTile(201, TileLogicType.CakeDelivery));
+
+            Match3LevelData levelData = CreateLevelData(2, 2, new[]
+            {
+                155, 155,
+                201, 101
+            });
+            levelData.overlayLayout = new[]
+            {
+                0, 0,
+                301, 0
+            };
+            levelData.spawnableTileIds = new List<int> { 101 };
+
+            BoardModel board = CreateBoard(levelData, database);
+            int movesBefore = board.RemainingMoves;
+
+            BoardMoveExecutionResult result = BoardResolutionService.ExecuteChargedCombo(
+                board,
+                new BoardCellPosition(0, 0),
+                new BoardCellPosition(1, 0),
+                levelData,
+                database,
+                new System.Random(0));
+
+            Assert.That(result.IsApplied, Is.True);
+            Assert.That(result.IsAccepted, Is.True);
+            Assert.That(result.Kind, Is.EqualTo(BoardExecutionKind.ChargedCombo));
+            Assert.That(board.RemainingMoves, Is.EqualTo(movesBefore - 1));
+            Assert.That(result.PresentationTrace.Cascades[0].ClearPhase.ClearOps.Exists(op => op.TileId == 155), Is.True);
+            Assert.That(result.PresentationTrace.Cascades[0].ClearPhase.ClearOps.Exists(op => op.TileId == 201), Is.True);
+            Assert.That(result.PresentationTrace.Cascades[0].ClearPhase.ClearOps.Exists(op => op.TileId == 301), Is.True);
+            Assert.That(result.PresentationTrace.Cascades[0].ClearPhase.ClearOps.Exists(op => op.TileId == 101), Is.True);
         }
 
         private static Match3LevelData CreateFilledLevel(int width, int height, int tileId)
@@ -1390,7 +1556,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
                 width = width,
                 height = height,
                 movesLimit = 20,
-                gridLayout = layout,
+                tileLayout = layout,
                 overlayLayout = new int[layout.Length],
                 spawnableTileIds = new List<int>()
             };
@@ -1399,14 +1565,35 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         private static BoardModel CreateBoard(Match3LevelData levelData, Match3TileDatabaseSO database)
         {
             BoardModel board = new BoardModel(levelData);
-            board.PopulateBoard(levelData.gridLayout, levelData.overlayLayout, database);
+            board.PopulateBoard(levelData.underlayLayout, levelData.tileLayout, levelData.overlayLayout, database);
             return board;
         }
 
-        private static Match3TileDatabaseSO CreateDatabase(params TileDefinitionSO[] tiles)
+        private static Match3TileDatabaseSO CreateDatabase(params BoardContentDefinitionSO[] definitions)
         {
             Match3TileDatabaseSO database = ScriptableObject.CreateInstance<Match3TileDatabaseSO>();
-            SetPrivateField(database, "tiles", new List<TileDefinitionSO>(tiles));
+            List<TileDefinitionSO> tileDefinitions = new List<TileDefinitionSO>();
+            List<OverlayDefinitionSO> overlayDefinitions = new List<OverlayDefinitionSO>();
+            List<UnderlayDefinitionSO> underlayDefinitions = new List<UnderlayDefinitionSO>();
+            for (int i = 0; i < definitions.Length; i++)
+            {
+                switch (definitions[i])
+                {
+                    case TileDefinitionSO tileDefinition:
+                        tileDefinitions.Add(tileDefinition);
+                        break;
+                    case OverlayDefinitionSO overlayDefinition:
+                        overlayDefinitions.Add(overlayDefinition);
+                        break;
+                    case UnderlayDefinitionSO underlayDefinition:
+                        underlayDefinitions.Add(underlayDefinition);
+                        break;
+                }
+            }
+
+            SetPrivateField(database, "tileDefinitions", tileDefinitions);
+            SetPrivateField(database, "overlayDefinitions", overlayDefinitions);
+            SetPrivateField(database, "underlayDefinitions", underlayDefinitions);
             database.RebuildCache();
             return database;
         }
@@ -1431,11 +1618,26 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             return tile;
         }
 
-        private static BlockerTileDefinitionSO CreateBlockerTile(int tileId, int defaultHp, TileLogicType logicType = TileLogicType.IceBlocker, int growthPerTurn = 1, int growthTurnInterval = 1)
+        private static OverlayDefinitionSO CreateOverlayTile(int tileId, int defaultHp, TileLogicType logicType = TileLogicType.IceOverlay, int growthPerTurn = 1, int growthTurnInterval = 1)
         {
-            BlockerTileDefinitionSO tile = ScriptableObject.CreateInstance<BlockerTileDefinitionSO>();
+            OverlayDefinitionSO tile = logicType == TileLogicType.BubbleOverlay
+                ? ScriptableObject.CreateInstance<BubbleOverlayDefinitionSO>()
+                : ScriptableObject.CreateInstance<IceOverlayDefinitionSO>();
             SetPrivateField(tile, "tileId", tileId);
-            SetPrivateField(tile, "blockerLogicType", logicType);
+            SetPrivateField(tile, "defaultHP", defaultHp);
+            SetPrivateField(tile, "canSpawnOnRefill", false);
+            SetPrivateField(tile, "spawnWeight", 0);
+            return tile;
+        }
+
+        private static ChocolateOverlayDefinitionSO CreateChocolateOverlayTile(
+            int tileId,
+            int defaultHp,
+            int growthPerTurn = 1,
+            int growthTurnInterval = 1)
+        {
+            ChocolateOverlayDefinitionSO tile = ScriptableObject.CreateInstance<ChocolateOverlayDefinitionSO>();
+            SetPrivateField(tile, "tileId", tileId);
             SetPrivateField(tile, "defaultHP", defaultHp);
             SetPrivateField(tile, "growthPerTurn", growthPerTurn);
             SetPrivateField(tile, "growthTurnInterval", growthTurnInterval);
@@ -1444,11 +1646,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             return tile;
         }
 
-        private static MechanicTileDefinitionSO CreateMechanicTile(int tileId, TileLogicType logicType)
+        private static TileDefinitionSO CreateMechanicTile(int tileId, TileLogicType logicType)
         {
-            MechanicTileDefinitionSO tile = ScriptableObject.CreateInstance<MechanicTileDefinitionSO>();
+            TileDefinitionSO tile = logicType == TileLogicType.StoneMechanic
+                ? ScriptableObject.CreateInstance<StoneTileDefinitionSO>()
+                : ScriptableObject.CreateInstance<DeliveryTileDefinitionSO>();
             SetPrivateField(tile, "tileId", tileId);
-            SetPrivateField(tile, "mechanicLogicType", logicType);
             SetPrivateField(tile, "canSpawnOnRefill", false);
             SetPrivateField(tile, "spawnWeight", 0);
             return tile;
@@ -1458,7 +1661,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         {
             foreach (CellModel cell in board.GetAllCells())
             {
-                if (cell?.BaseTile != null && cell.BaseTile.TileId == tileId)
+                if (cell?.Tile != null && cell.Tile.TileId == tileId)
                 {
                     return true;
                 }
@@ -1472,7 +1675,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             List<int> ids = new List<int>();
             foreach (CellModel cell in board.GetAllCells())
             {
-                ids.Add(cell.CurrentTile != null ? cell.CurrentTile.TileId : 0);
+                ids.Add(cell.Tile != null ? cell.Tile.TileId : 0);
             }
 
             return ids.ToArray();
@@ -1493,3 +1696,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         }
     }
 }
+

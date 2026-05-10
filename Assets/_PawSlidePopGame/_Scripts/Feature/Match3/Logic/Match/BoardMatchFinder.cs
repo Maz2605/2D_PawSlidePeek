@@ -140,7 +140,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Match
             int x = isHorizontal ? start : line;
             int y = isHorizontal ? line : start;
             CellModel seedCell = board.GetCell(x, y);
-            TileModel seed = seedCell != null && seedCell.CanBaseTileMatch() ? seedCell.BaseTile : null;
+            TileModel seed = seedCell != null && seedCell.CanTileMatch() ? seedCell.Tile : null;
             if (!IsMatchable(seed))
             {
                 return 0;
@@ -153,7 +153,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Match
                 int candidateX = isHorizontal ? index : line;
                 int candidateY = isHorizontal ? line : index;
                 CellModel candidateCell = board.GetCell(candidateX, candidateY);
-                TileModel candidate = candidateCell != null && candidateCell.CanBaseTileMatch() ? candidateCell.BaseTile : null;
+                TileModel candidate = candidateCell != null && candidateCell.CanTileMatch() ? candidateCell.Tile : null;
                 if (!seed.IsMatchableWith(candidate))
                 {
                     break;
@@ -199,7 +199,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Match
             Dictionary<CellModel, int> groupIds,
             int groupId)
         {
-            if (startCell?.BaseTile == null || !startCell.CanBaseTileMatch() || !(startCell.BaseTile.Definition is NormalAnimalTileDefinitionSO definition))
+            if (startCell?.Tile == null || !startCell.CanTileMatch() || !(startCell.Tile.Definition is NormalAnimalTileDefinitionSO definition))
             {
                 return null;
             }
@@ -267,12 +267,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Match
             Queue<CellModel> queue)
         {
             CellModel neighbor = board.GetCell(x, y);
-            if (neighbor?.BaseTile == null || !neighbor.CanBaseTileMatch() || groupIds.ContainsKey(neighbor) || !matchedCells.Contains(neighbor))
+            if (neighbor?.Tile == null || !neighbor.CanTileMatch() || groupIds.ContainsKey(neighbor) || !matchedCells.Contains(neighbor))
             {
                 return;
             }
 
-            if (!(neighbor.BaseTile.Definition is NormalAnimalTileDefinitionSO definition) || definition.AnimalId != animalId)
+            if (!(neighbor.Tile.Definition is NormalAnimalTileDefinitionSO definition) || definition.AnimalId != animalId)
             {
                 return;
             }
@@ -308,17 +308,17 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Match
         private static bool FormsSquare(CellModel topLeft, CellModel topRight, CellModel bottomLeft, CellModel bottomRight)
         {
             if (topLeft == null || topRight == null || bottomLeft == null || bottomRight == null ||
-                !topLeft.CanBaseTileMatch() ||
-                !topRight.CanBaseTileMatch() ||
-                !bottomLeft.CanBaseTileMatch() ||
-                !bottomRight.CanBaseTileMatch())
+                !topLeft.CanTileMatch() ||
+                !topRight.CanTileMatch() ||
+                !bottomLeft.CanTileMatch() ||
+                !bottomRight.CanTileMatch())
             {
                 return false;
             }
 
-            return topLeft.BaseTile.IsMatchableWith(topRight.BaseTile) &&
-                   topLeft.BaseTile.IsMatchableWith(bottomLeft.BaseTile) &&
-                   topLeft.BaseTile.IsMatchableWith(bottomRight.BaseTile);
+            return topLeft.Tile.IsMatchableWith(topRight.Tile) &&
+                   topLeft.Tile.IsMatchableWith(bottomLeft.Tile) &&
+                   topLeft.Tile.IsMatchableWith(bottomRight.Tile);
         }
 
         private static CellModel FindCell(IEnumerable<CellModel> cells, int x, int y)
@@ -336,7 +336,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Match
 
         private static bool IsAnimal(CellModel cell, AnimalTileId animalId)
         {
-            return cell?.BaseTile?.Definition is NormalAnimalTileDefinitionSO definition && definition.AnimalId == animalId;
+            return cell?.Tile?.Definition is NormalAnimalTileDefinitionSO definition && definition.AnimalId == animalId;
         }
 
         private static int CompareCells(CellModel left, CellModel right)
@@ -361,3 +361,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Match
         }
     }
 }
+

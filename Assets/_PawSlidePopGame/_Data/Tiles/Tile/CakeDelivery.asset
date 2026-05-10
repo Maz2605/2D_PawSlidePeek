@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2c8c92ea6567b741871451f3323e014, type: 3}
+  m_Name: CakeDelivery
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Match3.Data.DeliveryTileDefinitionSO
+  tileId: 201
+  canSpawnOnRefill: 0
+  spawnWeight: 0
+  legacyTileViewPrefab: {fileID: 0}
+  icon: {fileID: 21300000, guid: 65f2fc54ab7e4ff89988e3357ee63d1a, type: 3}
+  tileViewPrefab: {fileID: -6997355614192038555, guid: 72da652b0a874e55a556e65268a6e150, type: 3}

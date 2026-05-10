@@ -38,12 +38,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
             }
         }
 
-        public void PopulateBoard(int[] gridLayout, Match3TileDatabaseSO tileDatabase)
-        {
-            PopulateBoard(gridLayout, null, tileDatabase);
-        }
-
-        public void PopulateBoard(int[] gridLayout, int[] overlayLayout, Match3TileDatabaseSO tileDatabase)
+        public void PopulateBoard(int[] underlayLayout, int[] tileLayout, int[] overlayLayout, Match3TileDatabaseSO tileDatabase)
         {
             for (int y = 0; y < Height; y++)
             {
@@ -53,22 +48,27 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
                     CellModel cell = _grid[x, y];
                     if (!cell.IsPlayable)
                     {
-                        cell.ClearBaseTile();
-                        cell.ClearOverlayTile();
+                        cell.ClearUnderlay();
+                        cell.ClearTile();
+                        cell.ClearOverlay();
                         continue;
                     }
 
-                    int baseTileId = gridLayout != null && index < gridLayout.Length
-                        ? gridLayout[index]
+                    int underlayTileId = underlayLayout != null && index < underlayLayout.Length
+                        ? underlayLayout[index]
                         : 0;
-                    SetBaseTileFromDefinitionId(cell, baseTileId, tileDatabase);
+                    int baseTileId = tileLayout != null && index < tileLayout.Length
+                        ? tileLayout[index]
+                        : 0;
+                    SetUnderlayFromDefinitionId(cell, underlayTileId, tileDatabase);
+                    SetTileFromDefinitionId(cell, baseTileId, tileDatabase);
                     if (overlayLayout != null && index < overlayLayout.Length)
                     {
-                        SetOverlayTileFromDefinitionId(cell, overlayLayout[index], tileDatabase);
+                        SetOverlayFromDefinitionId(cell, overlayLayout[index], tileDatabase);
                     }
                     else
                     {
-                        cell.ClearOverlayTile();
+                        cell.ClearOverlay();
                     }
                 }
             }
@@ -160,16 +160,16 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
                 return;
             }
 
-            TileModel[] snapshot = new TileModel[cells.Count];
+            TileModel[] baseSnapshot = new TileModel[cells.Count];
             for (int i = 0; i < cells.Count; i++)
             {
-                snapshot[i] = cells[i].BaseTile;
+                baseSnapshot[i] = cells[i].Tile;
             }
 
             for (int i = 0; i < cells.Count; i++)
             {
                 int sourceIndex = (i - normalizedStep + cells.Count) % cells.Count;
-                cells[i].SetBaseTile(snapshot[sourceIndex]);
+                cells[i].SetTile(baseSnapshot[sourceIndex]);
             }
         }
 
@@ -180,22 +180,36 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
                 return null;
             }
 
-            TileDefinitionSO definition = tileDatabase.GetTileDefinition(tileId);
+            BoardContentDefinitionSO definition = tileDatabase.GetContentDefinition(tileId);
             if (definition == null)
             {
                 return null;
             }
 
             _tileInstanceCounter++;
-            return new TileModel(_tileInstanceCounter, definition);
+            switch (definition.ContentLayer)
+            {
+                case BoardLayer.Underlay:
+                    return new UnderlayContentModel(_tileInstanceCounter, definition as UnderlayDefinitionSO);
+                case BoardLayer.Overlay:
+                    return new OverlayContentModel(_tileInstanceCounter, definition);
+                default:
+                    return new TileContentModel(_tileInstanceCounter, definition as TileDefinitionSO);
+            }
         }
 
         public void SetTileFromDefinitionId(CellModel cell, int tileId, Match3TileDatabaseSO tileDatabase)
         {
-            SetBaseTileFromDefinitionId(cell, tileId, tileDatabase);
+            if (cell == null)
+            {
+                return;
+            }
+
+            TileModel tile = CreateTileFromDefinitionId(tileId, tileDatabase);
+            cell.SetTile(tile);
         }
 
-        public void SetBaseTileFromDefinitionId(CellModel cell, int tileId, Match3TileDatabaseSO tileDatabase)
+        public void SetUnderlayFromDefinitionId(CellModel cell, int tileId, Match3TileDatabaseSO tileDatabase)
         {
             if (cell == null)
             {
@@ -203,10 +217,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
             }
 
             TileModel tile = CreateTileFromDefinitionId(tileId, tileDatabase);
-            cell.SetBaseTile(tile);
+            cell.SetUnderlay(tile);
         }
 
-        public void SetOverlayTileFromDefinitionId(CellModel cell, int tileId, Match3TileDatabaseSO tileDatabase)
+        public void SetOverlayFromDefinitionId(CellModel cell, int tileId, Match3TileDatabaseSO tileDatabase)
         {
             if (cell == null)
             {
@@ -214,18 +228,18 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
             }
 
             TileModel tile = CreateTileFromDefinitionId(tileId, tileDatabase);
-            if (tile != null && !cell.CanAcceptOverlay())
+            if (tile != null && (!tile.Definition.AllowsOverlayPlacement || !cell.CanAcceptOverlay()))
             {
-                cell.ClearOverlayTile();
+                cell.ClearOverlay();
                 return;
             }
 
-            cell.SetOverlayTile(tile);
+            cell.SetOverlay(tile);
         }
 
         public void SetTile(CellModel cell, TileModel tile)
         {
-            cell?.SetBaseTile(tile);
+            cell?.SetTile(tile);
         }
 
         public void SetTile(CellModel cell, TileStackLayer layer, TileModel tile)
@@ -235,7 +249,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
 
         public void ClearCell(CellModel cell)
         {
-            cell?.ClearBaseTile();
+            cell?.ClearTile();
         }
 
         public void ClearCell(CellModel cell, TileStackLayer layer)

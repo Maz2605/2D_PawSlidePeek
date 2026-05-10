@@ -14,7 +14,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         private Vector3 _initialLocalScale;
 
         public Transform TileAnchor => tileAnchor != null ? tileAnchor : transform;
-        public Transform OverlayTileAnchor => overlayTileAnchor != null ? overlayTileAnchor : TileAnchor;
+        public Transform OverlayAnchor => overlayTileAnchor != null ? overlayTileAnchor : TileAnchor;
         public SpriteRenderer FallbackRenderer => fallbackRenderer;
 
         private void Awake()
@@ -37,7 +37,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
         public Vector3 GetTileAnchorLocalPosition(TileStackLayer layer, Transform relativeTo)
         {
-            Transform anchor = layer == TileStackLayer.Overlay ? OverlayTileAnchor : TileAnchor;
+            Transform anchor = layer == TileStackLayer.Overlay ? OverlayAnchor : TileAnchor;
             if (relativeTo == null)
             {
                 return anchor.position;
@@ -81,3 +81,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         }
     }
 }
+

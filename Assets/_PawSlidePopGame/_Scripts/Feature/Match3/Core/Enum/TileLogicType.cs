@@ -8,7 +8,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum
         NormalAnimal = 1,
         [InspectorName("Area Bomb Small (3x3)")]
         BombBooster = 2,
-        IceBlocker = 3,
+        IceOverlay = 3,
+        IceBlocker = IceOverlay,
         [InspectorName("Cross Bomb (Row + Column)")]
         CrossBomb = 4,
         [InspectorName("Square Bomb (Random 3x3)")]
@@ -18,12 +19,21 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum
         [InspectorName("Area Bomb Large (5x5)")]
         AreaBombLarge = 7,
         
-        //Blocker
-        BubbleBlocker = 8,
-        ChocolateBlocker = 9,
+        // Overlay
+        BubbleOverlay = 8,
+        BubbleBlocker = BubbleOverlay,
+        ChocolateOverlay = 9,
+        ChocolateBlocker = ChocolateOverlay,
+        ChocolateMechanic = ChocolateOverlay,
 
-        //Mechanic
-        CakeDelivery = 10,
-        StoneMechanic = 11,
+        // Tile Special
+        CakeTarget = 10,
+        CakeDelivery = CakeTarget,
+        StoneBlocker = 11,
+        StoneMechanic = StoneBlocker,
+
+        //Charged Ability
+        ChargedSweepBooster = 12,
     }
 }
+

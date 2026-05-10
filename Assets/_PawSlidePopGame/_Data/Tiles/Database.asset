@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 00332a39a3c3448abed72861dbbc66df, type: 3}
   m_Name: Database
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Match3.Data.Match3TileDatabaseSO
-  normalTiles:
+  normalTileDefinitions:
   - {fileID: 11400000, guid: 599f7ca9b87167f46bc1cb0d38c34f46, type: 2}
   - {fileID: 11400000, guid: 3b167e88a2a6b5044a3c940378303f3c, type: 2}
   - {fileID: 11400000, guid: d3861aa9f1611d44e9df2f1c82e24efa, type: 2}
@@ -22,16 +22,35 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 819206eb3958cec45ad1ee8a961e9b29, type: 2}
   - {fileID: 11400000, guid: e7e6a2c270b2b5d4f8eddc5ca549598f, type: 2}
   - {fileID: 11400000, guid: 69885bf686c9c3e43adbbbca1359a887, type: 2}
-  boosterTiles:
+  boosterTileDefinitions:
   - {fileID: 11400000, guid: 796dcf7223665cf43b436f87f1610c40, type: 2}
   - {fileID: 11400000, guid: a35d9145689a626418f73710a5eab2cb, type: 2}
   - {fileID: 11400000, guid: 05a8ea5196a901c4daf8bbd7ac9726b5, type: 2}
   - {fileID: 11400000, guid: 414747f8b689a464b8d090c5abd48692, type: 2}
-  blockerTiles:
+  - {fileID: 11400000, guid: 1f58fdbb4ef5479aa0c5282ac903b8bc, type: 2}
+  blockerTileDefinitions:
+  - {fileID: 11400000, guid: 30509fd770f34d6497d45b0d1de8610f, type: 2}
+  targetTileDefinitions:
+  - {fileID: 11400000, guid: 9798d861bd754b48b76dc197a972d5e4, type: 2}
+  overlayDefinitions:
   - {fileID: 11400000, guid: e1a9a4c625da4d79a2658f1c4795d201, type: 2}
   - {fileID: 11400000, guid: 398974eb667d482db1ee3faf4bbd3031, type: 2}
-  - {fileID: 11400000, guid: 1f977bf04b0145af934de8ed890cb0c2, type: 2}
-  mechanicTiles:
-  - {fileID: 11400000, guid: 9798d861bd754b48b76dc197a972d5e4, type: 2}
+  - {fileID: 11400000, guid: 6c5384a80166457aa7f8ef1bc85a8f9d, type: 2}
+  underlayDefinitions: []
+  tileDefinitions:
+  - {fileID: 11400000, guid: 599f7ca9b87167f46bc1cb0d38c34f46, type: 2}
+  - {fileID: 11400000, guid: 3b167e88a2a6b5044a3c940378303f3c, type: 2}
+  - {fileID: 11400000, guid: d3861aa9f1611d44e9df2f1c82e24efa, type: 2}
+  - {fileID: 11400000, guid: effe4be22e07aee41ab323bf6b56ca46, type: 2}
+  - {fileID: 11400000, guid: dcab77c16ed94e641a6ecb9d2a2b8e98, type: 2}
+  - {fileID: 11400000, guid: 64482e34e167091438925f23154a0a47, type: 2}
+  - {fileID: 11400000, guid: 819206eb3958cec45ad1ee8a961e9b29, type: 2}
+  - {fileID: 11400000, guid: e7e6a2c270b2b5d4f8eddc5ca549598f, type: 2}
+  - {fileID: 11400000, guid: 69885bf686c9c3e43adbbbca1359a887, type: 2}
+  - {fileID: 11400000, guid: 796dcf7223665cf43b436f87f1610c40, type: 2}
+  - {fileID: 11400000, guid: a35d9145689a626418f73710a5eab2cb, type: 2}
+  - {fileID: 11400000, guid: 05a8ea5196a901c4daf8bbd7ac9726b5, type: 2}
+  - {fileID: 11400000, guid: 414747f8b689a464b8d090c5abd48692, type: 2}
+  - {fileID: 11400000, guid: 1f58fdbb4ef5479aa0c5282ac903b8bc, type: 2}
   - {fileID: 11400000, guid: 30509fd770f34d6497d45b0d1de8610f, type: 2}
-  tiles: []
+  - {fileID: 11400000, guid: 9798d861bd754b48b76dc197a972d5e4, type: 2}

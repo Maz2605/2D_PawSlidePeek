@@ -1,4 +1,4 @@
-﻿namespace _PawSlidePopGame._Scripts.Data.Audio
+﻿namespace _PawSlidePopGame._Scripts.Core.Audio
 {
     public enum UISoundType
     {

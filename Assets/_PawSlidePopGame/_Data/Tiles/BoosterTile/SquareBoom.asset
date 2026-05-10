@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1eb9f5a1cb664c0fa694ef38b594486b, type: 3}
   m_Name: SquareBoom
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Match3.Data.BoosterTileDefinitionSO
-  tileId: 201
+  tileId: 151
   canSpawnOnRefill: 0
   spawnWeight: 1
   tileViewPrefab: {fileID: 2776329395840250644, guid: cbb99524e0bd5a04e8341c8123dabe75, type: 3}

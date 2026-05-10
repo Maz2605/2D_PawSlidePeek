@@ -10,6 +10,8 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
         CheckingResult = 5,
         Victory = 6,
         Defeat = 7,
-        Paused = 8
+        Paused = 8,
+        TargetingChargedPlacement = 9,
+        TargetingChargedCombo = 10
     }
 }

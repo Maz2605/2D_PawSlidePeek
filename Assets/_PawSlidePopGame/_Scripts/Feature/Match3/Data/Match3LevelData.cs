@@ -19,24 +19,45 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
     [Serializable]
     public class Match3LevelData
     {
+        [Serializable]
+        public class ChargedAbilityConfig
+        {
+            public bool enabled = true;
+            public int specialTileId = 155;
+            public int energyToCharge = 12;
+            public int energyFromBoosterActivate = 1;
+            public int energyFromBlockerClear = 2;
+            public int energyFromMechanicClear = 2;
+            public int maxStoredCharges = 1;
+
+            public bool IsEnabled => enabled && specialTileId > 0 && energyToCharge > 0 && maxStoredCharges > 0;
+        }
+
         public string levelID;
         public int displayLevelNumber = 1;
         public int width = 8;
         public int height = 8;
         public int movesLimit = 30;
-        public int[] gridLayout;
+        public int[] underlayLayout;
+        public int[] tileLayout;
         public int[] overlayLayout;
         public bool[] playableMask;
         public List<int> spawnableTileIds = new List<int>();
         public List<LevelTargetData> targets = new List<LevelTargetData>();
         public int[] starScoreThresholds = { 100, 250, 500, 1500 };
+        public ChargedAbilityConfig chargedAbility = new ChargedAbilityConfig();
 
         public int CellCount => Math.Max(0, width) * Math.Max(0, height);
         public int DisplayLevelNumber => displayLevelNumber > 0 ? displayLevelNumber : 1;
 
-        public bool HasValidGridLayout()
+        public bool HasValidTileLayout()
         {
-            return gridLayout != null && gridLayout.Length == CellCount;
+            return tileLayout != null && tileLayout.Length == CellCount;
+        }
+
+        public bool HasValidUnderlayLayout()
+        {
+            return underlayLayout != null && underlayLayout.Length == CellCount;
         }
 
         public bool HasValidOverlayLayout()
@@ -66,12 +87,32 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
 
         public int GetLayoutValue(int x, int y)
         {
-            if (!HasValidGridLayout() || x < 0 || x >= width || y < 0 || y >= height)
+            if (x < 0 || x >= width || y < 0 || y >= height)
             {
                 return 0;
             }
 
-            return gridLayout[(y * width) + x];
+            if (HasValidTileLayout())
+            {
+                return tileLayout[(y * width) + x];
+            }
+
+            return 0;
+        }
+
+        public int GetUnderlayValue(int x, int y)
+        {
+            if (!HasValidUnderlayLayout() || x < 0 || x >= width || y < 0 || y >= height)
+            {
+                return 0;
+            }
+
+            return underlayLayout[(y * width) + x];
+        }
+
+        public int[] GetResolvedTileLayout()
+        {
+            return HasValidTileLayout() ? tileLayout : null;
         }
 
         public int GetOverlayValue(int x, int y)
@@ -122,6 +163,26 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
             }
 
             return validTargets;
+        }
+
+        public ChargedAbilityConfig GetChargedAbilityConfig()
+        {
+            if (chargedAbility == null)
+            {
+                chargedAbility = new ChargedAbilityConfig();
+            }
+
+            if (chargedAbility.energyToCharge < 1)
+            {
+                chargedAbility.energyToCharge = 1;
+            }
+
+            if (chargedAbility.maxStoredCharges < 1)
+            {
+                chargedAbility.maxStoredCharges = 1;
+            }
+
+            return chargedAbility;
         }
     }
 }

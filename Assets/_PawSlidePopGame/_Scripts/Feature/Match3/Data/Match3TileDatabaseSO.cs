@@ -1,42 +1,35 @@
 using System.Collections.Generic;
 using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
 {
     [CreateAssetMenu(fileName = "Match3TileDatabase", menuName = "_PawSlidePopGame/Match3/Tile Database")]
     public class Match3TileDatabaseSO : ScriptableObject
     {
-        private const int NormalMinId = 100;
-        private const int NormalMaxId = 199;
-        private const int BoosterMinId = 200;
-        private const int BoosterMaxId = 299;
-        private const int BlockerMinId = 300;
-        private const int BlockerMaxId = 399;
-        private const int MechanicMinId = 400;
-        private const int MechanicMaxId = 499;
-
         [Header("Authoring")]
-        [SerializeField] private List<NormalAnimalTileDefinitionSO> normalTiles = new List<NormalAnimalTileDefinitionSO>();
-        [SerializeField] private List<BoosterTileDefinitionSO> boosterTiles = new List<BoosterTileDefinitionSO>();
-        [SerializeField] private List<BlockerTileDefinitionSO> blockerTiles = new List<BlockerTileDefinitionSO>();
-        [SerializeField] private List<MechanicTileDefinitionSO> mechanicTiles = new List<MechanicTileDefinitionSO>();
+        [SerializeField] private List<NormalTileDefinitionSO> normalTileDefinitions = new List<NormalTileDefinitionSO>();
+        [SerializeField] private List<BoosterTileDefinitionSO> boosterTileDefinitions = new List<BoosterTileDefinitionSO>();
+        [SerializeField] private List<BlockerTileDefinitionSO> blockerTileDefinitions = new List<BlockerTileDefinitionSO>();
+        [SerializeField] private List<TargetTileDefinitionSO> targetTileDefinitions = new List<TargetTileDefinitionSO>();
+        [SerializeField] private List<OverlayDefinitionSO> overlayDefinitions = new List<OverlayDefinitionSO>();
+        [SerializeField] private List<UnderlayDefinitionSO> underlayDefinitions = new List<UnderlayDefinitionSO>();
+        [SerializeField, HideInInspector] private List<TileDefinitionSO> tileDefinitions = new List<TileDefinitionSO>();
 
-        [FormerlySerializedAs("tiles")]
-        [SerializeField, HideInInspector] private List<TileDefinitionSO> tiles = new List<TileDefinitionSO>();
-
-        private readonly Dictionary<int, TileDefinitionSO> _tilesById = new Dictionary<int, TileDefinitionSO>();
+        private readonly Dictionary<int, BoardContentDefinitionSO> _definitionsById = new Dictionary<int, BoardContentDefinitionSO>();
         private readonly List<TileDefinitionSO> _spawnableTiles = new List<TileDefinitionSO>();
-        private readonly List<TileDefinitionSO> _allTiles = new List<TileDefinitionSO>();
+        private readonly List<BoardContentDefinitionSO> _allDefinitions = new List<BoardContentDefinitionSO>();
 
-        public IReadOnlyList<TileDefinitionSO> Tiles => _allTiles;
-        public int TileCount => _allTiles.Count;
-        public int NormalTileCount => normalTiles.Count;
-        public int BoosterTileCount => boosterTiles.Count;
-        public int BlockerTileCount => blockerTiles.Count;
-        public int MechanicTileCount => mechanicTiles.Count;
-        public int CachedTileCount => _tilesById.Count;
+        public IReadOnlyList<BoardContentDefinitionSO> Tiles => _allDefinitions;
+        public int TileCount => _allDefinitions.Count;
+        public int TileDefinitionCount => normalTileDefinitions.Count + boosterTileDefinitions.Count + blockerTileDefinitions.Count + targetTileDefinitions.Count;
+        public int OverlayDefinitionCount => overlayDefinitions.Count;
+        public int UnderlayDefinitionCount => underlayDefinitions.Count;
+        public int NormalTileCount => normalTileDefinitions.Count;
+        public int BoosterTileCount => boosterTileDefinitions.Count;
+        public int BlockerTileCount => blockerTileDefinitions.Count;
+        public int TargetTileCount => targetTileDefinitions.Count;
+        public int CachedTileCount => _definitionsById.Count;
         public int SpawnableTileCount => _spawnableTiles.Count;
 
         private void OnEnable()
@@ -51,49 +44,57 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
 
         public void RebuildCache()
         {
-            MigrateLegacyTiles();
-
-            _tilesById.Clear();
+            _definitionsById.Clear();
             _spawnableTiles.Clear();
-            _allTiles.Clear();
+            _allDefinitions.Clear();
+            SynchronizeTypedTileLists();
 
             HashSet<int> seenIds = new HashSet<int>();
-
-            ValidateAndCacheList(normalTiles, "normalTiles", seenIds);
-            ValidateAndCacheList(boosterTiles, "boosterTiles", seenIds);
-            ValidateAndCacheList(blockerTiles, "blockerTiles", seenIds);
-            ValidateAndCacheList(mechanicTiles, "mechanicTiles", seenIds);
+            ValidateAndCacheList(normalTileDefinitions, "normalTileDefinitions", seenIds);
+            ValidateAndCacheList(boosterTileDefinitions, "boosterTileDefinitions", seenIds);
+            ValidateAndCacheList(blockerTileDefinitions, "blockerTileDefinitions", seenIds);
+            ValidateAndCacheList(targetTileDefinitions, "targetTileDefinitions", seenIds);
+            ValidateAndCacheList(overlayDefinitions, "overlayDefinitions", seenIds);
+            ValidateAndCacheList(underlayDefinitions, "underlayDefinitions", seenIds);
         }
 
         public void ValidateAndLogSummary()
         {
             RebuildCache();
             Debug.Log(
-                $"[Match3TileDatabase] Validation finished for '{name}'. Total Entries: {TileCount}, Normal: {NormalTileCount}, Booster: {BoosterTileCount}, Blocker: {BlockerTileCount}, Mechanic: {MechanicTileCount}, Valid Unique Tiles: {CachedTileCount}, Spawnable Normal Tiles: {SpawnableTileCount}.",
+                $"[Match3TileDatabase] Validation finished for '{name}'. Total Entries: {TileCount}, Tiles: {TileDefinitionCount}, Normal: {NormalTileCount}, Boosters: {BoosterTileCount}, Blockers: {BlockerTileCount}, Targets: {TargetTileCount}, Overlays: {OverlayDefinitionCount}, Underlays: {UnderlayDefinitionCount}, Valid Unique Tiles: {CachedTileCount}, Spawnable Normal Tiles: {SpawnableTileCount}.",
                 this);
+        }
+
+        public BoardContentDefinitionSO GetContentDefinition(int tileId)
+        {
+            EnsureCache();
+            _definitionsById.TryGetValue(tileId, out BoardContentDefinitionSO definition);
+            return definition;
         }
 
         public TileDefinitionSO GetTileDefinition(int tileId)
         {
-            if (_tilesById.Count == 0)
-            {
-                RebuildCache();
-            }
+            return GetContentDefinition(tileId) as TileDefinitionSO;
+        }
 
-            _tilesById.TryGetValue(tileId, out TileDefinitionSO definition);
-            return definition;
+        public OverlayDefinitionSO GetOverlayDefinition(int tileId)
+        {
+            return GetContentDefinition(tileId) as OverlayDefinitionSO;
+        }
+
+        public UnderlayDefinitionSO GetUnderlayDefinition(int tileId)
+        {
+            return GetContentDefinition(tileId) as UnderlayDefinitionSO;
         }
 
         public BoosterTileDefinitionSO GetBoosterDefinition(TileLogicType logicType)
         {
-            if (_tilesById.Count == 0)
-            {
-                RebuildCache();
-            }
+            EnsureCache();
 
-            for (int i = 0; i < boosterTiles.Count; i++)
+            for (int i = 0; i < boosterTileDefinitions.Count; i++)
             {
-                BoosterTileDefinitionSO booster = boosterTiles[i];
+                BoosterTileDefinitionSO booster = boosterTileDefinitions[i];
                 if (booster != null && booster.LogicType == logicType)
                 {
                     return booster;
@@ -103,12 +104,19 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
             return null;
         }
 
+        public BlockerTileDefinitionSO GetBlockerDefinition(int tileId)
+        {
+            return GetTileDefinition(tileId) as BlockerTileDefinitionSO;
+        }
+
+        public TargetTileDefinitionSO GetTargetDefinition(int tileId)
+        {
+            return GetTileDefinition(tileId) as TargetTileDefinitionSO;
+        }
+
         public int GetRandomSpawnableTileId(System.Random random, IReadOnlyList<int> restrictedTileIds = null)
         {
-            if (_tilesById.Count == 0)
-            {
-                RebuildCache();
-            }
+            EnsureCache();
 
             if (_spawnableTiles.Count == 0)
             {
@@ -151,99 +159,127 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
             return 0;
         }
 
-        private void ValidateAndCacheList<TTile>(List<TTile> source, string listName, HashSet<int> seenIds) where TTile : TileDefinitionSO
+        private void EnsureCache()
+        {
+            if (_definitionsById.Count == 0)
+            {
+                RebuildCache();
+            }
+        }
+
+        private void SynchronizeTypedTileLists()
+        {
+            if (HasTypedTileDefinitions())
+            {
+                RebuildLegacyTileList();
+                return;
+            }
+
+            if (tileDefinitions.Count == 0)
+            {
+                return;
+            }
+
+            normalTileDefinitions.Clear();
+            boosterTileDefinitions.Clear();
+            blockerTileDefinitions.Clear();
+            targetTileDefinitions.Clear();
+
+            for (int i = 0; i < tileDefinitions.Count; i++)
+            {
+                TileDefinitionSO definition = tileDefinitions[i];
+                switch (definition)
+                {
+                    case NormalTileDefinitionSO normal:
+                        normalTileDefinitions.Add(normal);
+                        break;
+                    case BoosterTileDefinitionSO booster:
+                        boosterTileDefinitions.Add(booster);
+                        break;
+                    case BlockerTileDefinitionSO blocker:
+                        blockerTileDefinitions.Add(blocker);
+                        break;
+                    case TargetTileDefinitionSO target:
+                        targetTileDefinitions.Add(target);
+                        break;
+                }
+            }
+
+            RebuildLegacyTileList();
+        }
+
+        private bool HasTypedTileDefinitions()
+        {
+            return normalTileDefinitions.Count > 0 ||
+                   boosterTileDefinitions.Count > 0 ||
+                   blockerTileDefinitions.Count > 0 ||
+                   targetTileDefinitions.Count > 0;
+        }
+
+        private void RebuildLegacyTileList()
+        {
+            tileDefinitions.Clear();
+            AppendDefinitions(normalTileDefinitions);
+            AppendDefinitions(boosterTileDefinitions);
+            AppendDefinitions(blockerTileDefinitions);
+            AppendDefinitions(targetTileDefinitions);
+        }
+
+        private void ValidateAndCacheList<TDefinition>(List<TDefinition> source, string listName, HashSet<int> seenIds) where TDefinition : BoardContentDefinitionSO
         {
             for (int i = 0; i < source.Count; i++)
             {
-                TileDefinitionSO tile = source[i];
-                ValidateAndCacheTile(tile, listName, i, seenIds);
+                ValidateAndCacheDefinition(source[i], listName, i, seenIds);
             }
         }
 
-        private void ValidateAndCacheTile(TileDefinitionSO tile, string listName, int index, HashSet<int> seenIds)
+        private void ValidateAndCacheDefinition(BoardContentDefinitionSO definition, string listName, int index, HashSet<int> seenIds)
         {
-            if (tile == null)
+            if (definition == null)
             {
-                Debug.LogError($"[Match3TileDatabase] Null tile entry at index {index} in {listName} on database {name}.", this);
+                Debug.LogError($"[Match3TileDatabase] Null definition entry at index {index} in {listName} on database {name}.", this);
                 return;
             }
 
-            _allTiles.Add(tile);
+            _allDefinitions.Add(definition);
 
-            if (tile.TileId <= 0)
+            if (definition.TileId <= 0)
             {
-                Debug.LogError($"[Match3TileDatabase] Tile '{tile.name}' has invalid Tile Id {tile.TileId}.", tile);
+                Debug.LogError($"[Match3TileDatabase] Definition '{definition.name}' has invalid Tile Id {definition.TileId}.", definition);
                 return;
             }
 
-            if (!seenIds.Add(tile.TileId))
+            if (!seenIds.Add(definition.TileId))
             {
-                Debug.LogError($"[Match3TileDatabase] Duplicate Tile Id {tile.TileId} found in database {name}.", tile);
+                Debug.LogError($"[Match3TileDatabase] Duplicate Tile Id {definition.TileId} found in database {name}.", definition);
                 return;
             }
 
-            if (!IsTileIdInExpectedRange(tile))
+            _definitionsById[definition.TileId] = definition;
+
+            if (definition is TileDefinitionSO tileDefinition &&
+                tileDefinition.TileKind == TileKind.Normal &&
+                tileDefinition.CanSpawnOnRefill &&
+                tileDefinition.SpawnWeight > 0)
             {
-                Debug.LogWarning(
-                    $"[Match3TileDatabase] Tile '{tile.name}' with kind {tile.TileKind} should use id in range {GetExpectedRangeLabel(tile.TileKind)}, but current id is {tile.TileId}.",
-                    tile);
+                _spawnableTiles.Add(tileDefinition);
             }
 
-            _tilesById[tile.TileId] = tile;
-            if (tile.CanSpawnOnRefill && tile.TileKind == TileKind.Normal && tile.SpawnWeight > 0)
+            if (definition.TileViewPrefab == null)
             {
-                _spawnableTiles.Add(tile);
-            }
-
-            if (tile.TileViewPrefab == null)
-            {
-                Debug.LogWarning($"[Match3TileDatabase] Tile '{tile.name}' has no Tile View Prefab assigned.", tile);
+                Debug.LogWarning($"[Match3TileDatabase] Definition '{definition.name}' has no Tile View Prefab assigned.", definition);
             }
         }
 
-        private void MigrateLegacyTiles()
+        private void AppendDefinitions<TDefinition>(List<TDefinition> source) where TDefinition : TileDefinitionSO
         {
-            if (tiles == null || tiles.Count == 0)
+            for (int i = 0; i < source.Count; i++)
             {
-                return;
-            }
-
-            for (int i = 0; i < tiles.Count; i++)
-            {
-                TileDefinitionSO tile = tiles[i];
-                if (tile == null)
+                if (source[i] != null)
                 {
-                    continue;
-                }
-
-                switch (tile)
-                {
-                    case NormalAnimalTileDefinitionSO normalTile:
-                        AddIfMissing(normalTiles, normalTile);
-                        break;
-                    case BoosterTileDefinitionSO boosterTile:
-                        AddIfMissing(boosterTiles, boosterTile);
-                        break;
-                    case BlockerTileDefinitionSO blockerTile:
-                        AddIfMissing(blockerTiles, blockerTile);
-                        break;
-                    case MechanicTileDefinitionSO mechanicTile:
-                        AddIfMissing(mechanicTiles, mechanicTile);
-                        break;
+                    tileDefinitions.Add(source[i]);
                 }
             }
-
-            tiles.Clear();
-        }
-
-        private static void AddIfMissing<TTile>(List<TTile> target, TTile tile) where TTile : TileDefinitionSO
-        {
-            if (tile == null || target.Contains(tile))
-            {
-                return;
-            }
-
-            target.Add(tile);
         }
 
         private static bool IsRestricted(int tileId, IReadOnlyList<int> restrictedTileIds)
@@ -263,44 +299,6 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
 
             return false;
         }
-
-        private static bool IsTileIdInExpectedRange(TileDefinitionSO tile)
-        {
-            switch (tile.TileKind)
-            {
-                case TileKind.Normal:
-                    return IsInRange(tile.TileId, NormalMinId, NormalMaxId);
-                case TileKind.Booster:
-                    return IsInRange(tile.TileId, BoosterMinId, BoosterMaxId);
-                case TileKind.Blocker:
-                    return IsInRange(tile.TileId, BlockerMinId, BlockerMaxId);
-                case TileKind.Mechanic:
-                    return IsInRange(tile.TileId, MechanicMinId, MechanicMaxId);
-                default:
-                    return false;
-            }
-        }
-
-        private static bool IsInRange(int value, int min, int max)
-        {
-            return value >= min && value <= max;
-        }
-
-        private static string GetExpectedRangeLabel(TileKind tileKind)
-        {
-            switch (tileKind)
-            {
-                case TileKind.Normal:
-                    return $"{NormalMinId}-{NormalMaxId}";
-                case TileKind.Booster:
-                    return $"{BoosterMinId}-{BoosterMaxId}";
-                case TileKind.Blocker:
-                    return $"{BlockerMinId}-{BlockerMaxId}";
-                case TileKind.Mechanic:
-                    return $"{MechanicMinId}-{MechanicMaxId}";
-                default:
-                    return "unknown";
-            }
-        }
     }
 }
+

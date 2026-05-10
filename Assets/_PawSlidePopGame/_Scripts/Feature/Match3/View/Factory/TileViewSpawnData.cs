@@ -8,7 +8,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View.Factory
     {
         public Match3TileView Prefab { get; }
         public TileModel Tile { get; }
-        public TileDefinitionSO Definition { get; }
+        public BoardContentDefinitionSO Definition { get; }
         public Vector3 LocalPosition { get; }
         public bool IsIdleEnabled { get; }
         public string Name { get; }
@@ -16,7 +16,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View.Factory
         public TileViewSpawnData(
             Match3TileView prefab,
             TileModel tile,
-            TileDefinitionSO definition,
+            BoardContentDefinitionSO definition,
             Vector3 localPosition,
             bool isIdleEnabled,
             string name)
@@ -30,3 +30,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View.Factory
         }
     }
 }
+

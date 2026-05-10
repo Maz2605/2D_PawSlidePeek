@@ -5,7 +5,7 @@ using UnityEngine;
 namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
 {
     [CreateAssetMenu(fileName = "NormalAnimalTile", menuName = "_PawSlidePopGame/Match3/Tiles/Normal Animal Tile")]
-    public class NormalAnimalTileDefinitionSO : TileDefinitionSO
+    public class NormalAnimalTileDefinitionSO : NormalTileDefinitionSO
     {
         [Header("View")]
         [SerializeField] private NormalTileView tileViewPrefab;
@@ -13,8 +13,6 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
 
         public AnimalTileId AnimalId => animalId;
         public override Match3TileView TileViewPrefab => tileViewPrefab;
-        public override TileKind TileKind => TileKind.Normal;
-        public override TileLogicType LogicType => TileLogicType.NormalAnimal;
 
         protected override void OnValidate()
         {
@@ -23,3 +21,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
         }
     }
 }
+

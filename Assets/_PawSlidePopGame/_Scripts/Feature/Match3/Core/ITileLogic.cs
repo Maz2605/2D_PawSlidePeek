@@ -16,3 +16,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Core
         void OnActivated(BoardModel board, CellModel cell, TileModel tile, BoardFxContext fxContext);
     }
 }
+

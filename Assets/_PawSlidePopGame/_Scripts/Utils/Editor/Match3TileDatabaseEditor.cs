@@ -19,7 +19,7 @@ namespace _PawSlidePopGame._Scripts.Utils.Editor
 
             Match3TileDatabaseSO database = (Match3TileDatabaseSO)target;
             EditorGUILayout.HelpBox(
-                $"Entries: {database.TileCount}\nNormal: {database.NormalTileCount}\nBooster: {database.BoosterTileCount}\nBlocker: {database.BlockerTileCount}\nMechanic: {database.MechanicTileCount}\nValid Unique Tiles: {database.CachedTileCount}\nSpawnable Normal Tiles: {database.SpawnableTileCount}",
+                $"Entries: {database.TileCount}\nTile Definitions: {database.TileDefinitionCount}\nOverlay Definitions: {database.OverlayDefinitionCount}\nUnderlay Definitions: {database.UnderlayDefinitionCount}\nNormal Tiles: {database.NormalTileCount}\nBooster Tiles: {database.BoosterTileCount}\nValid Unique Tiles: {database.CachedTileCount}\nSpawnable Normal Tiles: {database.SpawnableTileCount}",
                 MessageType.Info);
 
             if (GUILayout.Button("Clear Console + Validate"))

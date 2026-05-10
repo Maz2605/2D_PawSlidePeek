@@ -140,7 +140,59 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
         private void HandleTileTapped(CellModel cell)
         {
-            if (_isAnimatingMove || cell?.BaseTile == null || !cell.CanBaseTileActivate() || GameFlowManager.Instance == null)
+            if (_isAnimatingMove || cell == null || GameFlowManager.Instance == null)
+            {
+                return;
+            }
+
+            if (GameFlowManager.Instance.IsInChargedPlacementMode)
+            {
+                if (!GameFlowManager.Instance.CanPlaceChargedBoosterAt(cell.X, cell.Y))
+                {
+                    return;
+                }
+
+                if (_movePlaybackRoutine != null)
+                {
+                    StopCoroutine(_movePlaybackRoutine);
+                }
+
+                int placementX = cell.X;
+                int placementY = cell.Y;
+                _movePlaybackRoutine = StartCoroutine(PlayExecutionRoutine(() => GameFlowManager.Instance != null
+                    ? GameFlowManager.Instance.RequestChargedPlacement(placementX, placementY)
+                    : new BoardMoveExecutionResult()));
+                return;
+            }
+
+            if (GameFlowManager.Instance.IsInChargedComboMode)
+            {
+                if (!GameFlowManager.Instance.CanConfirmChargedComboAt(cell.X, cell.Y))
+                {
+                    GameFlowManager.Instance.CancelChargedAbilityMode();
+                    return;
+                }
+
+                if (_movePlaybackRoutine != null)
+                {
+                    StopCoroutine(_movePlaybackRoutine);
+                }
+
+                int comboX = cell.X;
+                int comboY = cell.Y;
+                _movePlaybackRoutine = StartCoroutine(PlayExecutionRoutine(() => GameFlowManager.Instance != null
+                    ? GameFlowManager.Instance.RequestChargedComboActivation(comboX, comboY)
+                    : new BoardMoveExecutionResult()));
+                return;
+            }
+
+            if (cell.Tile == null || !cell.CanTileActivate())
+            {
+                return;
+            }
+
+            if (cell.Tile.LogicType == Core.Enum.TileLogicType.ChargedSweepBooster &&
+                GameFlowManager.Instance.TryEnterChargedComboMode(cell.X, cell.Y))
             {
                 return;
             }
@@ -226,13 +278,39 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
         private void ApplyInputState(InGameSubState subState)
         {
-            bool canInteract = subState == InGameSubState.PlayerTurn;
-            inputController?.SetInputLocked(!canInteract);
-            boardView?.SetIdleEnabled(canInteract);
-            if (!canInteract)
+            Match3InputController.BoardInputMode inputMode = Match3InputController.BoardInputMode.Disabled;
+            bool idleEnabled = false;
+
+            switch (subState)
             {
-                boardView?.ClearPreview();
+                case InGameSubState.PlayerTurn:
+                    inputMode = Match3InputController.BoardInputMode.Normal;
+                    idleEnabled = true;
+                    break;
+                case InGameSubState.TargetingChargedPlacement:
+                case InGameSubState.TargetingChargedCombo:
+                    inputMode = Match3InputController.BoardInputMode.TapOnly;
+                    idleEnabled = true;
+                    break;
+            }
+
+            inputController?.SetInputMode(inputMode);
+            boardView?.SetIdleEnabled(idleEnabled);
+            boardView?.ClearPreview();
+
+            if (subState == InGameSubState.TargetingChargedPlacement)
+            {
+                boardView?.ShowPlacementCandidates(GameFlowManager.Instance != null
+                    ? GameFlowManager.Instance.GetChargedPlacementCandidates()
+                    : null);
+            }
+            else if (subState == InGameSubState.TargetingChargedCombo)
+            {
+                boardView?.ShowChargedComboSelection(
+                    GameFlowManager.Instance != null ? GameFlowManager.Instance.GetChargedComboSourceCell() : null,
+                    GameFlowManager.Instance != null ? GameFlowManager.Instance.GetChargedComboPartnerCells() : null);
             }
         }
     }
 }
+

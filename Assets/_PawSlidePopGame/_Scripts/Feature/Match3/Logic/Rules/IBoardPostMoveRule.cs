@@ -9,3 +9,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Rules
         bool TryApply(BoardModel board, BoardMoveContext moveContext, BoardResolutionResult result);
     }
 }
+

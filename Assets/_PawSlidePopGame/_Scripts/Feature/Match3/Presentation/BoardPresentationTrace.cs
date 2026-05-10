@@ -48,10 +48,20 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
     [Serializable]
     public sealed class BoardMoveExecutionResult
     {
+        public BoardExecutionKind Kind { get; set; } = BoardExecutionKind.None;
         public bool IsApplied { get; set; }
         public bool IsAccepted { get; set; }
         public BoardResolutionResult ResolutionResult { get; set; } = new BoardResolutionResult();
         public BoardPresentationTrace PresentationTrace { get; set; } = new BoardPresentationTrace();
+    }
+
+    public enum BoardExecutionKind
+    {
+        None = 0,
+        Move = 1,
+        TileActivation = 2,
+        ChargedPlacement = 3,
+        ChargedCombo = 4
     }
 
     [Serializable]
@@ -170,7 +180,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
         public int TileInstanceId { get; set; }
         public int TileId { get; set; }
         public TileStackLayer Layer { get; set; }
-        public TileDefinitionSO Definition { get; set; }
+        public BoardContentDefinitionSO Definition { get; set; }
         public int SpawnFromRowAboveBoard { get; set; }
         public BoardCellPosition ToCell { get; set; }
     }
@@ -183,7 +193,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
         public int NewTileInstanceId { get; set; }
         public int ToTileId { get; set; }
         public TileStackLayer Layer { get; set; }
-        public TileDefinitionSO Definition { get; set; }
+        public BoardContentDefinitionSO Definition { get; set; }
         public TileLogicType LogicType { get; set; }
         public BoardCellPosition Cell { get; set; }
         public bool ReplaceSourceTileView { get; set; } = true;
@@ -289,17 +299,26 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
 
         public void RecordTargetSelection(TileModel sourceTile, CellModel targetCell)
         {
+            RecordTargetSelection(sourceTile, targetCell, targetCell?.TopTile);
+        }
+
+        public void RecordTargetSelection(TileModel sourceTile, CellModel targetCell, TileModel targetTile)
+        {
             if (sourceTile == null || targetCell == null)
             {
                 return;
             }
 
+            TileStackLayer targetLayer = targetCell.Overlay != null && targetCell.Overlay == targetTile
+                ? TileStackLayer.Overlay
+                : TileStackLayer.Base;
+
             _cascadeTrace.ClearPhase.TargetSelectionOps.Add(new TargetSelectionOp
             {
                 SourceTileInstanceId = sourceTile.InstanceId,
                 TargetCell = BoardCellPosition.FromCell(targetCell),
-                TargetTileInstanceId = targetCell.TopTile != null ? targetCell.TopTile.InstanceId : 0,
-                TargetLayer = targetCell.OverlayTile != null ? TileStackLayer.Overlay : TileStackLayer.Base
+                TargetTileInstanceId = targetTile != null ? targetTile.InstanceId : 0,
+                TargetLayer = targetLayer
             });
         }
 
@@ -355,16 +374,24 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
                 return layer.Value;
             }
 
-            if (tile != null && (tile.TileKind == TileKind.Blocker || tile.TileKind == TileKind.Mechanic))
+            if (tile == null)
             {
-                return TileStackLayer.Overlay;
+                return TileStackLayer.Tile;
             }
 
-            return TileStackLayer.Base;
+            switch (tile.Layer)
+            {
+                case BoardLayer.Underlay:
+                    return TileStackLayer.Underlay;
+                case BoardLayer.Overlay:
+                    return TileStackLayer.Overlay;
+                default:
+                    return TileStackLayer.Tile;
+            }
         }
     }
 
-    internal sealed class BoardPresentationTraceBuilder
+    public sealed class BoardPresentationTraceBuilder
     {
         private readonly BoardPresentationTrace _trace;
 
@@ -426,3 +453,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
         }
     }
 }
+

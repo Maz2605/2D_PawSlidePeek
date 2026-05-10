@@ -35,7 +35,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Match
                 }
 
                 CellModel spawnCell = ChooseSpawnCell(group, moveRequest);
-                if (spawnCell == null || spawnCell.BaseTile == null || !spawnCell.CanBaseTileMatch())
+                if (spawnCell == null || spawnCell.Tile == null || !spawnCell.CanTileMatch())
                 {
                     continue;
                 }
@@ -94,7 +94,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Match
                 }
             }
 
-            if (preferredCell != null && preferredCell.BaseTile != null && preferredCell.CanBaseTileMatch())
+            if (preferredCell != null && preferredCell.Tile != null && preferredCell.CanTileMatch())
             {
                 return preferredCell;
             }
@@ -105,7 +105,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Match
             for (int i = 0; i < group.Cells.Count; i++)
             {
                 CellModel cell = group.Cells[i];
-                if (cell.BaseTile == null || !cell.CanBaseTileMatch())
+                if (cell.Tile == null || !cell.CanTileMatch())
                 {
                     continue;
                 }
@@ -135,3 +135,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Match
         }
     }
 }
+

@@ -52,7 +52,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             Match3TileViewFactory factory = new Match3TileViewFactory();
             Transform parent = CreateGameObject("TileParent").transform;
             MechanicTileView prefab = CreateTilePrefab();
-            MechanicTileDefinitionSO definition = CreateMechanicDefinition(prefab);
+            DeliveryTileDefinitionSO definition = CreateMechanicDefinition(prefab);
 
             Match3TileView firstView = factory.CreateVisual(
                 new TileViewSpawnData(
@@ -144,11 +144,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
             return cellView;
         }
 
-        private MechanicTileDefinitionSO CreateMechanicDefinition(MechanicTileView prefab)
+        private DeliveryTileDefinitionSO CreateMechanicDefinition(MechanicTileView prefab)
         {
-            MechanicTileDefinitionSO definition = ScriptableObject.CreateInstance<MechanicTileDefinitionSO>();
+            DeliveryTileDefinitionSO definition = ScriptableObject.CreateInstance<DeliveryTileDefinitionSO>();
             _createdObjects.Add(definition);
-            SetPrivateField(definition, "tileId", 401);
+            SetPrivateField(definition, "tileId", 201);
             SetPrivateField(definition, "tileViewPrefab", prefab);
             return definition;
         }
@@ -205,3 +205,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         }
     }
 }
+

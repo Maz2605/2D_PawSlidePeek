@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1eb9f5a1cb664c0fa694ef38b594486b, type: 3}
   m_Name: CrossBoom
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Match3.Data.BoosterTileDefinitionSO
-  tileId: 202
+  tileId: 152
   canSpawnOnRefill: 0
   spawnWeight: 1
   tileViewPrefab: {fileID: 6995693621893937196, guid: bba7a538e5e18414fbbaadea683e27dd, type: 3}

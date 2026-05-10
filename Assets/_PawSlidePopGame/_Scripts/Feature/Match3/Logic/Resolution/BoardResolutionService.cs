@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
 using _PawSlidePopGame._Scripts.Feature.Match3.Data;
+using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Booster;
 using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Match;
 using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move;
 using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Rules;
@@ -22,6 +23,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             BoardRuleSet ruleSet = null)
         {
             BoardMoveExecutionResult executionResult = new BoardMoveExecutionResult();
+            executionResult.Kind = BoardExecutionKind.Move;
             BoardRuleSet activeRuleSet = ruleSet ?? BoardRuleSet.Default;
             if (activeRuleSet.MoveRule == null || activeRuleSet.MatchRule == null)
             {
@@ -104,6 +106,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             BoardRuleSet ruleSet = null)
         {
             BoardMoveExecutionResult executionResult = new BoardMoveExecutionResult();
+            executionResult.Kind = BoardExecutionKind.TileActivation;
             BoardRuleSet activeRuleSet = ruleSet ?? BoardRuleSet.Default;
             if (board == null || levelData == null || tileDatabase == null || activeRuleSet.MatchRule == null)
             {
@@ -111,8 +114,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             }
 
             CellModel cell = board.GetCell(x, y);
-            TileModel tile = cell?.BaseTile;
-            if (cell == null || !cell.IsPlayable || !cell.CanBaseTileActivate() || tile == null || tile.TileKind != TileKind.Booster)
+            TileModel tile = cell?.Tile;
+            if (cell == null || !cell.IsPlayable || !cell.CanTileActivate() || tile == null || tile.TileKind != TileKind.Booster)
             {
                 return executionResult;
             }
@@ -143,6 +146,127 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
 
             BoardGravityService.Apply(board, activationCascade.GravityPhase.TravelOps);
             resolutionResult.SpawnedTiles += BoardRefillService.Apply(board, levelData, tileDatabase, random, activationCascade.RefillPhase.SpawnOps);
+
+            ResolveBoard(board, levelData, tileDatabase, random, resolutionResult, activeRuleSet.MatchRule, null, traceBuilder, null);
+            ApplyDeliveryMechanics(board, levelData, tileDatabase, random, resolutionResult, activeRuleSet.MatchRule, traceBuilder);
+            ApplyChocolateGrowth(board, tileDatabase, random, resolutionResult, traceBuilder);
+            resolutionResult.ScoreDelta = board.CurrentScore - scoreBefore;
+
+            executionResult.ResolutionResult = resolutionResult;
+            executionResult.PresentationTrace = traceBuilder.Build();
+            return executionResult;
+        }
+
+        public static bool CanPlaceChargedBoosterAt(BoardModel board, int x, int y, int chargedTileId, Match3TileDatabaseSO tileDatabase)
+        {
+            if (board == null || tileDatabase == null || chargedTileId <= 0)
+            {
+                return false;
+            }
+
+            CellModel cell = board.GetCell(x, y);
+            TileDefinitionSO chargedDefinition = tileDatabase.GetTileDefinition(chargedTileId);
+            return IsValidChargedPlacementCell(cell, chargedDefinition);
+        }
+
+        public static BoardMoveExecutionResult ExecuteChargedPlacement(
+            BoardModel board,
+            int x,
+            int y,
+            int chargedTileId,
+            Match3TileDatabaseSO tileDatabase,
+            Random random)
+        {
+            BoardMoveExecutionResult executionResult = new BoardMoveExecutionResult
+            {
+                Kind = BoardExecutionKind.ChargedPlacement
+            };
+
+            if (board == null || tileDatabase == null || chargedTileId <= 0)
+            {
+                return executionResult;
+            }
+
+            CellModel cell = board.GetCell(x, y);
+            TileDefinitionSO chargedDefinition = tileDatabase.GetTileDefinition(chargedTileId);
+            if (!IsValidChargedPlacementCell(cell, chargedDefinition))
+            {
+                return executionResult;
+            }
+
+            TileModel sourceTile = cell.Tile;
+            TileModel createdTile = board.CreateTileFromDefinitionId(chargedTileId, tileDatabase);
+            if (sourceTile == null || createdTile == null)
+            {
+                return executionResult;
+            }
+
+            executionResult.IsApplied = true;
+            executionResult.IsAccepted = true;
+
+            BoardPresentationTraceBuilder traceBuilder = new BoardPresentationTraceBuilder();
+            BoardResolutionResult resolutionResult = new BoardResolutionResult
+            {
+                IsMoveAccepted = true
+            };
+
+            CascadeTrace placementCascade = traceBuilder.BeginCascade();
+            BoardFxContext fxContext = new BoardFxContext(placementCascade, random);
+            board.SetTile(cell, TileStackLayer.Base, createdTile);
+            fxContext.RecordSpecialCreate(sourceTile, createdTile, cell, TileStackLayer.Base, true);
+            resolutionResult.CascadesResolved += CountCascadeAsResolved(placementCascade);
+            resolutionResult.SpawnedTiles += 1;
+
+            executionResult.ResolutionResult = resolutionResult;
+            executionResult.PresentationTrace = traceBuilder.Build();
+            return executionResult;
+        }
+
+        public static BoardMoveExecutionResult ExecuteChargedCombo(
+            BoardModel board,
+            BoardCellPosition sourcePosition,
+            BoardCellPosition partnerPosition,
+            Match3LevelData levelData,
+            Match3TileDatabaseSO tileDatabase,
+            Random random,
+            BoardRuleSet ruleSet = null)
+        {
+            BoardMoveExecutionResult executionResult = new BoardMoveExecutionResult
+            {
+                Kind = BoardExecutionKind.ChargedCombo
+            };
+            BoardRuleSet activeRuleSet = ruleSet ?? BoardRuleSet.Default;
+            if (board == null || levelData == null || tileDatabase == null || activeRuleSet.MatchRule == null)
+            {
+                return executionResult;
+            }
+
+            CellModel sourceCell = board.GetCell(sourcePosition.X, sourcePosition.Y);
+            CellModel partnerCell = board.GetCell(partnerPosition.X, partnerPosition.Y);
+            if (!IsValidChargedComboPair(sourceCell, partnerCell) || !board.CanConsumeMove())
+            {
+                return executionResult;
+            }
+
+            executionResult.IsApplied = true;
+            executionResult.IsAccepted = true;
+            board.ConsumeMove();
+
+            BoardPresentationTraceBuilder traceBuilder = new BoardPresentationTraceBuilder();
+            BoardResolutionResult resolutionResult = new BoardResolutionResult
+            {
+                IsMoveAccepted = true
+            };
+
+            int scoreBefore = board.CurrentScore;
+            CascadeTrace comboCascade = traceBuilder.BeginCascade();
+            BoardFxContext fxContext = new BoardFxContext(comboCascade, random);
+            ApplyChargedComboPurge(board, sourceCell, partnerCell, fxContext);
+            resolutionResult.CascadesResolved += CountCascadeAsResolved(comboCascade);
+            resolutionResult.ClearedTiles += comboCascade.ClearPhase.ClearOps.Count;
+
+            BoardGravityService.Apply(board, comboCascade.GravityPhase.TravelOps);
+            resolutionResult.SpawnedTiles += BoardRefillService.Apply(board, levelData, tileDatabase, random, comboCascade.RefillPhase.SpawnOps);
 
             ResolveBoard(board, levelData, tileDatabase, random, resolutionResult, activeRuleSet.MatchRule, null, traceBuilder, null);
             ApplyDeliveryMechanics(board, levelData, tileDatabase, random, resolutionResult, activeRuleSet.MatchRule, traceBuilder);
@@ -223,7 +347,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                 for (int cellIndex = 0; cellIndex < group.Cells.Count; cellIndex++)
                 {
                     CellModel cell = group.Cells[cellIndex];
-                    if (cell?.BaseTile == null)
+                    if (cell?.Tile == null)
                     {
                         continue;
                     }
@@ -232,18 +356,18 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
 
                     if (decision != null && cell == decision.SpawnCell)
                     {
-                        pendingCreates.Add(new PendingSpecialCreate(decision, cell.BaseTile, cell));
-                        if (cell.CanBaseTileMatch())
+                        pendingCreates.Add(new PendingSpecialCreate(decision, cell.Tile, cell));
+                        if (cell.CanTileMatch())
                         {
                             board.AddScore(10);
-                            fxContext?.RecordScore(cell.BaseTile, cell, 10, board.CurrentScore);
+                            fxContext?.RecordScore(cell.Tile, cell, 10, board.CurrentScore);
                         }
 
                         continue;
                     }
 
                     clearedTiles++;
-                    cell.BaseTile.Match(board, cell, fxContext);
+                    cell.Tile.Match(board, cell, fxContext);
                 }
             }
 
@@ -273,12 +397,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
 
         private static void ClearMatchedBubbleOverlay(CellModel cell, BoardModel board, BoardFxContext fxContext)
         {
-            if (cell == null || !cell.HasOverlayLogic(TileLogicType.BubbleBlocker))
+            if (cell == null || !cell.HasOverlayLogic(TileLogicType.BubbleOverlay))
             {
                 return;
             }
 
-            cell.OverlayTile?.Match(board, cell, fxContext);
+            cell.Overlay?.Match(board, cell, fxContext);
         }
 
         private static void ApplyAdjacentSolidBlockerBreaks(BoardModel board, BoardMatchAnalysis matchAnalysis, BoardFxContext fxContext)
@@ -308,7 +432,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             for (int i = 0; i < orderedBlockerCells.Count; i++)
             {
                 CellModel blockerCell = orderedBlockerCells[i];
-                blockerCell?.OverlayTile?.Match(board, blockerCell, fxContext);
+                blockerCell?.Overlay?.Match(board, blockerCell, fxContext);
             }
         }
 
@@ -329,8 +453,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
         {
             CellModel adjacentCell = board.GetCell(x, y);
             if (adjacentCell != null &&
-                (adjacentCell.HasOverlayLogic(TileLogicType.IceBlocker) ||
-                 adjacentCell.HasOverlayLogic(TileLogicType.ChocolateBlocker)))
+                (adjacentCell.HasOverlayLogic(TileLogicType.IceOverlay) ||
+                 adjacentCell.HasOverlayLogic(TileLogicType.ChocolateOverlay)))
             {
                 blockerCellsToBreak.Add(adjacentCell);
             }
@@ -362,7 +486,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                 return;
             }
 
-            BlockerTileDefinitionSO chocolateDefinition = GetChocolateDefinition(chocolateCells, tileDatabase);
+            ChocolateOverlayDefinitionSO chocolateDefinition = GetChocolateDefinition(chocolateCells, tileDatabase);
             int configuredGrowthCount = chocolateDefinition != null ? chocolateDefinition.GrowthPerTurn : 0;
             if (configuredGrowthCount <= 0)
             {
@@ -424,22 +548,20 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             }
         }
 
-        private static BlockerTileDefinitionSO GetChocolateDefinition(IReadOnlyList<CellModel> chocolateCells, Match3TileDatabaseSO tileDatabase)
+        private static ChocolateOverlayDefinitionSO GetChocolateDefinition(IReadOnlyList<CellModel> chocolateCells, Match3TileDatabaseSO tileDatabase)
         {
             if (chocolateCells != null)
             {
                 for (int i = 0; i < chocolateCells.Count; i++)
                 {
-                    if (chocolateCells[i]?.OverlayTile?.Definition is BlockerTileDefinitionSO blockerDefinition &&
-                        blockerDefinition.LogicType == TileLogicType.ChocolateBlocker)
+                    if (chocolateCells[i]?.Overlay?.Definition is ChocolateOverlayDefinitionSO chocolateDefinition)
                     {
-                        return blockerDefinition;
+                        return chocolateDefinition;
                     }
                 }
             }
 
-            TileDefinitionSO fallbackDefinition = tileDatabase?.GetTileDefinition(303);
-            return fallbackDefinition as BlockerTileDefinitionSO;
+            return tileDatabase?.GetOverlayDefinition(303) as ChocolateOverlayDefinitionSO;
         }
 
         private static bool HasChocolateClears(BoardPresentationTrace trace, Match3TileDatabaseSO tileDatabase)
@@ -460,7 +582,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                 for (int clearIndex = 0; clearIndex < clearOps.Count; clearIndex++)
                 {
                     TileDefinitionSO definition = tileDatabase.GetTileDefinition(clearOps[clearIndex].TileId);
-                    if (definition != null && definition.LogicType == TileLogicType.ChocolateBlocker)
+                    if (definition != null && definition.LogicType == TileLogicType.ChocolateOverlay)
                     {
                         return true;
                     }
@@ -487,7 +609,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             bool deliveredAny;
             do
             {
-                List<CellModel> deliveredCells = CollectDeliveredMechanicCells(board);
+                List<CellModel> deliveredCells = CollectDeliveredTargetCells(board);
                 int deliveredCount = deliveredCells.Count;
                 deliveredAny = deliveredCount > 0;
                 if (!deliveredAny)
@@ -497,7 +619,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
 
                 CascadeTrace deliveryCascade = traceBuilder.BeginCascade();
                 BoardFxContext fxContext = new BoardFxContext(deliveryCascade, random);
-                ApplyDeliveredMechanicClears(deliveredCells, fxContext);
+                ApplyDeliveredTargetClears(deliveredCells, fxContext);
 
                 resolutionResult.CascadesResolved += CountCascadeAsResolved(deliveryCascade);
                 resolutionResult.ClearedTiles += deliveredCount;
@@ -508,7 +630,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             } while (deliveredAny);
         }
 
-        private static List<CellModel> CollectDeliveredMechanicCells(BoardModel board)
+        private static List<CellModel> CollectDeliveredTargetCells(BoardModel board)
         {
             List<CellModel> deliveredCells = new List<CellModel>();
             if (board == null)
@@ -519,7 +641,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             for (int x = 0; x < board.Width; x++)
             {
                 CellModel exitCell = GetBottomPlayableCell(board, x);
-                if (exitCell?.BaseTile == null || exitCell.OverlayTile != null || exitCell.BaseTile.LogicType != TileLogicType.CakeDelivery)
+                if (exitCell?.Tile == null || exitCell.Overlay != null || exitCell.Tile.LogicType != TileLogicType.CakeTarget)
                 {
                     continue;
                 }
@@ -530,7 +652,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             return deliveredCells;
         }
 
-        private static void ApplyDeliveredMechanicClears(IReadOnlyList<CellModel> deliveredCells, BoardFxContext fxContext)
+        private static void ApplyDeliveredTargetClears(IReadOnlyList<CellModel> deliveredCells, BoardFxContext fxContext)
         {
             if (deliveredCells == null)
             {
@@ -540,14 +662,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             for (int i = 0; i < deliveredCells.Count; i++)
             {
                 CellModel deliveredCell = deliveredCells[i];
-                TileModel deliveredTile = deliveredCell?.BaseTile;
+                TileModel deliveredTile = deliveredCell?.Tile;
                 if (deliveredCell == null || deliveredTile == null)
                 {
                     continue;
                 }
 
                 fxContext?.RecordClear(deliveredTile, deliveredCell, false);
-                deliveredCell.ClearBaseTile();
+                deliveredCell.ClearTile();
             }
         }
 
@@ -575,7 +697,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             List<CellModel> chocolateCells = new List<CellModel>();
             foreach (CellModel cell in board.GetAllCells())
             {
-                if (cell != null && cell.HasOverlayLogic(TileLogicType.ChocolateBlocker))
+                if (cell != null && cell.HasOverlayLogic(TileLogicType.ChocolateOverlay))
                 {
                     chocolateCells.Add(cell);
                 }
@@ -590,7 +712,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             for (int i = 0; i < chocolateCells.Count; i++)
             {
                 CellModel sourceCell = chocolateCells[i];
-                if (sourceCell?.OverlayTile == null)
+                if (sourceCell?.Overlay == null)
                 {
                     continue;
                 }
@@ -616,9 +738,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             CellModel targetCell = board.GetCell(targetX, targetY);
             if (targetCell == null ||
                 !targetCell.IsPlayable ||
-                targetCell.BaseTile == null ||
+                targetCell.Tile == null ||
                 !targetCell.CanAcceptOverlay() ||
-                targetCell.OverlayTile != null)
+                targetCell.Overlay != null)
             {
                 return;
             }
@@ -629,7 +751,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                 return;
             }
 
-            candidatesByCell[key] = new ChocolateGrowthCandidate(sourceCell, targetCell, sourceCell.OverlayTile);
+            candidatesByCell[key] = new ChocolateGrowthCandidate(sourceCell, targetCell, sourceCell.Overlay);
         }
 
         private static bool ApplyPostMoveRules(
@@ -678,27 +800,39 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
 
             for (int i = 0; i < count; i++)
             {
-                TileModel tile = moveContext.Snapshot.GetTile(i);
-                if (tile == null)
-                {
-                    continue;
-                }
-
                 CellModel sourceCell = moveContext.Snapshot.GetCell(i);
                 CellModel destinationCell = moveContext.AffectedCells[(i + normalizedStep) % count];
-                operations.Add(new TileTravelOp
-                {
-                    TileInstanceId = tile.InstanceId,
-                    TileId = tile.TileId,
-                    Layer = TileStackLayer.Base,
-                    FromCell = new BoardCellPosition(sourceCell.X, sourceCell.Y),
-                    ToCell = new BoardCellPosition(destinationCell.X, destinationCell.Y),
-                    Distance = 1,
-                    IsWrapAround = IsWrapAround(moveContext.Request, sourceCell, destinationCell)
-                });
+                bool isWrapAround = IsWrapAround(moveContext.Request, sourceCell, destinationCell);
+                AddTravelOp(operations, moveContext.Snapshot.GetTile(i), TileStackLayer.Base, sourceCell, destinationCell, isWrapAround);
+                AddTravelOp(operations, moveContext.Snapshot.GetOverlay(i), TileStackLayer.Overlay, sourceCell, destinationCell, isWrapAround);
             }
 
             return operations;
+        }
+
+        private static void AddTravelOp(
+            ICollection<TileTravelOp> operations,
+            TileModel tile,
+            TileStackLayer layer,
+            CellModel sourceCell,
+            CellModel destinationCell,
+            bool isWrapAround)
+        {
+            if (operations == null || tile == null || sourceCell == null || destinationCell == null)
+            {
+                return;
+            }
+
+            operations.Add(new TileTravelOp
+            {
+                TileInstanceId = tile.InstanceId,
+                TileId = tile.TileId,
+                Layer = layer,
+                FromCell = new BoardCellPosition(sourceCell.X, sourceCell.Y),
+                ToCell = new BoardCellPosition(destinationCell.X, destinationCell.Y),
+                Distance = 1,
+                IsWrapAround = isWrapAround
+            });
         }
 
         private static List<TileTravelOp> ReverseOperations(IReadOnlyList<TileTravelOp> operations)
@@ -764,6 +898,85 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             return byY != 0 ? byY : left.X.CompareTo(right.X);
         }
 
+        private static bool IsValidChargedPlacementCell(CellModel cell, TileDefinitionSO chargedDefinition)
+        {
+            return cell != null &&
+                   cell.IsPlayable &&
+                   chargedDefinition != null &&
+                   chargedDefinition.TileKind == TileKind.Booster &&
+                   chargedDefinition.LogicType == TileLogicType.ChargedSweepBooster &&
+                   cell.Overlay == null &&
+                   cell.Tile != null &&
+                   cell.Tile.TileKind == TileKind.Normal;
+        }
+
+        private static bool IsValidChargedComboPair(CellModel sourceCell, CellModel partnerCell)
+        {
+            return sourceCell != null &&
+                   partnerCell != null &&
+                   sourceCell.IsPlayable &&
+                   partnerCell.IsPlayable &&
+                   sourceCell.Tile != null &&
+                   partnerCell.Tile != null &&
+                   sourceCell.Tile.LogicType == TileLogicType.ChargedSweepBooster &&
+                   partnerCell.Tile.LogicType == TileLogicType.ChargedSweepBooster &&
+                   Math.Abs(sourceCell.X - partnerCell.X) + Math.Abs(sourceCell.Y - partnerCell.Y) == 1;
+        }
+
+        private static void ApplyChargedComboPurge(BoardModel board, CellModel sourceCell, CellModel partnerCell, BoardFxContext fxContext)
+        {
+            if (board == null)
+            {
+                return;
+            }
+
+            if (sourceCell?.Tile != null)
+            {
+                fxContext?.RecordActivate(sourceCell.Tile, sourceCell);
+            }
+
+            if (partnerCell?.Tile != null)
+            {
+                fxContext?.RecordActivate(partnerCell.Tile, partnerCell);
+            }
+
+            foreach (CellModel cell in board.GetAllCells())
+            {
+                if (cell == null || !cell.IsPlayable)
+                {
+                    continue;
+                }
+
+                if (cell.Overlay != null)
+                {
+                    ForceClearTile(board, cell, cell.Overlay, fxContext);
+                }
+
+                if (cell.Tile != null)
+                {
+                    ForceClearTile(board, cell, cell.Tile, fxContext);
+                }
+            }
+        }
+
+        private static void ForceClearTile(BoardModel board, CellModel cell, TileModel tile, BoardFxContext fxContext)
+        {
+            if (board == null || cell == null || tile == null)
+            {
+                return;
+            }
+
+            if (tile.CurrentHP > 0 && (tile.TileKind == TileKind.Blocker || tile.TileKind == TileKind.Target))
+            {
+                fxContext?.RecordDamage(tile, cell, tile.CurrentHP, 0, true);
+            }
+
+            fxContext?.RecordClear(tile, cell, false);
+            cell.ClearTile(cell.GetTileLayer(tile) ?? TileStackLayer.Base);
+            board.AddScore(10);
+            fxContext?.RecordScore(tile, cell, 10, board.CurrentScore);
+        }
+
         private readonly struct PendingSpecialCreate
         {
             public SpecialSpawnDecision Decision { get; }
@@ -793,3 +1006,4 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
         }
     }
 }
+

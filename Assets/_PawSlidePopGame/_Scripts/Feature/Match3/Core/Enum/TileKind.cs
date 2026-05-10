@@ -5,12 +5,16 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum
         Normal = 0,
         Booster = 1,
         Blocker = 2,
-        Mechanic = 3
+        Target = 3,
+        Mechanic = Target
     }
 
     public enum TileStackLayer
     {
-        Base = 0,
-        Overlay = 1
+        Underlay = 0,
+        Base = 1,
+        Tile = 1,
+        Overlay = 2
     }
 }
+
