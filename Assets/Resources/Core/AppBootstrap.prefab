@@ -141,6 +141,7 @@ GameObject:
   - component: {fileID: 1180178159475771711}
   - component: {fileID: 823730163174776434}
   - component: {fileID: 6412311779083642}
+  - component: {fileID: 6138519104609171712}
   m_Layer: 0
   m_Name: AppBootstrap
   m_TagString: Untagged
@@ -178,9 +179,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Core.Managers.AppBootstrap
   nameInitScene: LoadingScene
   nameMainScene: GameplayScene
-  minLoadingTime: 5
+  uiManagerPrefab: {fileID: 5056079412890078848, guid: 34b095bb18c706148b276ebb2c73bc9d, type: 3}
   coreServices:
-  - {fileID: 0}
+  - {fileID: 6138519104609171712}
   - {fileID: 823730163174776434}
   - {fileID: 0}
   - {fileID: 0}
@@ -217,3 +218,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff4ace7f6868cd84e87536d7cf8d7cee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame.Input.InputManager
+--- !u!114 &6138519104609171712
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87d65054c2db4ccb95f0abca01bdbd84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Core.System.DeviceSettingService
+  targetFPS: 60
+  disableVSync: 1
+  keepScreenAwake: 1

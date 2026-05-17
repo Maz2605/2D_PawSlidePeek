@@ -24,7 +24,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                 contentRoot = transform;
             }
 
-            BootstrapTemplateFromScene();
+            // BootstrapTemplateFromScene();
         }
 
         public void SetTargets(IReadOnlyList<TargetProgressData> targets)

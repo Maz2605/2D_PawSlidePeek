@@ -219,7 +219,7 @@ namespace _PawSlidePopGame._Scripts.UI.Manager
             return instance as T;
         }
 
-        public T ShowPopup<T>(PopupID id, Action onOpened = null) where T : BasePopup
+        public T ShowPopup<T>(PopupID id, Action<T> beforeShow = null, Action onOpened = null) where T : BasePopup
         {
             if (!_popupCache.TryGetValue(id, out BasePopup instance) || instance == null)
             {
@@ -246,9 +246,17 @@ namespace _PawSlidePopGame._Scripts.UI.Manager
             {
                 _popupStack.Push(instance);
             }
-            
+
+            T typedInstance = instance as T;
+            if (typedInstance == null)
+            {
+                Debug.LogError($"[UIManager] Popup '{id}' không phải kiểu '{typeof(T).Name}'.");
+                return null;
+            }
+
+            beforeShow?.Invoke(typedInstance);
             instance.Show(onOpened);
-            return instance as T;
+            return typedInstance;
         }
 
         public void CloseTopPopup()

@@ -19,7 +19,15 @@ namespace _PawSlidePopGame._Scripts.UI.Base
 
         protected virtual void Awake()
         {
-            if (canvasGroup == null) canvasGroup = GetComponent<CanvasGroup>();
+            if (canvasGroup == null)
+            {
+                canvasGroup = GetComponent<CanvasGroup>();
+            }
+
+            if (canvasGroup == null)
+            {
+                canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            }
         }
 
         public virtual void Show(Action onOpenedCallback = null)
@@ -38,7 +46,8 @@ namespace _PawSlidePopGame._Scripts.UI.Base
                 .SetLink(gameObject, LinkBehaviour.KillOnDisable)
                 .OnComplete(() => 
                 {
-                    canvasGroup.blocksRaycasts = true; 
+                    canvasGroup.blocksRaycasts = true;
+                    OnOpened?.Invoke();
                 }); 
             
             PlayShowAnimation();

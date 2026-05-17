@@ -24,10 +24,14 @@ MonoBehaviour:
     playableMask: 
     spawnableTileIds: 65000000660000006700000068000000690000006a000000
     targets:
-    - tileId: 301
-      requiredCount: 5
     - tileId: 105
-      requiredCount: 24
-    - tileId: 303
-      requiredCount: 3
+      requiredCount: 10
     starScoreThresholds: f0000000f4010000e8030000dc050000
+    chargedAbility:
+      enabled: 1
+      specialTileId: 155
+      energyToCharge: 12
+      energyFromBoosterActivate: 1
+      energyFromBlockerClear: 2
+      energyFromMechanicClear: 2
+      maxStoredCharges: 1

@@ -13,6 +13,7 @@ namespace _PawSlidePopGame._Scripts.Core.System.Boostrap
         [Header("Scene Config")]
         [SerializeField] private string nameInitScene = "LoadingScene";
         [SerializeField] private string nameMainScene = "GameplayScene";
+        [SerializeField] private GameObject uiManagerPrefab;
 
         [Header("Core Services")]
         [SerializeField] private List<MonoBehaviour> coreServices;
@@ -33,7 +34,7 @@ namespace _PawSlidePopGame._Scripts.Core.System.Boostrap
         private IEnumerator RunInitFlowRoutine(bool isEditorAutoInject)
         {
             DontDestroyOnLoad(gameObject);
-            // EnsureUIManagerExists();
+            EnsureUIManagerExists();
 
             foreach (MonoBehaviour mono in coreServices)
             {
@@ -49,22 +50,25 @@ namespace _PawSlidePopGame._Scripts.Core.System.Boostrap
 
         private void EnsureUIManagerExists()
         {
-            UIManager existingUIManager = FindFirstObjectByType<UIManager>();
+            UIManager existingUIManager = FindFirstObjectByType<UIManager>(FindObjectsInactive.Include);
             if (existingUIManager != null)
             {
                 existingUIManager.Init();
                 return;
             }
 
-            GameObject uiManagerPrefab = Resources.Load<GameObject>("UI/UIManager");
-            if (uiManagerPrefab == null)
+            GameObject prefab = uiManagerPrefab != null
+                ? uiManagerPrefab
+                : Resources.Load<GameObject>("UI/UIManager");
+
+            if (prefab == null)
             {
-                Debug.LogError("[AppBootstrap] Missing Resources/UI/UIManager prefab.");
+                Debug.LogError("[AppBootstrap] Missing UIManager prefab reference.");
                 return;
             }
 
-            GameObject uiManagerInstance = Instantiate(uiManagerPrefab);
-            uiManagerInstance.name = uiManagerPrefab.name;
+            GameObject uiManagerInstance = Instantiate(prefab);
+            uiManagerInstance.name = prefab.name;
 
             UIManager uiManager = uiManagerInstance.GetComponent<UIManager>();
             if (uiManager == null)
