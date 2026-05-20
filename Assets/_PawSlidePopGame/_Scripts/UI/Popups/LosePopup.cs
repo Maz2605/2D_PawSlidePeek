@@ -1,11 +1,10 @@
 using System;
-using _PawSlidePopGame._Scripts.Core.System.SceneManagement;
+using _PawSlidePopGame._Scripts.Core.System.GameFlow;
 using _PawSlidePopGame._Scripts.Data.Events.Payloads;
 using _PawSlidePopGame._Scripts.UI.Base;
 using _PawSlidePopGame._Scripts.UI.Components.Popup;
 using DG.Tweening;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace _PawSlidePopGame._Scripts.UI.Popups
@@ -122,25 +121,12 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
 
         private void HandleRepeatPressed()
         {
-            ReloadCurrentScene();
+            GameAppFlowManager.Instance?.RestartGameplay();
         }
 
         private void HandleHomePressed()
         {
-            ReloadCurrentScene();
-        }
-
-        private void ReloadCurrentScene()
-        {
-            string currentScene = SceneManager.GetActiveScene().name;
-            if (SceneLoaderManager.Instance != null)
-            {
-                SceneLoaderManager.Instance.LoadScene(currentScene);
-            }
-            else
-            {
-                SceneManager.LoadScene(currentScene);
-            }
+            GameAppFlowManager.Instance?.EnterMainMenu();
         }
 
         private Sequence BuildCenterSequence()

@@ -121,6 +121,22 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             }
         }
 
+        public void ResetPresentation()
+        {
+            if (_movePlaybackRoutine != null)
+            {
+                StopCoroutine(_movePlaybackRoutine);
+                _movePlaybackRoutine = null;
+            }
+
+            _isAnimatingMove = false;
+            inputController?.SetInputMode(Match3InputController.BoardInputMode.Disabled);
+            inputController?.Bind(null);
+            boardView?.ClearPreview();
+            boardView?.SetIdleEnabled(false);
+            boardView?.ClearBoardVisuals();
+        }
+
         private void HandleMoveRequested(BoardMoveRequest request)
         {
             if (_isAnimatingMove || GameFlowManager.Instance == null)

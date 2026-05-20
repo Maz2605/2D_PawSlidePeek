@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using _PawSlidePopGame._Scripts.Core.Boostrap;
+using _PawSlidePopGame._Scripts.Core.System.GameFlow;
 using _PawSlidePopGame._Scripts.Core.System.SceneManagement;
 using _PawSlidePopGame._Scripts.UI.Manager;
 using UnityEngine;
@@ -35,6 +36,7 @@ namespace _PawSlidePopGame._Scripts.Core.System.Boostrap
         {
             DontDestroyOnLoad(gameObject);
             EnsureUIManagerExists();
+            EnsureGameAppFlowManagerExists();
 
             foreach (MonoBehaviour mono in coreServices)
             {
@@ -46,6 +48,17 @@ namespace _PawSlidePopGame._Scripts.Core.System.Boostrap
 
             yield return null;
             SceneLoaderManager.Instance.LoadScene(nameMainScene);
+        }
+
+        private void EnsureGameAppFlowManagerExists()
+        {
+            GameAppFlowManager flowManager = GetComponent<GameAppFlowManager>();
+            if (flowManager == null)
+            {
+                flowManager = gameObject.AddComponent<GameAppFlowManager>();
+            }
+
+            flowManager.Initialize();
         }
 
         private void EnsureUIManagerExists()

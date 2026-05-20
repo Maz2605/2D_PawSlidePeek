@@ -88,6 +88,47 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             UpdateSliderVisual(_currentScore, true);
         }
 
+        public void ResetView()
+        {
+            _sliderTween?.Kill();
+            _sliderTween = null;
+
+            _visualMaxScore = 1;
+            _superScore = -1;
+            _currentScore = 0;
+            _totalStarsConfigured = 0;
+
+            if (levelText != null)
+            {
+                levelText.text = string.Empty;
+            }
+
+            if (progressSlider != null)
+            {
+                progressSlider.DOKill();
+                progressSlider.minValue = 0f;
+                progressSlider.maxValue = 1f;
+                progressSlider.value = 0f;
+                progressSlider.transform.localScale = Vector3.one;
+            }
+
+            if (sliderFillImage != null)
+            {
+                sliderFillImage.sprite = normalFillSprite;
+            }
+
+            for (int i = 0; i < starViews.Count; i++)
+            {
+                if (starViews[i] == null)
+                {
+                    continue;
+                }
+
+                starViews[i].gameObject.SetActive(false);
+                starViews[i].SetState(StarVisualState.Locked, instant: true);
+            }
+        }
+
         // ... Hàm AlignStarsToThresholds giữ nguyên logic như bản trước ...
         private void AlignStarsToThresholds(int[] thresholds, int maxScore)
         {

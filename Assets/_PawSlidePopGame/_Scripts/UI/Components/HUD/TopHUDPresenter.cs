@@ -77,6 +77,21 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             EventManager<VisualGameEvent>.RemoveListener(VisualGameEvent.TopHudTargetsCompletedFx, HandleTargetsCompletedFx);
         }
 
+        public void ResetView()
+        {
+            _currentSnapshot = null;
+
+            if (canvasGroup != null)
+            {
+                canvasGroup.DOKill();
+                canvasGroup.alpha = 1f;
+            }
+
+            movesCounterView?.ResetView();
+            targetListView?.ResetView();
+            levelProgressView?.ResetView();
+        }
+
         private void HandleHudSnapshot(GameplayHudSnapshot snapshot)
         {
             if (snapshot == null)

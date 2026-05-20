@@ -67,6 +67,20 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                 .SetLink(gameObject, LinkBehaviour.KillOnDisable);
         }
 
+        public void ResetView()
+        {
+            transform.DOKill();
+            transform.localScale = Vector3.one;
+
+            for (int i = 0; i < _spawnedItems.Count; i++)
+            {
+                if (_spawnedItems[i] != null)
+                {
+                    _spawnedItems[i].SetData(null);
+                }
+            }
+        }
+
         private void BootstrapTemplateFromScene()
         {
             if (targetItemPrefab == null)

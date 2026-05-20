@@ -54,6 +54,16 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             Rebuild();
         }
 
+        public void ClearBoardVisuals()
+        {
+            ClearPreview();
+            ClearCells();
+            ClearTileViews();
+            _board = null;
+            _levelData = null;
+            _tileDatabase = null;
+        }
+
         public CellModel GetCellAtScreenPosition(Vector2 screenPosition)
         {
             if (Camera.main == null)

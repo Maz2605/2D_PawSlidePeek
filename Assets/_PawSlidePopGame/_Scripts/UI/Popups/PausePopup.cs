@@ -1,11 +1,9 @@
 using System;
-using _PawSlidePopGame._Scripts.Core.System.SceneManagement;
+using _PawSlidePopGame._Scripts.Core.System.GameFlow;
 using _PawSlidePopGame._Scripts.Feature.Match3.Flow;
 using _PawSlidePopGame._Scripts.UI.Base;
-using _PawSlidePopGame._Scripts.UI.Manager;
 using DG.Tweening;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace _PawSlidePopGame._Scripts.UI.Popups
@@ -122,18 +120,29 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
 
         private void HandleResumePressed()
         {
-            UIManager.Instance?.CloseTopPopup();
             GameFlowManager.Instance?.ResumeGameplay();
         }
 
         private void HandleQuitPressed()
         {
-            ReloadCurrentScene();
+            if (GameAppFlowManager.Instance != null)
+            {
+                GameAppFlowManager.Instance.EnterMainMenu();
+                return;
+            }
+
+            Debug.LogWarning("[PausePopup] Missing GameAppFlowManager. Quit request ignored.", this);
         }
 
         private void HandleRestartPressed()
         {
-            ReloadCurrentScene();
+            if (GameAppFlowManager.Instance != null)
+            {
+                GameAppFlowManager.Instance.RestartGameplay();
+                return;
+            }
+
+            Debug.LogWarning("[PausePopup] Missing GameAppFlowManager. Restart request ignored.", this);
         }
 
         private void SetupButtonsInteractable(bool enable)
@@ -142,19 +151,6 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
             if (btnResume) btnResume.interactable = enable;
             if (btnQuit) btnQuit.interactable = enable;
             if (btnBackground) btnBackground.interactable = enable;
-        }
-
-        private void ReloadCurrentScene()
-        {
-            string currentScene = SceneManager.GetActiveScene().name;
-            if (SceneLoaderManager.Instance != null)
-            {
-                SceneLoaderManager.Instance.LoadScene(currentScene);
-            }
-            else
-            {
-                SceneManager.LoadScene(currentScene);
-            }
         }
 
         private void PrepareElementsForShow()

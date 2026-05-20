@@ -240,13 +240,6 @@ namespace _PawSlidePopGame._Scripts.UI.Manager
                 _popupCache[id] = instance;
             }
 
-            instance.transform.SetAsLastSibling(); 
-
-            if (_popupStack.Count == 0 || _popupStack.Peek() != instance)
-            {
-                _popupStack.Push(instance);
-            }
-
             T typedInstance = instance as T;
             if (typedInstance == null)
             {
@@ -254,6 +247,8 @@ namespace _PawSlidePopGame._Scripts.UI.Manager
                 return null;
             }
 
+            PushPopupToTop(instance);
+            instance.transform.SetAsLastSibling();
             beforeShow?.Invoke(typedInstance);
             instance.Show(onOpened);
             return typedInstance;
@@ -269,6 +264,31 @@ namespace _PawSlidePopGame._Scripts.UI.Manager
                     topPopup.Hide(); 
                 }
             }
+        }
+
+        public bool ClosePopup(PopupID id)
+        {
+            if (!_popupCache.TryGetValue(id, out BasePopup popup) || popup == null)
+            {
+                return false;
+            }
+
+            bool wasVisible = popup.gameObject.activeInHierarchy;
+            RemovePopupFromStack(popup);
+
+            if (wasVisible)
+            {
+                popup.Hide();
+            }
+
+            return wasVisible;
+        }
+
+        public bool IsPopupVisible(PopupID id)
+        {
+            return _popupCache.TryGetValue(id, out BasePopup popup) &&
+                   popup != null &&
+                   popup.gameObject.activeInHierarchy;
         }
 
         public void ClearAllPopups()
@@ -300,5 +320,39 @@ namespace _PawSlidePopGame._Scripts.UI.Manager
 
         public void ShowLoading(Action onCovered = null) => _loadingInstance?.ShowLoading(onCovered);
         public void HideLoading() => _loadingInstance?.HideLoading();
+
+        private void PushPopupToTop(BasePopup popup)
+        {
+            if (popup == null)
+            {
+                return;
+            }
+
+            RemovePopupFromStack(popup);
+            _popupStack.Push(popup);
+        }
+
+        private void RemovePopupFromStack(BasePopup popup)
+        {
+            if (popup == null || _popupStack.Count == 0)
+            {
+                return;
+            }
+
+            Stack<BasePopup> buffer = new Stack<BasePopup>();
+            while (_popupStack.Count > 0)
+            {
+                BasePopup current = _popupStack.Pop();
+                if (current != popup)
+                {
+                    buffer.Push(current);
+                }
+            }
+
+            while (buffer.Count > 0)
+            {
+                _popupStack.Push(buffer.Pop());
+            }
+        }
     }
 }

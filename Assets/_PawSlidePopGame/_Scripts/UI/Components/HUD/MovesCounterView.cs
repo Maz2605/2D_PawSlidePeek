@@ -28,6 +28,23 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             }
         }
 
+        public void ResetView(int value = 0)
+        {
+            movesAmountText?.DOKill();
+            _scaleTween?.Kill();
+            _scaleTween = null;
+
+            _currentDisplayValue = -1;
+            _targetValue = value;
+
+            if (movesAmountText != null)
+            {
+                movesAmountText.transform.localScale = Vector3.one;
+            }
+
+            UpdateTextUI(value);
+        }
+
         public void PlayValueChangedFx()
         {
             if (movesAmountText == null || _currentDisplayValue == _targetValue) 

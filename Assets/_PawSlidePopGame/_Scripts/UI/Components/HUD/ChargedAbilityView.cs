@@ -22,6 +22,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         public event Action OnCancelRequested;
 
         private ChargedAbilityHudData _currentData;
+        private bool _isInputEnabled = true;
 
         private void Awake()
         {
@@ -109,21 +110,79 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             {
                 bool canUse = _currentData.availableCharges > 0 && !_currentData.isPlacementMode && !_currentData.isComboSelectionMode;
                 useButton.gameObject.SetActive(!_currentData.isPlacementMode && !_currentData.isComboSelectionMode);
-                useButton.interactable = canUse;
+                useButton.interactable = _isInputEnabled && canUse;
             }
 
             if (cancelButton != null)
             {
                 cancelButton.gameObject.SetActive(_currentData.isPlacementMode || _currentData.isComboSelectionMode);
-                cancelButton.interactable = _currentData.isPlacementMode || _currentData.isComboSelectionMode;
+                cancelButton.interactable = _isInputEnabled &&
+                                            (_currentData.isPlacementMode || _currentData.isComboSelectionMode);
             }
 
             if (canvasGroup != null)
             {
+                canvasGroup.interactable = _isInputEnabled;
+                canvasGroup.blocksRaycasts = _isInputEnabled;
                 canvasGroup.DOKill();
                 canvasGroup.alpha = 0.85f;
                 canvasGroup.DOFade(1f, 0.15f).SetLink(gameObject, LinkBehaviour.KillOnDisable);
             }
+        }
+
+        public void SetInputEnabled(bool enabled)
+        {
+            _isInputEnabled = enabled;
+            RefreshInteractableState();
+        }
+
+        public void ResetView()
+        {
+            _currentData = null;
+            _isInputEnabled = true;
+
+            if (canvasGroup != null)
+            {
+                canvasGroup.DOKill();
+                canvasGroup.alpha = 1f;
+                canvasGroup.interactable = true;
+                canvasGroup.blocksRaycasts = true;
+            }
+
+            if (iconImage != null)
+            {
+                iconImage.sprite = null;
+                iconImage.enabled = false;
+            }
+
+            if (fillImage != null)
+            {
+                fillImage.fillAmount = 0f;
+            }
+
+            if (valueText != null)
+            {
+                valueText.text = string.Empty;
+            }
+
+            if (stateText != null)
+            {
+                stateText.text = string.Empty;
+            }
+
+            if (useButton != null)
+            {
+                useButton.gameObject.SetActive(true);
+                useButton.interactable = false;
+            }
+
+            if (cancelButton != null)
+            {
+                cancelButton.gameObject.SetActive(false);
+                cancelButton.interactable = false;
+            }
+
+            gameObject.SetActive(false);
         }
 
         private void HandleUseClicked()
@@ -134,6 +193,38 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         private void HandleCancelClicked()
         {
             OnCancelRequested?.Invoke();
+        }
+
+        private void RefreshInteractableState()
+        {
+            if (_currentData == null)
+            {
+                if (canvasGroup != null)
+                {
+                    canvasGroup.interactable = _isInputEnabled;
+                    canvasGroup.blocksRaycasts = _isInputEnabled;
+                }
+
+                return;
+            }
+
+            if (useButton != null)
+            {
+                bool canUse = _currentData.availableCharges > 0 && !_currentData.isPlacementMode && !_currentData.isComboSelectionMode;
+                useButton.interactable = _isInputEnabled && canUse;
+            }
+
+            if (cancelButton != null)
+            {
+                bool canCancel = _currentData.isPlacementMode || _currentData.isComboSelectionMode;
+                cancelButton.interactable = _isInputEnabled && canCancel;
+            }
+
+            if (canvasGroup != null)
+            {
+                canvasGroup.interactable = _isInputEnabled;
+                canvasGroup.blocksRaycasts = _isInputEnabled;
+            }
         }
 
         private void EnsureRuntimeView()

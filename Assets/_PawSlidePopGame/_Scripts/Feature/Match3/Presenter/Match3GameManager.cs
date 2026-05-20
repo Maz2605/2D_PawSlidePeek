@@ -84,6 +84,16 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             OnBoardInitialized?.Invoke(_board);
         }
 
+        public void ResetGame()
+        {
+            _board = null;
+            _ruleSet = null;
+            _random = null;
+            _lastMoveResult = null;
+            _lastExecutionResult = null;
+            _isInitialized = false;
+        }
+
         public BoardMoveExecutionResult ExecuteMove(BoardMoveRequest request)
         {
             if (!_isInitialized)

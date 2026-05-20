@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using DG.Tweening;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -11,15 +12,31 @@ namespace _PawSlidePopGame._Scripts.UI.Components.NavigationBar
     {
         public MainTabID tabID;
         public Button btn;
-        public RectTransform rectTransform; 
-        
-        [Header("Juice Target")]
-        [Tooltip("Kéo trực tiếp Object ICON vào đây để chỉ scale icon")]
-        public RectTransform iconTarget; 
+        public RectTransform rectTransform;
 
-        [HideInInspector] public Sequence animSeq; 
+        [Header("Core Target")]
+        public RectTransform iconTarget;
+        public RectTransform contentRoot;
+        public Graphic backgroundGraphic;
+
+        [Header("Optional Visual Hooks")]
+        public CanvasGroup contentGroup;
+        public Graphic[] tintTargets;
+        public RectTransform glowTarget;
+        public Graphic glowGraphic;
+
+        [HideInInspector] public Sequence animSeq;
+        [NonSerialized] public TabPoseCache poseCache;
     }
-    
+
+    [Serializable]
+    public class TabPoseCache
+    {
+        public Vector2 contentAnchoredPosition;
+        public Vector3 contentScale;
+        public Vector3 contentEulerAngles;
+    }
+
     [RequireComponent(typeof(RectTransform))]
     public class NavigationBar : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
@@ -28,193 +45,249 @@ namespace _PawSlidePopGame._Scripts.UI.Components.NavigationBar
         
         [Header("--- Tabs Setup ---")]
         [SerializeField] private NavTab[] tabs;
-        [SerializeField] private float animDuration = 0.25f;
+
+        [Header("--- Candy Crush Feel (Juicy) ---")]
+        [SerializeField] private float sliderMoveDuration = 0.25f;
+        [SerializeField] private float sliderOvershoot = 1.15f; // Độ nảy của thanh trượt
+        [SerializeField] private float activeContentScale = 1.25f; // Phóng to hơn bình thường
+        [SerializeField] private Ease bounceEase = Ease.OutBack; // Tạo độ nảy chuẩn casual
         
-        [Header("--- Magnify Effect (Kính lúp) ---")]
-        [SerializeField] private float maxScale = 1.3f;
-        [SerializeField] private float minScale = 1.0f;
-        [SerializeField] private float baseEffectRadius = 100f;
+        [Header("--- Colors & Alpha ---")]
+        [SerializeField] private float activeShadowAlpha = 1f;
+        [SerializeField] private float inactiveShadowAlpha = 0f;
+        [SerializeField] private Color activeBackgroundColor = new(1f, 0.86f, 0.32f, 1f);
+        [SerializeField] private Color inactiveBackgroundColor = new(1f, 1f, 1f, 0.65f);
+        [SerializeField] private float iconSelectedAlpha = 1f;
+        [SerializeField] private float iconInactiveAlpha = 0.6f;
 
-        [Header("--- Slider Juice ---")]
-        [SerializeField] private float baseSwipeThreshold = 80f; 
-        [SerializeField] private float stretchFactor = 0.007f; 
-        [SerializeField] private float maxStretch = 0.15f; 
-
+        [Header("--- Drag Setting ---")]
+        [SerializeField] private float baseSwipeThreshold = 60f; // Nhạy hơn một chút
+        
+        // Mở cổng Event để Manager bên ngoài bắt và chạy Âm thanh / Rung (Haptic)
         public event Action<MainTabID> OnTabClicked;
+        public event Action OnDragInteraction; 
 
+        public MainTabID CurrentTab => _currentTab;
         private MainTabID _currentTab = (MainTabID)(-1);
         private RectTransform _containerRect;
-        private Canvas _rootCanvas;
-        
-        private float _scaledSwipeThreshold;
-        private float _scaledEffectRadius;
         private float _startDragX;
-        private int _currentDragPointerId = -999; 
-        
+        private int _currentDragPointerId = -999;
+        private bool _isInitialized;
+
         private Tweener _sliderPosTween;
-        private Tweener _sliderScaleTween; 
+        private Sequence _sliderScaleSequence;
 
         public void Init()
         {
-            Canvas.ForceUpdateCanvases();
+            if (_isInitialized) return;
+
             _containerRect = GetComponent<RectTransform>();
-            _rootCanvas = GetComponentInParent<Canvas>();
 
-            float scaleFactor = _rootCanvas != null ? _rootCanvas.scaleFactor : 1f;
-            _scaledSwipeThreshold = baseSwipeThreshold * scaleFactor;
-            _scaledEffectRadius = baseEffectRadius * scaleFactor;
+            if (tabs == null || tabs.Length == 0) return;
 
-            foreach (var tab in tabs)
+            foreach (NavTab tab in tabs)
             {
+                if (tab.contentRoot == null) tab.contentRoot = tab.iconTarget;
+                
+                CacheTabPose(tab);
+                SetTabVisualInstant(tab, false);
+
                 MainTabID id = tab.tabID;
-                tab.btn.onClick.AddListener(() => {
-                    if (_currentDragPointerId == -999) ChangeTab(id);
+                tab.btn.onClick.RemoveAllListeners();
+                
+                // Hiệu ứng "Punch" nhẹ khi chạm vào nút trước khi chuyển tab
+                tab.btn.onClick.AddListener(() =>
+                {
+                    if (_currentDragPointerId == -999)
+                    {
+                        tab.contentRoot.DOPunchScale(new Vector3(-0.1f, -0.1f, 0), 0.15f, 1, 0.5f)
+                            .OnComplete(() => ChangeTab(id));
+                        
+                        OnDragInteraction?.Invoke(); // Trigger âm thanh "Click" nhỏ
+                    }
                 });
             }
+
+            _isInitialized = true;
         }
 
-        private float GetTabTargetX(NavTab tab)
+        public void ChangeTab(MainTabID tabID, bool instant = false)
         {
-            // Lấy tọa độ của iconTarget để slider bám chuẩn tâm icon
-            return _containerRect.InverseTransformPoint(tab.iconTarget.position).x;
-        }
+            if (_currentTab == tabID && !instant) return;
 
-        public void ChangeTab(MainTabID tabID, bool instant = false, bool forceSnap = false)
-        {
-            if (_currentTab == tabID && !instant && !forceSnap) return;
             bool isNew = _currentTab != tabID;
             _currentTab = tabID;
 
-            float duration = instant ? 0f : animDuration;
-            _sliderPosTween?.Kill();
-            
-            NavTab targetTab = Array.Find(tabs, t => t.tabID == tabID);
-            if (targetTab == null) return;
+            AnimateSliderToTab(tabID, instant);
 
-            float targetX = GetTabTargetX(targetTab);
-
-            if (instant)
+            foreach (NavTab tab in tabs)
             {
-                sliderBackground.anchoredPosition = new Vector2(targetX, sliderBackground.anchoredPosition.y);
-            }
-            else
-            {
-                _sliderPosTween = sliderBackground.DOAnchorPosX(targetX, duration)
-                    .SetEase(Ease.OutCubic)
-                    .SetLink(sliderBackground.gameObject);
-            }
-            
-            foreach (var tab in tabs)
-            {
-                bool isSelected = (tab.tabID == tabID);
-                tab.animSeq?.Kill();
-                tab.animSeq = DOTween.Sequence().SetLink(tab.iconTarget.gameObject); 
-
-                float s = isSelected ? maxScale : minScale;
-
-                // Chỉ tác động Scale lên iconTarget
-                tab.animSeq.Join(tab.iconTarget.DOScale(s, duration).SetEase(isSelected ? Ease.OutBack : Ease.OutQuad));
-                
-                if (instant) tab.animSeq.Complete();
+                if (tab != null && tab.contentRoot != null)
+                {
+                    AnimateTabSelection(tab, tab.tabID == tabID, instant);
+                }
             }
 
             if (isNew)
             {
-                OnTabClicked?.Invoke(tabID);
-                if (!instant) {
-                    // uddojwc
-                }
+                OnTabClicked?.Invoke(tabID); // Nơi gọi tiếng "Pop" to và Rung Haptic
             }
         }
 
-        #region Drag Logic
+        // Tối ưu GC: Thay Array.Find bằng vòng lặp for truyền thống
+        private NavTab GetTabByID(MainTabID id)
+        {
+            for (int i = 0; i < tabs.Length; i++)
+            {
+                if (tabs[i].tabID == id) return tabs[i];
+            }
+            return null;
+        }
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            if (_currentDragPointerId != -999) return;
+            if (!_isInitialized || _currentDragPointerId != -999) return;
+            
             _currentDragPointerId = eventData.pointerId;
-
-            _sliderPosTween?.Kill(); 
-            _sliderScaleTween?.Kill(); 
-            _sliderScaleTween = sliderBackground.DOScale(new Vector3(1.1f, 0.9f, 1f), 0.15f).SetEase(Ease.OutQuad);
-
-            foreach (var tab in tabs) tab.animSeq?.Kill();
-
+            _sliderPosTween?.Kill();
+            
             RectTransformUtility.ScreenPointToLocalPointInRectangle(_containerRect, eventData.position, eventData.pressEventCamera, out Vector2 startPt);
             _startDragX = startPt.x;
         }
 
         public void OnDrag(PointerEventData eventData)
         {
-            if (eventData.pointerId != _currentDragPointerId) return; 
+            // Đã loại bỏ logic update Graphic mỗi frame ở đây để cứu Performance CPU/Canvas
+            if (eventData.pointerId != _currentDragPointerId) return;
 
             if (RectTransformUtility.ScreenPointToLocalPointInRectangle(_containerRect, eventData.position, eventData.pressEventCamera, out Vector2 localPt))
             {
-                float minX = GetTabTargetX(tabs[0]);
-                float maxX = GetTabTargetX(tabs[tabs.Length - 1]);
-                float clampedX = Mathf.Clamp(localPt.x, minX, maxX);
-                
-                sliderBackground.anchoredPosition = new Vector2(clampedX, sliderBackground.anchoredPosition.y);
-                
-                float dragSpeed = Mathf.Abs(eventData.delta.x);
-                float stretchX = 1f + Mathf.Clamp(dragSpeed * stretchFactor, 0f, maxStretch);
-                float stretchY = 1f - Mathf.Clamp(dragSpeed * (stretchFactor * 0.5f), 0f, maxStretch * 0.5f);
-                sliderBackground.localScale = new Vector3(stretchX, stretchY, 1f);
-
-                // Magnifying Effect: Chỉ tác động lên LocalScale của iconTarget
-                foreach (var tab in tabs)
+                float clampedX = Mathf.Clamp(localPt.x, GetTabTargetX(tabs[0]), GetTabTargetX(tabs[tabs.Length - 1]));
+                if (sliderBackground != null)
                 {
-                    float dist = Mathf.Abs(clampedX - GetTabTargetX(tab));
-                    float lensFactor = 1f - Mathf.Clamp01(dist / _scaledEffectRadius);
-                    float curScale = Mathf.Lerp(minScale, maxScale, lensFactor);
-                    
-                    tab.iconTarget.localScale = new Vector3(curScale, curScale, 1f);
+                    sliderBackground.anchoredPosition = new Vector2(clampedX, sliderBackground.anchoredPosition.y);
                 }
             }
         }
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            if (eventData.pointerId != _currentDragPointerId) return; 
-            _currentDragPointerId = -999; 
+            if (eventData.pointerId != _currentDragPointerId) return;
             
-            _sliderScaleTween?.Kill();
-            _sliderScaleTween = sliderBackground.DOScale(Vector3.one, 0.45f).SetEase(Ease.OutElastic);
+            _currentDragPointerId = -999;
             
             RectTransformUtility.ScreenPointToLocalPointInRectangle(_containerRect, eventData.position, eventData.pressEventCamera, out Vector2 endPt);
             float deltaX = endPt.x - _startDragX;
 
             MainTabID targetID = _currentTab;
-            if (Mathf.Abs(deltaX) > _scaledSwipeThreshold)
+
+            // Xử lý vuốt để chuyển tab
+            if (Mathf.Abs(deltaX) > baseSwipeThreshold)
             {
-                int curIdx = Array.FindIndex(tabs, t => t.tabID == _currentTab);
-                int dir = deltaX > 0 ? 1 : -1; 
-                targetID = tabs[Mathf.Clamp(curIdx + dir, 0, tabs.Length - 1)].tabID;
-            }
-            else
-            {
-                float minD = float.MaxValue;
-                foreach (var t in tabs)
-                {
-                    float d = Mathf.Abs(sliderBackground.anchoredPosition.x - GetTabTargetX(t));
-                    if (d < minD) { minD = d; targetID = t.tabID; }
-                }
+                int currentIndex = GetTabIndex(_currentTab);
+                int direction = deltaX > 0 ? 1 : -1;
+                int targetIndex = Mathf.Clamp(currentIndex + direction, 0, tabs.Length - 1);
+                targetID = tabs[targetIndex].tabID;
             }
 
-            if (targetID == _currentTab) {
-                // uddojwc
-            }
-            
-            ChangeTab(targetID, false, true);
+            ChangeTab(targetID, false);
         }
 
-        #endregion
+        private int GetTabIndex(MainTabID id)
+        {
+            for (int i = 0; i < tabs.Length; i++)
+            {
+                if (tabs[i].tabID == id) return i;
+            }
+            return 0;
+        }
+
+        private float GetTabTargetX(NavTab tab)
+        {
+            return _containerRect.InverseTransformPoint(tab.rectTransform.position).x;
+        }
+
+        private void AnimateSliderToTab(MainTabID tabID, bool instant)
+        {
+            NavTab targetTab = GetTabByID(tabID);
+            if (targetTab == null || sliderBackground == null) return;
+
+            float targetX = GetTabTargetX(targetTab);
+            _sliderPosTween?.Kill();
+            _sliderScaleSequence?.Kill();
+
+            if (instant)
+            {
+                sliderBackground.anchoredPosition = new Vector2(targetX, sliderBackground.anchoredPosition.y);
+                sliderBackground.localScale = Vector3.one;
+                return;
+            }
+
+            // DOTween: Kéo background chạy sang với độ nảy nhẹ
+            _sliderPosTween = sliderBackground.DOAnchorPosX(targetX, sliderMoveDuration)
+                .SetEase(Ease.OutCubic);
+            
+            // DOTween: Squash & Stretch cho background lúc trượt
+            _sliderScaleSequence = DOTween.Sequence();
+            _sliderScaleSequence
+                .Append(sliderBackground.DOScale(new Vector3(1.1f, 0.9f, 1f), sliderMoveDuration * 0.5f))
+                .Append(sliderBackground.DOScale(Vector3.one, sliderMoveDuration * 0.5f).SetEase(bounceEase));
+        }
+
+        private void AnimateTabSelection(NavTab tab, bool selected, bool instant)
+        {
+            tab.animSeq?.Kill();
+            
+            Vector3 targetScale = tab.poseCache.contentScale * (selected ? activeContentScale : 1f);
+            Color targetBgColor = selected ? activeBackgroundColor : inactiveBackgroundColor;
+            float targetAlpha = selected ? iconSelectedAlpha : iconInactiveAlpha;
+
+            if (instant)
+            {
+                SetTabVisualInstant(tab, selected);
+                return;
+            }
+
+            tab.animSeq = DOTween.Sequence();
+            
+            // Animation nảy lên mạnh mẽ (Candy Crush feel)
+            tab.animSeq.Join(tab.contentRoot.DOScale(targetScale, sliderMoveDuration).SetEase(selected ? bounceEase : Ease.OutQuad));
+            
+            // Thay đổi màu sắc nền
+            if (tab.backgroundGraphic != null)
+            {
+                tab.animSeq.Join(tab.backgroundGraphic.DOColor(targetBgColor, sliderMoveDuration));
+            }
+
+            // Alpha cho Icon
+            if (tab.contentGroup != null)
+            {
+                tab.animSeq.Join(tab.contentGroup.DOFade(targetAlpha, sliderMoveDuration));
+            }
+        }
+
+        private void CacheTabPose(NavTab tab)
+        {
+            tab.poseCache = new TabPoseCache
+            {
+                contentAnchoredPosition = tab.contentRoot.anchoredPosition,
+                contentScale = tab.contentRoot.localScale,
+                contentEulerAngles = tab.contentRoot.localEulerAngles
+            };
+        }
+
+        private void SetTabVisualInstant(NavTab tab, bool selected)
+        {
+            tab.contentRoot.localScale = tab.poseCache.contentScale * (selected ? activeContentScale : 1f);
+            if (tab.backgroundGraphic != null) tab.backgroundGraphic.color = selected ? activeBackgroundColor : inactiveBackgroundColor;
+            if (tab.contentGroup != null) tab.contentGroup.alpha = selected ? iconSelectedAlpha : iconInactiveAlpha;
+        }
 
         private void OnDestroy()
         {
             _sliderPosTween?.Kill();
-            _sliderScaleTween?.Kill();
-            foreach (var tab in tabs) tab.animSeq?.Kill();
+            _sliderScaleSequence?.Kill();
+            foreach (NavTab tab in tabs) tab?.animSeq?.Kill();
         }
     }
 }

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using _PawSlidePopGame._Scripts.Data.Events;
 using _PawSlidePopGame._Scripts.Data.Events.Payloads;
+using _PawSlidePopGame._Scripts.Core.System.GameFlow;
 using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
 using _PawSlidePopGame._Scripts.Feature.Match3.Data;
 using _PawSlidePopGame._Scripts.Feature.Match3.Flow;
@@ -9,8 +10,10 @@ using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Board;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presentation;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presenter;
+using _PawSlidePopGame._Scripts.UI.Popups;
 using _PawSlidePopGame._Scripts.UI.Manager;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
@@ -414,6 +417,68 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
         }
 
         [Test]
+        public void GameFlowManager_PauseGameplay_PlayerTurn_ShowsPausePopupAndRestoresStateOnResume()
+        {
+            UIManager uiManager = CreateUIManager();
+            Match3LevelData levelData = CreateLevelData(3, 3, new[]
+            {
+                101, 102, 103,
+                102, 103, 101,
+                103, 101, 102
+            });
+
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateNormalTile(102, AnimalTileId.Dog),
+                CreateNormalTile(103, AnimalTileId.Fox));
+
+            GameFlowManager flowManager = CreateFlowManager(levelData, database);
+
+            Assert.That(flowManager.CurrentInGameSubState, Is.EqualTo(InGameSubState.PlayerTurn));
+
+            flowManager.PauseGameplay();
+
+            Assert.That(flowManager.CurrentInGameSubState, Is.EqualTo(InGameSubState.Paused));
+            Assert.That(uiManager.IsPopupVisible(PopupID.PausePopup), Is.True);
+
+            flowManager.ResumeGameplay();
+
+            Assert.That(flowManager.CurrentInGameSubState, Is.EqualTo(InGameSubState.PlayerTurn));
+            Assert.That(uiManager.IsPopupVisible(PopupID.PausePopup), Is.False);
+        }
+
+        [Test]
+        public void GameFlowManager_PauseGameplay_DuringResolvingBoard_IsIgnoredAndDoesNotOpenPopup()
+        {
+            UIManager uiManager = CreateUIManager();
+            Match3LevelData levelData = CreateLevelData(3, 4, new[]
+            {
+                101, 102, 101,
+                103, 101, 102,
+                102, 103, 101,
+                101, 103, 102
+            });
+            levelData.spawnableTileIds = new List<int> { 101, 102, 103 };
+
+            Match3TileDatabaseSO database = CreateDatabase(
+                CreateNormalTile(101, AnimalTileId.Cat),
+                CreateNormalTile(102, AnimalTileId.Dog),
+                CreateNormalTile(103, AnimalTileId.Fox));
+
+            GameFlowManager flowManager = CreateFlowManager(levelData, database);
+            BoardMoveExecutionResult result = flowManager.RequestMove(
+                new BoardMoveRequest(MoveAxis.Row, 1, LineSlideDirection.Right, 1, 1));
+
+            Assert.That(result.IsAccepted, Is.True);
+            Assert.That(flowManager.CurrentInGameSubState, Is.EqualTo(InGameSubState.ResolvingBoard));
+
+            flowManager.PauseGameplay();
+
+            Assert.That(flowManager.CurrentInGameSubState, Is.EqualTo(InGameSubState.ResolvingBoard));
+            Assert.That(uiManager.IsPopupVisible(PopupID.PausePopup), Is.False);
+        }
+
+        [Test]
         public void GameFlowManager_PlaybackCallbacks_PublishScoreTargetAndCompletionEvents()
         {
             Match3LevelData levelData = CreateLevelData(3, 3, new[]
@@ -756,6 +821,20 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Editor
 
             flowManager.EnterGameplay();
             return flowManager;
+        }
+
+        private static UIManager CreateUIManager()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/_PawSlidePopGame/_Prefabs/UI/UIManager.prefab");
+            Assert.That(prefab, Is.Not.Null, "Missing UIManager prefab for tests.");
+
+            GameObject instance = Object.Instantiate(prefab);
+            UIManager uiManager = instance.GetComponent<UIManager>();
+            Assert.That(uiManager, Is.Not.Null);
+
+            uiManager.Init();
+            return uiManager;
         }
 
         private static Match3LevelData CreateLevelData(int width, int height, int[] layout)

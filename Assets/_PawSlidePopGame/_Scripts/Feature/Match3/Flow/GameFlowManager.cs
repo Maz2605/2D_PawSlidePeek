@@ -9,9 +9,6 @@ using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Board;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presentation;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presenter;
-using _PawSlidePopGame._Scripts.UI.Manager;
-using _PawSlidePopGame._Scripts.UI.Screens;
-using _PawSlidePopGame._Scripts.UI.Screens.Gameplay;
 using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
 using UnityEngine;
 
@@ -38,9 +35,19 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
             CurrentInGameSubState == InGameSubState.PlayerTurn &&
             gameManager != null &&
             gameManager.IsInitialized;
+        public bool CanPauseGameplay =>
+            CurrentGameState == GameState.Gameplay &&
+            IsInteractiveGameplaySubState(CurrentInGameSubState);
 
         public bool IsInChargedPlacementMode => CurrentInGameSubState == InGameSubState.TargetingChargedPlacement;
         public bool IsInChargedComboMode => CurrentInGameSubState == InGameSubState.TargetingChargedCombo;
+
+        public static bool IsInteractiveGameplaySubState(InGameSubState subState)
+        {
+            return subState == InGameSubState.PlayerTurn ||
+                   subState == InGameSubState.TargetingChargedPlacement ||
+                   subState == InGameSubState.TargetingChargedCombo;
+        }
 
         protected override void Awake()
         {
@@ -53,14 +60,6 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
             }
         }
 
-        private void Start()
-        {
-            if (autoStartFlow)
-            {
-                EnterGameplay();
-            }
-        }
-
         public void EnterGameplay()
         {
             if (gameManager == null)
@@ -69,10 +68,26 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
                 return;
             }
 
+            if (!gameObject.activeInHierarchy)
+            {
+                Debug.LogWarning("[GameFlowManager] EnterGameplay ignored because gameplay session is inactive.", this);
+                return;
+            }
+
             SetGameState(GameState.Gameplay);
             SetInGameSubState(InGameSubState.Bootstrapping);
-            UIManager.Instance?.ShowScreen<GameplayScreen>(ScreenID.Gameplay);
             BeginBoardPreparation();
+        }
+
+        public void ExitGameplay()
+        {
+            _chargedComboSource = null;
+            _objectiveTracker = null;
+            _chargedAbilityTracker = null;
+            _lastSnapshot = null;
+            _resumeSubState = InGameSubState.PlayerTurn;
+            CurrentGameState = GameState.None;
+            CurrentInGameSubState = InGameSubState.None;
         }
 
         public void BeginBoardPreparation()
@@ -407,14 +422,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
 
         public void PauseGameplay()
         {
-            if (CurrentGameState != GameState.Gameplay || CurrentInGameSubState == InGameSubState.Paused)
+            if (!CanPauseGameplay || CurrentInGameSubState == InGameSubState.Paused)
             {
                 return;
             }
 
-            _resumeSubState = CurrentInGameSubState == InGameSubState.None
-                ? InGameSubState.PlayerTurn
-                : CurrentInGameSubState;
+            _resumeSubState = IsInteractiveGameplaySubState(CurrentInGameSubState)
+                ? CurrentInGameSubState
+                : InGameSubState.PlayerTurn;
 
             SetInGameSubState(InGameSubState.Paused);
             EventManager<VisualGameEvent>.Post(VisualGameEvent.GameplayPausedFx);
@@ -427,7 +442,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
                 return;
             }
 
-            InGameSubState targetState = _resumeSubState == InGameSubState.None
+            InGameSubState targetState = _resumeSubState == InGameSubState.None || _resumeSubState == InGameSubState.Paused
                 ? InGameSubState.PlayerTurn
                 : _resumeSubState;
 
@@ -698,4 +713,3 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
         }
     }
 }
-

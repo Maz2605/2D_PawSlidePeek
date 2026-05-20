@@ -1,6 +1,7 @@
-﻿public enum MainTabID
-    {
-        Shop = 0,
-        Home = 1,
-        Settings = 2
-    }
+public enum MainTabID
+{
+    MapTab = 0,
+    StarRewards = 1,
+    SpinWheelTab = 2,
+    Shop = 3
+}

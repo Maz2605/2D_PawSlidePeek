@@ -1,11 +1,10 @@
 using _PawSlidePopGame._Scripts.Core.Audio;
-using _PawSlidePopGame._Scripts.Core.System.SceneManagement;
+using _PawSlidePopGame._Scripts.Core.System.GameFlow;
 using _PawSlidePopGame._Scripts.Data.Events.Payloads;
 using _PawSlidePopGame._Scripts.UI.Base;
 using _PawSlidePopGame._Scripts.UI.Components.Popup;
 using DG.Tweening;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace _PawSlidePopGame._Scripts.UI.Popups
@@ -118,20 +117,9 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
             if (nextLevelButton) nextLevelButton.interactable = enabled;
         }
 
-        private void HandleLevelsPressed() => ReloadCurrentScene();
-        private void HandleRepeatPressed() => ReloadCurrentScene();
-        private void HandleNextLevelPressed() => ReloadCurrentScene();
-
-        
-        //Temp
-        private void ReloadCurrentScene()
-        {
-            string currentScene = SceneManager.GetActiveScene().name;
-            if (SceneLoaderManager.Instance != null)
-                SceneLoaderManager.Instance.LoadScene(currentScene);
-            else
-                SceneManager.LoadScene(currentScene);
-        }
+        private void HandleLevelsPressed() => GameAppFlowManager.Instance?.EnterMainMenu();
+        private void HandleRepeatPressed() => GameAppFlowManager.Instance?.RestartGameplay();
+        private void HandleNextLevelPressed() => GameAppFlowManager.Instance?.RestartGameplay();
 
         private void ResetLayoutState()
         {
