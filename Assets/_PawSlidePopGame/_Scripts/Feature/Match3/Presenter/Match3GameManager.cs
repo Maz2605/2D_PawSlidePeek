@@ -11,8 +11,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 {
     public class Match3GameManager : MonoBehaviour
     {
-        [Header("Data")]    
-        [SerializeField] private Match3LevelDefinitionSO levelDefinition;
+        [Header("Data")]
         [SerializeField] private Match3TileDatabaseSO tileDatabase;
 
         [Header("Runtime Config")]
@@ -25,9 +24,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         private BoardResolutionResult _lastMoveResult;
         private BoardMoveExecutionResult _lastExecutionResult;
         private bool _isInitialized;
+        private Match3LevelData _activeLevelData;
 
         public BoardModel Board => _board;
-        public Match3LevelData LevelData => levelDefinition != null ? levelDefinition.LevelData : null;
+        public Match3LevelData LevelData => _activeLevelData;
         public Match3TileDatabaseSO TileDatabase => tileDatabase;
         public BoardResolutionResult LastMoveResult => _lastMoveResult;
         public BoardMoveExecutionResult LastExecutionResult => _lastExecutionResult;
@@ -37,16 +37,15 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         public event Action<BoardModel> OnBoardInitialized;
         public event Action<BoardMoveExecutionResult> OnMoveExecuted;
 
+        public void SetLevelData(Match3LevelData levelData)
+        {
+            _activeLevelData = levelData;
+        }
+
         public void InitializeGame()
         {
             if (_isInitialized)
             {
-                return;
-            }
-
-            if (levelDefinition == null)
-            {
-                Debug.LogError("[Match3GameManager] Missing level definition.");
                 return;
             }
 
@@ -56,10 +55,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 return;
             }
 
-            Match3LevelData levelData = levelDefinition.LevelData;
+            Match3LevelData levelData = _activeLevelData;
             if (levelData == null)
             {
-                Debug.LogError("[Match3GameManager] Level definition has no level data.");
+                Debug.LogError("[Match3GameManager] Missing active level data. Inject level data before InitializeGame().");
                 return;
             }
 
@@ -91,6 +90,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             _random = null;
             _lastMoveResult = null;
             _lastExecutionResult = null;
+            _activeLevelData = null;
             _isInitialized = false;
         }
 
@@ -105,7 +105,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             _lastExecutionResult = BoardResolutionService.ExecuteMove(
                 _board,
                 request,
-                levelDefinition.LevelData,
+                LevelData,
                 tileDatabase,
                 _random,
                 _ruleSet);
@@ -136,7 +136,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 _board,
                 x,
                 y,
-                levelDefinition.LevelData,
+                LevelData,
                 tileDatabase,
                 _random,
                 _ruleSet);

@@ -1,6 +1,7 @@
 using _PawSlidePopGame._Scripts.Core.System.GameFlow;
 using _PawSlidePopGame._Scripts.Data.Events;
 using _PawSlidePopGame._Scripts.Data.Events.Payloads;
+using _PawSlidePopGame._Scripts.Feature.Match3.Boosters;
 using _PawSlidePopGame._Scripts.Feature.Match3.Flow;
 using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Board;
@@ -17,6 +18,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         [SerializeField] private Match3GameManager gameManager;
         [SerializeField] private Match3BoardView boardView;
         [SerializeField] private Match3InputController inputController;
+        [SerializeField] private BoosterController boosterController;
 
         private Coroutine _movePlaybackRoutine;
         private bool _isAnimatingMove;
@@ -36,6 +38,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             if (inputController == null)
             {
                 inputController = GetComponent<Match3InputController>();
+            }
+
+            if (boosterController == null)
+            {
+                boosterController = FindFirstObjectByType<BoosterController>(FindObjectsInactive.Include);
             }
         }
 
@@ -59,6 +66,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 inputController.OnPreviewStarted += HandlePreviewStarted;
                 inputController.OnPreviewUpdated += HandlePreviewUpdated;
                 inputController.OnPreviewCleared += HandlePreviewCleared;
+            }
+
+            if (boosterController != null)
+            {
+                boosterController.OnExecutionRequested += HandleBoosterExecutionRequested;
+                boosterController.OnActiveBoosterChanged += HandleActiveBoosterChanged;
             }
 
             EventManager<LogicGameEvent>.AddListener<InGameSubStateChangedPayload>(
@@ -99,6 +112,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 inputController.OnPreviewStarted -= HandlePreviewStarted;
                 inputController.OnPreviewUpdated -= HandlePreviewUpdated;
                 inputController.OnPreviewCleared -= HandlePreviewCleared;
+            }
+
+            if (boosterController != null)
+            {
+                boosterController.OnExecutionRequested -= HandleBoosterExecutionRequested;
+                boosterController.OnActiveBoosterChanged -= HandleActiveBoosterChanged;
             }
 
             EventManager<LogicGameEvent>.RemoveListener<InGameSubStateChangedPayload>(
@@ -144,6 +163,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 return;
             }
 
+            if (boosterController != null && boosterController.TryHandleLineSwipe(request))
+            {
+                return;
+            }
+
             if (_movePlaybackRoutine != null)
             {
                 StopCoroutine(_movePlaybackRoutine);
@@ -157,6 +181,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         private void HandleTileTapped(CellModel cell)
         {
             if (_isAnimatingMove || cell == null || GameFlowManager.Instance == null)
+            {
+                return;
+            }
+
+            if (boosterController != null && boosterController.TryHandleTileTap(cell))
             {
                 return;
             }
@@ -223,6 +252,31 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             _movePlaybackRoutine = StartCoroutine(PlayExecutionRoutine(() => GameFlowManager.Instance != null
                 ? GameFlowManager.Instance.RequestTileActivation(x, y)
                 : new BoardMoveExecutionResult()));
+        }
+
+        private void HandleBoosterExecutionRequested(System.Func<BoardMoveExecutionResult> executeAction)
+        {
+            if (_isAnimatingMove || executeAction == null)
+            {
+                return;
+            }
+
+            if (_movePlaybackRoutine != null)
+            {
+                StopCoroutine(_movePlaybackRoutine);
+            }
+
+            _movePlaybackRoutine = StartCoroutine(PlayExecutionRoutine(executeAction));
+        }
+
+        private void HandleActiveBoosterChanged(BoosterDefinitionSO boosterDefinition)
+        {
+            if (_isAnimatingMove)
+            {
+                return;
+            }
+
+            boardView?.ClearPreview();
         }
 
         private System.Collections.IEnumerator PlayExecutionRoutine(System.Func<BoardMoveExecutionResult> executeAction)

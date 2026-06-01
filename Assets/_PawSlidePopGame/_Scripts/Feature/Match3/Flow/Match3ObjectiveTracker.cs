@@ -27,7 +27,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
                     continue;
                 }
 
-                TileDefinitionSO definition = tileDatabase != null ? tileDatabase.GetTileDefinition(target.tileId) : null;
+                BoardContentDefinitionSO definition = tileDatabase != null ? tileDatabase.GetTargetContentDefinition(target.tileId) : null;
                 TargetProgressData progress = new TargetProgressData
                 {
                     tileId = target.tileId,

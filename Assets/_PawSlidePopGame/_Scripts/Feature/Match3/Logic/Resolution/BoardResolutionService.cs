@@ -293,6 +293,26 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             return result;
         }
 
+        internal static void ResolveAfterBoosterMutation(
+            BoardModel board,
+            Match3LevelData levelData,
+            Match3TileDatabaseSO tileDatabase,
+            Random random,
+            BoardResolutionResult result,
+            BoardPresentationTraceBuilder traceBuilder,
+            BoardRuleSet ruleSet = null)
+        {
+            BoardRuleSet activeRuleSet = ruleSet ?? BoardRuleSet.Default;
+            if (board == null || levelData == null || tileDatabase == null || random == null || result == null || traceBuilder == null || activeRuleSet.MatchRule == null)
+            {
+                return;
+            }
+
+            ResolveBoard(board, levelData, tileDatabase, random, result, activeRuleSet.MatchRule, null, traceBuilder, null);
+            ApplyDeliveryMechanics(board, levelData, tileDatabase, random, result, activeRuleSet.MatchRule, traceBuilder);
+            ApplyChocolateGrowth(board, tileDatabase, random, result, traceBuilder);
+        }
+
         private static void ResolveBoard(
             BoardModel board,
             Match3LevelData levelData,
@@ -876,7 +896,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             return Math.Abs(sourceCell.Y - destinationCell.Y) > 1;
         }
 
-        private static int CountCascadeAsResolved(CascadeTrace cascadeTrace)
+        internal static int CountCascadeAsResolved(CascadeTrace cascadeTrace)
         {
             if (cascadeTrace == null)
             {

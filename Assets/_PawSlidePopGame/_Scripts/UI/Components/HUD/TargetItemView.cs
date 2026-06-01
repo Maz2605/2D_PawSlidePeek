@@ -43,9 +43,10 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             gameObject.SetActive(true);
             BoundTileId = data.tileId;
 
-            if (iconImage != null && data.icon != null)
+            if (iconImage != null)
             {
                 iconImage.sprite = data.icon;
+                iconImage.enabled = data.icon != null;
             }
 
             if (shadowImage != null)

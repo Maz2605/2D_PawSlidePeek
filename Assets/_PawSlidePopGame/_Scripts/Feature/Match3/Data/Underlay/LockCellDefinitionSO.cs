@@ -11,6 +11,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
 
         public override int DefaultHP => defaultHP;
         public override UnderlayLogicType LogicType => UnderlayLogicType.LockCell;
+        public override bool SupportsTargetObjective => true;
     }
 }
 

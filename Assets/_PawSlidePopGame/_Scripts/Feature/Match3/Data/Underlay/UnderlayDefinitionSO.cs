@@ -13,6 +13,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
         public override BoardLayer ContentLayer => BoardLayer.Underlay;
         public override bool CanSpawnOnRefill => false;
         public override int SpawnWeight => 0;
+        public override bool SupportsTargetObjective => false;
+        public override string TargetObjectiveRestrictionReason => "Underlay objective targets must come from a destructible underlay definition.";
         public abstract UnderlayLogicType LogicType { get; }
 
         protected override void OnValidate()

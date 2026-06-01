@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5977b579d7473b47b204c821224db53, type: 3}
+  m_Name: RainbowBooster
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Match3.Boosters.BoosterDefinitionSO
+  boosterId: rainbow
+  displayName: Rainbow
+  icon: {fileID: 21300000, guid: 6df58617877a949d38ef6eba9819915e, type: 3}
+  boosterType: 3
+  targetingMode: 1
+  isUnlocked: 1
+  unlockLevel: 1
+  consumesMove: 0
+  isUnlimitedForDev: 0
+  createdTileId: 155
+  initialCount: 3
+  coinPrice: 500

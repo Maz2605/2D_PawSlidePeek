@@ -1,0 +1,197 @@
+using System.Collections.Generic;
+using System.Linq;
+using _PawSlidePopGame._Scripts.Data.LevelProvider;
+using _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Contracts;
+using _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Model;
+using _PawSlidePopGame._Scripts.Feature.LevelEditor.Persistence;
+using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
+using _PawSlidePopGame._Scripts.Feature.Match3.Data;
+
+namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Mapping
+{
+    public static class LevelEditorDocumentMapper
+    {
+        public static LevelEditorSessionContext CreateNew(string levelId, int displayLevelNumber, int width, int height, int movesLimit, IReadOnlyList<int> spawnableTileIds = null)
+        {
+            LevelEditorBoardState board = new LevelEditorBoardState();
+            board.Initialize(width, height);
+
+            return new LevelEditorSessionContext
+            {
+                levelId = string.IsNullOrWhiteSpace(levelId) ? "Level_001" : levelId.Trim(),
+                displayLevelNumber = displayLevelNumber > 0 ? displayLevelNumber : 1,
+                movesLimit = movesLimit > 0 ? movesLimit : 1,
+                board = board,
+                spawnableTileIds = spawnableTileIds != null ? new List<int>(spawnableTileIds) : new List<int>(),
+                isDirty = false
+            };
+        }
+
+        public static LevelEditorSessionContext LoadFromDocument(LevelSaveData document)
+        {
+            Match3LevelData levelData = document?.levelData ?? new Match3LevelData();
+            LevelEditorBoardState board = new LevelEditorBoardState();
+            board.Initialize(levelData.width, levelData.height);
+
+            CopyLayout(levelData.tileLayout, board.tileLayout);
+            CopyLayout(levelData.overlayLayout, board.overlayLayout);
+            CopyLayout(levelData.underlayLayout, board.underlayLayout);
+            CopyMask(levelData.playableMask, board.playableMask);
+
+            return new LevelEditorSessionContext
+            {
+                levelId = string.IsNullOrWhiteSpace(document?.levelId) ? levelData.levelID : document.levelId,
+                displayLevelNumber = levelData.DisplayLevelNumber,
+                movesLimit = levelData.movesLimit > 0 ? levelData.movesLimit : 1,
+                board = board,
+                spawnableTileIds = levelData.spawnableTileIds != null ? new List<int>(levelData.spawnableTileIds) : new List<int>(),
+                isDirty = false
+            };
+        }
+
+        public static LevelSaveData BuildDocument(
+            LevelEditorSessionContext context,
+            Match3TileDatabaseSO database,
+            IReadOnlyList<LevelTargetRequirement> targets,
+            int schemaVersion = 1)
+        {
+            Match3LevelData levelData = new Match3LevelData
+            {
+                levelID = LevelPathUtility.SanitizeLevelId(context.levelId),
+                displayLevelNumber = context.displayLevelNumber > 0 ? context.displayLevelNumber : 1,
+                width = context.board.width,
+                height = context.board.height,
+                movesLimit = context.movesLimit > 0 ? context.movesLimit : 1,
+                tileLayout = (int[])context.board.tileLayout.Clone(),
+                overlayLayout = (int[])context.board.overlayLayout.Clone(),
+                underlayLayout = (int[])context.board.underlayLayout.Clone(),
+                playableMask = (bool[])context.board.playableMask.Clone(),
+                spawnableTileIds = ResolveSpawnableTileIds(context, database),
+                targets = BuildTargets(targets)
+            };
+
+            return LevelEditorDocumentFactory.Create(levelData, schemaVersion);
+        }
+
+        private static List<int> ResolveSpawnableTileIds(LevelEditorSessionContext context, Match3TileDatabaseSO database)
+        {
+            List<int> spawnables = new List<int>();
+
+            if (context.spawnableTileIds != null)
+            {
+                for (int i = 0; i < context.spawnableTileIds.Count; i++)
+                {
+                    int tileId = context.spawnableTileIds[i];
+                    if (tileId > 0 && !spawnables.Contains(tileId))
+                    {
+                        spawnables.Add(tileId);
+                    }
+                }
+            }
+
+            if (context.board?.tileLayout != null && database != null)
+            {
+                for (int i = 0; i < context.board.tileLayout.Length; i++)
+                {
+                    int tileId = context.board.tileLayout[i];
+                    TileDefinitionSO definition = database.GetTileDefinition(tileId);
+                    if (definition == null || definition.TileKind != TileKind.Normal || !definition.CanSpawnOnRefill)
+                    {
+                        continue;
+                    }
+
+                    if (!spawnables.Contains(tileId))
+                    {
+                        spawnables.Add(tileId);
+                    }
+                }
+            }
+
+            if (spawnables.Count == 0 && database != null)
+            {
+                IReadOnlyList<BoardContentDefinitionSO> definitions = database.Tiles;
+                for (int i = 0; i < definitions.Count; i++)
+                {
+                    if (definitions[i] is TileDefinitionSO tileDefinition &&
+                        tileDefinition.TileKind == TileKind.Normal &&
+                        tileDefinition.CanSpawnOnRefill &&
+                        tileDefinition.SpawnWeight > 0 &&
+                        !spawnables.Contains(tileDefinition.TileId))
+                    {
+                        spawnables.Add(tileDefinition.TileId);
+                    }
+                }
+            }
+
+            return spawnables;
+        }
+
+        public static List<LevelTargetRequirement> LoadTargetsFromDocument(LevelSaveData document)
+        {
+            Match3LevelData levelData = document?.levelData;
+            return levelData?.targets != null
+                ? levelData.targets.Select(target => new LevelTargetRequirement(target.tileId, target.requiredCount)).ToList()
+                : new List<LevelTargetRequirement>();
+        }
+
+        private static List<LevelTargetData> BuildTargets(IReadOnlyList<LevelTargetRequirement> goals)
+        {
+            List<LevelTargetData> targets = new List<LevelTargetData>();
+            if (goals == null)
+            {
+                return targets;
+            }
+
+            for (int i = 0; i < goals.Count; i++)
+            {
+                LevelTargetRequirement goal = goals[i];
+                if (goal.tileId <= 0 || goal.requiredCount <= 0)
+                {
+                    continue;
+                }
+
+                targets.Add(new LevelTargetData(goal.tileId, goal.requiredCount));
+            }
+
+            return targets;
+        }
+
+        private static void CopyLayout(int[] source, int[] destination)
+        {
+            if (source == null || destination == null)
+            {
+                return;
+            }
+
+            int count = source.Length < destination.Length ? source.Length : destination.Length;
+            for (int i = 0; i < count; i++)
+            {
+                destination[i] = source[i] < 0 ? 0 : source[i];
+            }
+        }
+
+        private static void CopyMask(bool[] source, bool[] destination)
+        {
+            if (destination == null)
+            {
+                return;
+            }
+
+            if (source == null)
+            {
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    destination[i] = true;
+                }
+
+                return;
+            }
+
+            int count = source.Length < destination.Length ? source.Length : destination.Length;
+            for (int i = 0; i < count; i++)
+            {
+                destination[i] = source[i];
+            }
+        }
+    }
+}

@@ -148,6 +148,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities
             if (TileLogic != null)
             {
                 TileLogic.OnMatched(board, cell, this, fxContext);
+                NotifyUnderlayMatched(board, cell, fxContext);
                 return;
             }
 
@@ -170,6 +171,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities
             if (TileLogic != null)
             {
                 TileLogic.OnExploded(board, cell, this, fxContext);
+                NotifyUnderlayExploded(board, cell, fxContext);
                 return;
             }
 
@@ -201,6 +203,28 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities
         public void NotifyExitedCell(BoardModel board, CellModel cell, BoardFxContext fxContext = null)
         {
             UnderlayLogic?.OnTileExited(board, cell, this, fxContext);
+        }
+
+        private void NotifyUnderlayMatched(BoardModel board, CellModel cell, BoardFxContext fxContext)
+        {
+            UnderlayContentModel underlay = cell?.Underlay;
+            if (underlay == null || ReferenceEquals(underlay, this))
+            {
+                return;
+            }
+
+            underlay.Match(board, cell, fxContext);
+        }
+
+        private void NotifyUnderlayExploded(BoardModel board, CellModel cell, BoardFxContext fxContext)
+        {
+            UnderlayContentModel underlay = cell?.Underlay;
+            if (underlay == null || ReferenceEquals(underlay, this))
+            {
+                return;
+            }
+
+            underlay.Explode(board, cell, fxContext);
         }
     }
 }

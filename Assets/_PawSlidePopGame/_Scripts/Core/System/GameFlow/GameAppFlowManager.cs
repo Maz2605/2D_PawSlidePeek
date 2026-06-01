@@ -24,6 +24,7 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
         private bool _isInitialized;
         private GameFlowManager _gameFlowManager;
         private Match3GameManager _gameManager;
+        private Match3LevelManager _levelManager;
         private Match3BoardPresenter _boardPresenter;
         private Transform _gameplaySessionRoot;
 
@@ -93,6 +94,20 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
             CurrentLevelId = string.IsNullOrWhiteSpace(levelId) ? tempLevelId : levelId;
 
             ExitGameplaySession();
+            if (!TryResolveLevelManager())
+            {
+                Debug.LogError("[GameAppFlowManager] Missing Match3LevelManager in active scene.", this);
+                return false;
+            }
+
+            _levelManager.SetRequestedLevelId(CurrentLevelId);
+            if (!_levelManager.TryLoadCurrentLevel(out var levelData))
+            {
+                Debug.LogError($"[GameAppFlowManager] Failed to load level '{CurrentLevelId}'.", this);
+                return false;
+            }
+
+            _gameManager?.SetLevelData(levelData);
             SetAppState(GameAppState.EnteringGameplay);
             SetGameplaySessionActive(true);
             UIManager.Instance.ClearAllPopups();
@@ -125,6 +140,7 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
             CloseGameplayPopups();
             _boardPresenter?.ResetPresentation();
             _gameManager?.ResetGame();
+            _levelManager?.ClearLoadedLevel();
             SetGameplaySessionActive(false);
         }
 
@@ -173,8 +189,20 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
             _gameManager = _gameFlowManager != null
                 ? _gameFlowManager.GetComponent<Match3GameManager>()
                 : FindFirstObjectByType<Match3GameManager>(FindObjectsInactive.Include);
+            _levelManager = FindFirstObjectByType<Match3LevelManager>(FindObjectsInactive.Include);
             _boardPresenter = FindFirstObjectByType<Match3BoardPresenter>(FindObjectsInactive.Include);
             return _gameFlowManager != null;
+        }
+
+        private bool TryResolveLevelManager()
+        {
+            if (_levelManager != null)
+            {
+                return true;
+            }
+
+            _levelManager = FindFirstObjectByType<Match3LevelManager>(FindObjectsInactive.Include);
+            return _levelManager != null;
         }
 
         private bool TryResolveGameplaySessionRoot()

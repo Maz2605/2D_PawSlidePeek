@@ -73,6 +73,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
             return definition;
         }
 
+        public BoardContentDefinitionSO GetTargetContentDefinition(int tileId)
+        {
+            return GetContentDefinition(tileId);
+        }
+
         public TileDefinitionSO GetTileDefinition(int tileId)
         {
             return GetContentDefinition(tileId) as TileDefinitionSO;
@@ -86,6 +91,19 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
         public UnderlayDefinitionSO GetUnderlayDefinition(int tileId)
         {
             return GetContentDefinition(tileId) as UnderlayDefinitionSO;
+        }
+
+        public bool IsTargetObjectiveSupported(int tileId, out BoardContentDefinitionSO definition, out string reason)
+        {
+            definition = GetTargetContentDefinition(tileId);
+            if (definition == null)
+            {
+                reason = "Target content id is unknown.";
+                return false;
+            }
+
+            reason = definition.TargetObjectiveRestrictionReason;
+            return definition.SupportsTargetObjective;
         }
 
         public BoosterTileDefinitionSO GetBoosterDefinition(TileLogicType logicType)

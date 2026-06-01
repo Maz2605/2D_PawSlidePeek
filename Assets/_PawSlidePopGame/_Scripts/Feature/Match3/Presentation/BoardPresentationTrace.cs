@@ -61,7 +61,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
         Move = 1,
         TileActivation = 2,
         ChargedPlacement = 3,
-        ChargedCombo = 4
+        ChargedCombo = 4,
+        Booster = 5
     }
 
     [Serializable]

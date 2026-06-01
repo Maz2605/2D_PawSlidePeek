@@ -3,6 +3,7 @@ using _PawSlidePopGame._Scripts.Core.System.DesignPattern.Singleton;
 using _PawSlidePopGame._Scripts.Core.System.GameFlow;
 using _PawSlidePopGame._Scripts.Data.Events;
 using _PawSlidePopGame._Scripts.Data.Events.Payloads;
+using _PawSlidePopGame._Scripts.Feature.Match3.Boosters;
 using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
 using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move;
 using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution;
@@ -100,7 +101,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
             SetInGameSubState(InGameSubState.PreparingBoard);
             gameManager.InitializeGame();
             _objectiveTracker = new Match3ObjectiveTracker(gameManager.LevelData, gameManager.TileDatabase);
-            _chargedAbilityTracker = new ChargedAbilityTracker(gameManager.LevelData, gameManager.TileDatabase);
+            _chargedAbilityTracker = null;
             _chargedComboSource = null;
             PublishHudInitialized();
             EnterPlayerTurn();
@@ -140,6 +141,91 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
             }
 
             return executionResult;
+        }
+
+        public bool CanUseBoosterAt(BoosterDefinitionSO boosterDefinition, int x, int y)
+        {
+            return CanAcceptGameplayCommands &&
+                   BoosterResolutionService.CanUseAt(boosterDefinition, gameManager.Board, x, y, gameManager.TileDatabase);
+        }
+
+        public bool CanUseBoosterLine(BoosterDefinitionSO boosterDefinition, MoveAxis axis, int lineIndex)
+        {
+            return CanAcceptGameplayCommands &&
+                   BoosterResolutionService.CanUseLine(boosterDefinition, gameManager.Board, axis, lineIndex);
+        }
+
+        public bool CanUseImmediateBooster(BoosterDefinitionSO boosterDefinition)
+        {
+            return CanAcceptGameplayCommands &&
+                   BoosterResolutionService.CanUseImmediate(boosterDefinition, gameManager.Board);
+        }
+
+        public BoardMoveExecutionResult RequestBoosterAt(BoosterDefinitionSO boosterDefinition, int x, int y)
+        {
+            BoardMoveExecutionResult emptyResult = new BoardMoveExecutionResult
+            {
+                Kind = BoardExecutionKind.Booster
+            };
+
+            if (!CanUseBoosterAt(boosterDefinition, x, y))
+            {
+                return emptyResult;
+            }
+
+            SetInGameSubState(InGameSubState.ResolvingBoard);
+            return BoosterResolutionService.ExecuteAt(
+                boosterDefinition,
+                gameManager.Board,
+                x,
+                y,
+                gameManager.LevelData,
+                gameManager.TileDatabase,
+                gameManager.Random);
+        }
+
+        public BoardMoveExecutionResult RequestBoosterLine(BoosterDefinitionSO boosterDefinition, MoveAxis axis, int lineIndex)
+        {
+            BoardMoveExecutionResult emptyResult = new BoardMoveExecutionResult
+            {
+                Kind = BoardExecutionKind.Booster
+            };
+
+            if (!CanUseBoosterLine(boosterDefinition, axis, lineIndex))
+            {
+                return emptyResult;
+            }
+
+            SetInGameSubState(InGameSubState.ResolvingBoard);
+            return BoosterResolutionService.ExecuteLine(
+                boosterDefinition,
+                gameManager.Board,
+                axis,
+                lineIndex,
+                gameManager.LevelData,
+                gameManager.TileDatabase,
+                gameManager.Random);
+        }
+
+        public BoardMoveExecutionResult RequestImmediateBooster(BoosterDefinitionSO boosterDefinition)
+        {
+            BoardMoveExecutionResult emptyResult = new BoardMoveExecutionResult
+            {
+                Kind = BoardExecutionKind.Booster
+            };
+
+            if (!CanUseImmediateBooster(boosterDefinition))
+            {
+                return emptyResult;
+            }
+
+            SetInGameSubState(InGameSubState.ResolvingBoard);
+            return BoosterResolutionService.ExecuteImmediate(
+                boosterDefinition,
+                gameManager.Board,
+                gameManager.LevelData,
+                gameManager.TileDatabase,
+                gameManager.Random);
         }
 
         public bool EnterChargedPlacementMode()

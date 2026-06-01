@@ -28,6 +28,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
         public Sprite Icon => icon;
         public virtual int DefaultHP => 1;
         public virtual bool AllowsOverlayPlacement => false;
+        public virtual bool SupportsTargetObjective => ContentLayer != BoardLayer.Underlay;
+        public virtual string TargetObjectiveRestrictionReason => null;
         public abstract BoardLayer ContentLayer { get; }
 
         protected virtual void OnValidate()
