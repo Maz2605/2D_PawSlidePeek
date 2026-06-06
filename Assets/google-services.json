@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "398760079055",
+    "project_id": "pawslidepop",
+    "storage_bucket": "pawslidepop.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:398760079055:android:5d1615c2a0d0a0340a91ba",
+        "android_client_info": {
+          "package_name": "com.mazcompany.pawslidepop"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDikGypzpW2iMvLzNAwQQdbFOYl8OIAwq0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
