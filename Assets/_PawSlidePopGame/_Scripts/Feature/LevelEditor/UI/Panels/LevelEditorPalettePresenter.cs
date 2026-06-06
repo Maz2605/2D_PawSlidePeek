@@ -26,6 +26,7 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI.Panels
             _service = service;
             CacheSections();
             ConfigureSections();
+            _service?.SetActiveSection(_activeSection);
             ShowActiveSectionInstant();
         }
 
@@ -39,22 +40,22 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI.Panels
             itemNormalSection?.SetEntries(
                 _service.GetPaletteEntries(LevelEditorPaletteSectionType.ItemNormal),
                 _service.Selection != null ? _service.Selection.SelectedTileId : 0,
-                id => _service.SetSelectedLayer(BoardLayer.Tile, id));
+                id => _service.SetSelectedSectionLayer(LevelEditorPaletteSectionType.ItemNormal, id));
 
             itemSpecialSection?.SetEntries(
                 _service.GetPaletteEntries(LevelEditorPaletteSectionType.ItemSpecial),
                 _service.Selection != null ? _service.Selection.SelectedTileId : 0,
-                id => _service.SetSelectedLayer(BoardLayer.Tile, id));
+                id => _service.SetSelectedSectionLayer(LevelEditorPaletteSectionType.ItemSpecial, id));
 
             overlaySection?.SetEntries(
                 _service.GetPaletteEntries(LevelEditorPaletteSectionType.Overlay),
                 _service.Selection != null ? _service.Selection.SelectedOverlayId : 0,
-                id => _service.SetSelectedLayer(BoardLayer.Overlay, id));
+                id => _service.SetSelectedSectionLayer(LevelEditorPaletteSectionType.Overlay, id));
 
             underlaySection?.SetEntries(
                 _service.GetPaletteEntries(LevelEditorPaletteSectionType.Underlay),
                 _service.Selection != null ? _service.Selection.SelectedUnderlayId : 0,
-                id => _service.SetSelectedLayer(BoardLayer.Underlay, id));
+                id => _service.SetSelectedSectionLayer(LevelEditorPaletteSectionType.Underlay, id));
         }
 
         private void Update()
@@ -119,6 +120,7 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI.Panels
 
             _activeSection = nextSection;
             _hasActiveSection = true;
+            _service?.SetActiveSection(_activeSection);
             ApplySectionVisibility(false);
         }
 

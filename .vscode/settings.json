@@ -67,5 +67,8 @@
         "*.sln": "*.csproj",
         "*.slnx": "*.csproj"
     },
-    "dotnet.defaultSolution": "2D_PawSlidePop.slnx"
+    "dotnet.defaultSolution": "2D_PawSlidePop.slnx",
+    "dotrush.roslyn.projectOrSolutionFiles": [
+        "f:\\Unity\\Maz's Project\\2D_PawSlidePop\\2D_PawSlidePop.sln"
+    ]
 }

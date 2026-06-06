@@ -4,6 +4,7 @@ using _PawSlidePopGame._Scripts.Data.Events.Payloads;
 using _PawSlidePopGame._Scripts.Feature.Match3.Boosters;
 using _PawSlidePopGame._Scripts.Feature.Match3.Flow;
 using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move;
+using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Board;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presentation;
@@ -22,6 +23,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
         private Coroutine _movePlaybackRoutine;
         private bool _isAnimatingMove;
+
+        private float _idleTimer = 0f;
+        private bool _isTrackingIdle = false;
+        private const float IdleHintDelay = 15f;
+        private bool _hintShown = false;
 
         private void Awake()
         {
@@ -74,6 +80,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 boosterController.OnActiveBoosterChanged += HandleActiveBoosterChanged;
             }
 
+            if (GameFlowManager.Instance != null)
+            {
+                GameFlowManager.Instance.OnAutoShuffleTriggered += HandleAutoShuffleTriggered;
+            }
+
             EventManager<LogicGameEvent>.AddListener<InGameSubStateChangedPayload>(
                 LogicGameEvent.InGameSubStateChanged,
                 HandleSubStateChanged);
@@ -89,6 +100,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             if (GameFlowManager.Instance != null)
             {
                 ApplyInputState(GameFlowManager.Instance.CurrentInGameSubState);
+                GameFlowManager.Instance.OnAutoShuffleTriggered -= HandleAutoShuffleTriggered;
+                GameFlowManager.Instance.OnAutoShuffleTriggered += HandleAutoShuffleTriggered;
             }
         }
 
@@ -118,6 +131,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             {
                 boosterController.OnExecutionRequested -= HandleBoosterExecutionRequested;
                 boosterController.OnActiveBoosterChanged -= HandleActiveBoosterChanged;
+            }
+
+            if (GameFlowManager.Instance != null)
+            {
+                GameFlowManager.Instance.OnAutoShuffleTriggered -= HandleAutoShuffleTriggered;
             }
 
             EventManager<LogicGameEvent>.RemoveListener<InGameSubStateChangedPayload>(
@@ -156,8 +174,46 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             boardView?.ClearBoardVisuals();
         }
 
+        private void Update()
+        {
+            if (_isTrackingIdle && !_hintShown)
+            {
+                _idleTimer += Time.deltaTime;
+                if (_idleTimer >= IdleHintDelay)
+                {
+                    ShowIdleHint();
+                }
+            }
+        }
+
+        private void ShowIdleHint()
+        {
+            if (gameManager == null || gameManager.Board == null || gameManager.RuleSet == null || boardView == null)
+            {
+                return;
+            }
+
+            BoardMoveRequest? hint = BoardResolutionService.FindPossibleMove(gameManager.Board, gameManager.RuleSet.MatchRule);
+            if (hint.HasValue)
+            {
+                _hintShown = true;
+                boardView.HighlightHint(hint.Value);
+            }
+        }
+
+        private void ResetIdleTimer()
+        {
+            _idleTimer = 0f;
+            if (_hintShown)
+            {
+                _hintShown = false;
+                boardView?.ClearPreview();
+            }
+        }
+
         private void HandleMoveRequested(BoardMoveRequest request)
         {
+            ResetIdleTimer();
             if (_isAnimatingMove || GameFlowManager.Instance == null)
             {
                 return;
@@ -180,6 +236,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
         private void HandleTileTapped(CellModel cell)
         {
+            ResetIdleTimer();
             if (_isAnimatingMove || cell == null || GameFlowManager.Instance == null)
             {
                 return;
@@ -256,6 +313,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
         private void HandleBoosterExecutionRequested(System.Func<BoardMoveExecutionResult> executeAction)
         {
+            ResetIdleTimer();
             if (_isAnimatingMove || executeAction == null)
             {
                 return;
@@ -267,6 +325,17 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             }
 
             _movePlaybackRoutine = StartCoroutine(PlayExecutionRoutine(executeAction));
+        }
+
+        private void HandleAutoShuffleTriggered(BoardMoveExecutionResult result)
+        {
+            ResetIdleTimer();
+            if (_movePlaybackRoutine != null)
+            {
+                StopCoroutine(_movePlaybackRoutine);
+            }
+
+            _movePlaybackRoutine = StartCoroutine(PlayExecutionRoutine(() => result));
         }
 
         private void HandleActiveBoosterChanged(BoosterDefinitionSO boosterDefinition)
@@ -303,6 +372,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
         private void HandlePreviewStarted(CellModel cell)
         {
+            ResetIdleTimer();
             if (_isAnimatingMove)
             {
                 return;
@@ -313,6 +383,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
         private void HandlePreviewUpdated(BoardLinePreview preview)
         {
+            ResetIdleTimer();
             if (_isAnimatingMove)
             {
                 return;
@@ -323,6 +394,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
         private void HandlePreviewCleared()
         {
+            ResetIdleTimer();
             if (_isAnimatingMove)
             {
                 return;
@@ -356,11 +428,22 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 case InGameSubState.PlayerTurn:
                     inputMode = Match3InputController.BoardInputMode.Normal;
                     idleEnabled = true;
+                    _isTrackingIdle = true;
+                    _idleTimer = 0f;
+                    _hintShown = false;
                     break;
                 case InGameSubState.TargetingChargedPlacement:
                 case InGameSubState.TargetingChargedCombo:
                     inputMode = Match3InputController.BoardInputMode.TapOnly;
                     idleEnabled = true;
+                    _isTrackingIdle = false;
+                    _idleTimer = 0f;
+                    _hintShown = false;
+                    break;
+                default:
+                    _isTrackingIdle = false;
+                    _idleTimer = 0f;
+                    _hintShown = false;
                     break;
             }
 

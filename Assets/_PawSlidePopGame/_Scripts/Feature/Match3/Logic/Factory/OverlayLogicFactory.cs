@@ -56,16 +56,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Factory
             private readonly ITileLogic _inner;
             private readonly bool _blocksMatch;
             private readonly bool _blocksExplosionToTile;
-
             public OverlayLogicAdapter(ITileLogic inner, bool blocksMatch, bool blocksExplosionToTile)
             {
                 _inner = inner;
                 _blocksMatch = blocksMatch;
                 _blocksExplosionToTile = blocksExplosionToTile;
             }
-
-            public bool CanBeMoved() => false;
-            public bool CanFall() => false;
+            public bool CanBeMoved() => _inner == null || _inner.CanBeMoved();
+            public bool CanFall() => _inner == null || _inner.CanFall();
             public bool BlocksTileBelow() => _inner != null && _inner.BlocksTileBelow();
             public bool CanTileEnter(Model.Board.BoardModel board, Model.Board.CellModel cell, Model.Entities.TileModel tile) => true;
             public bool CanTileExit(Model.Board.BoardModel board, Model.Board.CellModel cell, Model.Entities.TileModel tile) => true;

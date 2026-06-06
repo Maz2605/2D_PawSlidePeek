@@ -1,6 +1,8 @@
 using _PawSlidePopGame._Scripts.Data.Events;
 using _PawSlidePopGame._Scripts.Data.Events.Payloads;
+using _PawSlidePopGame._Scripts.Core.System.GameFlow;
 using _PawSlidePopGame._Scripts.Feature.Match3.Flow;
+using _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager;
 using _PawSlidePopGame._Scripts.UI.Manager;
 using _PawSlidePopGame._Scripts.UI.Popups;
 using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
@@ -31,6 +33,8 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.Gameplay
                 return;
             }
 
+            RecordLevelProgress(resolvedSnapshot);
+
             UIManager.Instance?.ShowPopup<WinPopup>(
                 PopupID.WinPopup,
                 popup => popup.SetSnapshot(resolvedSnapshot));
@@ -48,6 +52,18 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.Gameplay
             UIManager.Instance?.ShowPopup<LosePopup>(
                 PopupID.LosePopup,
                 popup => popup.SetSnapshot(resolvedSnapshot));
+        }
+
+        private static void RecordLevelProgress(GameplayHudSnapshot snapshot)
+        {
+            string levelId = GameAppFlowManager.Instance != null ? GameAppFlowManager.Instance.CurrentLevelId : null;
+            if (string.IsNullOrWhiteSpace(levelId))
+            {
+                Debug.LogWarning("[GameplayResultPopupPresenter] Cannot save level progress because CurrentLevelId is empty.");
+                return;
+            }
+
+            LevelProgressRepository.Instance.RecordLevelResult(levelId, snapshot.reachedStars, snapshot.currentScore);
         }
     }
 }

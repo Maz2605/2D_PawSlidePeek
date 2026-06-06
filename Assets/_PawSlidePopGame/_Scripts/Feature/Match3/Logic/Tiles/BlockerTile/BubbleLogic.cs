@@ -8,6 +8,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Overlays
 {
     public class BubbleOverlayLogic : BaseBlockerLogic
     {
+        public override bool CanBeMoved() => true;
+        public override bool CanFall() => true;
         public override bool BlocksTileBelow() => false;
 
         public override void OnExploded(BoardModel board, CellModel cell, TileModel tile, BoardFxContext fxContext)
@@ -20,13 +22,13 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Overlays
             Break(board, cell, tile, fxContext);
         }
 
-
         private static void Break(BoardModel board, CellModel cell, TileModel tile, BoardFxContext fxContext)
         {
             if (tile == null || cell == null || tile.IsDead)
             {
                 return;
             }
+            UnityEngine.Debug.Log($"[Bubble] Break called for Cell ({cell.X}, {cell.Y})");
 
             int previousHp = tile.CurrentHP;
             tile.TakeDamage(previousHp);
@@ -38,4 +40,3 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Overlays
         }
     }
 }
-

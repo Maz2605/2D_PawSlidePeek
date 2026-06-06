@@ -37,6 +37,7 @@ namespace _PawSlidePopGame._Scripts.Core.System.Boostrap
             DontDestroyOnLoad(gameObject);
             EnsureUIManagerExists();
             EnsureGameAppFlowManagerExists();
+            SceneLoaderManager sceneLoader = EnsureSceneLoaderManagerExists();
 
             foreach (MonoBehaviour mono in coreServices)
             {
@@ -47,7 +48,7 @@ namespace _PawSlidePopGame._Scripts.Core.System.Boostrap
             }
 
             yield return null;
-            SceneLoaderManager.Instance.LoadScene(nameMainScene);
+            sceneLoader.LoadScene(nameMainScene);
         }
 
         private void EnsureGameAppFlowManagerExists()
@@ -59,6 +60,17 @@ namespace _PawSlidePopGame._Scripts.Core.System.Boostrap
             }
 
             flowManager.Initialize();
+        }
+
+        private SceneLoaderManager EnsureSceneLoaderManagerExists()
+        {
+            SceneLoaderManager sceneLoader = GetComponent<SceneLoaderManager>();
+            if (sceneLoader == null)
+            {
+                sceneLoader = gameObject.AddComponent<SceneLoaderManager>();
+            }
+
+            return sceneLoader;
         }
 
         private void EnsureUIManagerExists()

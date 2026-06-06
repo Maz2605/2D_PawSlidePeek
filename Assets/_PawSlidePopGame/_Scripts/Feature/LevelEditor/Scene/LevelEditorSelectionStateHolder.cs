@@ -9,6 +9,7 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Scene
         [SerializeField] private int selectedUnderlayId;
         [SerializeField] private int selectedTileId = 101;
         [SerializeField] private int selectedOverlayId = 301;
+        [SerializeField] private LevelEditorPaletteSectionType activeSectionType = LevelEditorPaletteSectionType.ItemNormal;
         [SerializeField] private bool hasSelectedCell;
         [SerializeField] private int selectedX;
         [SerializeField] private int selectedY;
@@ -35,6 +36,8 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Scene
         public int SelectedX => selectedX;
         public int SelectedY => selectedY;
         public LevelEditorCoordinate SelectedCoordinate => new LevelEditorCoordinate(selectedX, selectedY);
+        public LevelEditorPaletteSectionType ActiveSectionType => activeSectionType;
+        public BoardLayer ActiveBoardLayer => ResolveBoardLayer(activeSectionType);
 
         public void SetSelectedCoordinate(int x, int y)
         {
@@ -75,6 +78,41 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Scene
                 case BoardLayer.Overlay:
                     SelectedOverlayId = contentId;
                     break;
+            }
+        }
+
+        public void SetActiveSection(LevelEditorPaletteSectionType sectionType)
+        {
+            activeSectionType = sectionType;
+        }
+
+        public int GetSelectedContentIdForActiveLayer()
+        {
+            switch (ActiveBoardLayer)
+            {
+                case BoardLayer.Underlay:
+                    return selectedUnderlayId;
+                case BoardLayer.Tile:
+                    return selectedTileId;
+                case BoardLayer.Overlay:
+                    return selectedOverlayId;
+                default:
+                    return 0;
+            }
+        }
+
+        public static BoardLayer ResolveBoardLayer(LevelEditorPaletteSectionType sectionType)
+        {
+            switch (sectionType)
+            {
+                case LevelEditorPaletteSectionType.Overlay:
+                    return BoardLayer.Overlay;
+                case LevelEditorPaletteSectionType.Underlay:
+                    return BoardLayer.Underlay;
+                case LevelEditorPaletteSectionType.ItemNormal:
+                case LevelEditorPaletteSectionType.ItemSpecial:
+                default:
+                    return BoardLayer.Tile;
             }
         }
     }

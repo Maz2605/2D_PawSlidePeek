@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
 {
@@ -30,6 +31,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
             public int energyFromMechanicClear = 2;
             public int maxStoredCharges = 1;
 
+            [JsonIgnore]
             public bool IsEnabled => enabled && specialTileId > 0 && energyToCharge > 0 && maxStoredCharges > 0;
         }
 
@@ -47,7 +49,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
         public int[] starScoreThresholds = { 100, 250, 500, 1500 };
         public ChargedAbilityConfig chargedAbility = new ChargedAbilityConfig();
 
+        [JsonIgnore]
         public int CellCount => Math.Max(0, width) * Math.Max(0, height);
+
+        [JsonIgnore]
         public int DisplayLevelNumber => displayLevelNumber > 0 ? displayLevelNumber : 1;
 
         public bool HasValidTileLayout()

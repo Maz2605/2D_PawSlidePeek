@@ -148,24 +148,20 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
             {
                 return;
             }
-
             int normalizedStep = step % cells.Count;
             if (normalizedStep < 0)
             {
                 normalizedStep += cells.Count;
             }
-
             if (normalizedStep == 0)
             {
                 return;
             }
-
             TileModel[] baseSnapshot = new TileModel[cells.Count];
             for (int i = 0; i < cells.Count; i++)
             {
                 baseSnapshot[i] = cells[i].Tile;
             }
-
             for (int i = 0; i < cells.Count; i++)
             {
                 int sourceIndex = (i - normalizedStep + cells.Count) % cells.Count;
@@ -296,6 +292,16 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
             {
                 RemainingMoves--;
             }
+        }
+
+        public void AddMoves(int amount)
+        {
+            if (amount <= 0)
+            {
+                return;
+            }
+
+            RemainingMoves += amount;
         }
 
         public void ResetChocolateGrowthCounter()

@@ -119,7 +119,7 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
 
         private void HandleLevelsPressed() => GameAppFlowManager.Instance?.EnterMainMenu();
         private void HandleRepeatPressed() => GameAppFlowManager.Instance?.RestartGameplay();
-        private void HandleNextLevelPressed() => GameAppFlowManager.Instance?.RestartGameplay();
+        private void HandleNextLevelPressed() => GameAppFlowManager.Instance?.StartNextLevel();
 
         private void ResetLayoutState()
         {

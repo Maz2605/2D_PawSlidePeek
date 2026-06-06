@@ -31,6 +31,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Factory
                     return new AreaBombLargeLogic();
                 case TileLogicType.ChargedSweepBooster:
                     return new ChargedSweepBoosterLogic();
+                case TileLogicType.BoardClearBomb:
+                    return new BoardClearBombLogic();
                 case TileLogicType.IceOverlay:
                     return new IceOverlayLogic();
                 case TileLogicType.BubbleOverlay:

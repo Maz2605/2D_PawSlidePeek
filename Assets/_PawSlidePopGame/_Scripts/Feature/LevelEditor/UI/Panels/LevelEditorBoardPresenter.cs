@@ -51,11 +51,25 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
                         ResolveIcon(cell.OverlayId),
                         _service.Selection != null && _service.Selection.HasSelectedCell && _service.Selection.SelectedX == x && _service.Selection.SelectedY == y,
                         cell.Playable,
-                        _service.PaintCell);
+                        HandleCellAction);
                 }
             }
 
             cellTemplate.gameObject.SetActive(false);
+        }
+
+        private void HandleCellAction(int x, int y, LevelEditorBoardCellAction action)
+        {
+            switch (action)
+            {
+                case LevelEditorBoardCellAction.Erase:
+                    _service?.EraseCell(x, y);
+                    break;
+                case LevelEditorBoardCellAction.Paint:
+                default:
+                    _service?.PaintCell(x, y);
+                    break;
+            }
         }
 
         private void EnsureCells(LevelEditorBoardState board)
@@ -102,11 +116,28 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
             {
                 if (_cells[i] != null)
                 {
-                    Destroy(_cells[i].gameObject);
+                    DestroyViewObject(_cells[i].gameObject);
                 }
             }
 
             _cells.Clear();
+        }
+
+        private static void DestroyViewObject(GameObject target)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(target);
+            }
+            else
+            {
+                DestroyImmediate(target);
+            }
         }
 
         private Sprite ResolveIcon(int contentId)

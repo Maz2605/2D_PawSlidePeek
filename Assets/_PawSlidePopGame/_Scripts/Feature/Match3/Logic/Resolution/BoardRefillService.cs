@@ -73,7 +73,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                 for (int i = 0; i < levelData.spawnableTileIds.Count; i++)
                 {
                     int candidateId = levelData.spawnableTileIds[i];
-                    if (!IsRestricted(candidateId, restrictedIds))
+                    if (IsValidNormalSpawnable(candidateId, tileDatabase) && !IsRestricted(candidateId, restrictedIds))
                     {
                         filteredIds.Add(candidateId);
                     }
@@ -81,11 +81,114 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
 
                 if (filteredIds.Count > 0)
                 {
-                    return filteredIds[random.Next(0, filteredIds.Count)];
+                    return PickSpawnTileIdWithWeights(board, filteredIds, levelData, tileDatabase, random);
                 }
             }
 
             return tileDatabase != null ? tileDatabase.GetRandomSpawnableTileId(random, restrictedIds) : 0;
+        }
+
+        private static int PickSpawnTileIdWithWeights(
+            BoardModel board,
+            List<int> candidateIds,
+            Match3LevelData levelData,
+            Match3TileDatabaseSO tileDatabase,
+            Random random)
+        {
+            Dictionary<int, int> boardCounts = new Dictionary<int, int>();
+            for (int i = 0; i < candidateIds.Count; i++)
+            {
+                boardCounts[candidateIds[i]] = 0;
+            }
+
+            int totalTilesCount = 0;
+            foreach (CellModel cell in board.GetAllCells())
+            {
+                if (cell != null && cell.Tile != null)
+                {
+                    int tileId = cell.Tile.TileId;
+                    if (boardCounts.ContainsKey(tileId))
+                    {
+                        boardCounts[tileId]++;
+                    }
+                    totalTilesCount++;
+                }
+            }
+
+            HashSet<int> targetTileIds = new HashSet<int>();
+            if (levelData != null && levelData.targets != null)
+            {
+                for (int i = 0; i < levelData.targets.Count; i++)
+                {
+                    targetTileIds.Add(levelData.targets[i].tileId);
+                }
+            }
+
+            double[] weights = new double[candidateIds.Count];
+            double totalWeight = 0;
+
+            for (int i = 0; i < candidateIds.Count; i++)
+            {
+                int tileId = candidateIds[i];
+                BoardContentDefinitionSO definition = tileDatabase.GetContentDefinition(tileId);
+                double baseWeight = definition != null ? definition.SpawnWeight : 1.0;
+                if (baseWeight <= 0)
+                {
+                    baseWeight = 1.0;
+                }
+
+                double count = boardCounts[tileId];
+                double proportion = totalTilesCount > 0 ? count / (double)totalTilesCount : 0.0;
+                double idealProportion = 1.0 / candidateIds.Count;
+                double balanceFactor = 1.0;
+
+                if (proportion > idealProportion)
+                {
+                    balanceFactor = Math.Max(0.2, 1.0 - (proportion - idealProportion) * 2.0);
+                }
+                else if (proportion < idealProportion)
+                {
+                    balanceFactor = Math.Min(1.8, 1.0 + (idealProportion - proportion) * 2.0);
+                }
+
+                double objectiveBias = targetTileIds.Contains(tileId) ? 1.25 : 1.0;
+                double finalWeight = baseWeight * balanceFactor * objectiveBias;
+                
+                weights[i] = finalWeight;
+                totalWeight += finalWeight;
+            }
+
+            if (totalWeight <= 0)
+            {
+                return candidateIds[random.Next(0, candidateIds.Count)];
+            }
+
+            double roll = random.NextDouble() * totalWeight;
+            double cumulative = 0;
+            for (int i = 0; i < candidateIds.Count; i++)
+            {
+                cumulative += weights[i];
+                if (roll <= cumulative)
+                {
+                    return candidateIds[i];
+                }
+            }
+
+            return candidateIds[candidateIds.Count - 1];
+        }
+
+        private static bool IsValidNormalSpawnable(int tileId, Match3TileDatabaseSO tileDatabase)
+        {
+            if (tileId <= 0 || tileDatabase == null)
+            {
+                return false;
+            }
+
+            TileDefinitionSO definition = tileDatabase.GetTileDefinition(tileId);
+            return definition != null &&
+                   definition.TileKind == TileKind.Normal &&
+                   definition.CanSpawnOnRefill &&
+                   definition.SpawnWeight > 0;
         }
 
         private static void AddNeighborRestriction(CellModel first, CellModel second, List<int> restrictedIds)

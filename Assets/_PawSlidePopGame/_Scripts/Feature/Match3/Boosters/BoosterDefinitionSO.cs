@@ -11,6 +11,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Boosters
         [SerializeField] private Sprite icon;
 
         [Header("Behavior")]
+        [SerializeField] private BoosterUsagePhase usagePhase = BoosterUsagePhase.Gameplay;
         [SerializeField] private BoosterType boosterType = BoosterType.Hammer;
         [SerializeField] private BoosterTargetingMode targetingMode = BoosterTargetingMode.TapCell;
         [SerializeField] private bool isUnlocked = true;
@@ -21,9 +22,15 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Boosters
         [SerializeField] private int initialCount = 3;
         [SerializeField] private int coinPrice;
 
+        [Header("Pre-Level Effect")]
+        [SerializeField] private PreLevelBoosterEffectType preLevelEffectType = PreLevelBoosterEffectType.None;
+        [SerializeField] private int extraMovesAmount;
+        [SerializeField] private int startingTileId;
+
         public string BoosterId => boosterId;
         public string DisplayName => displayName;
         public Sprite Icon => icon;
+        public BoosterUsagePhase UsagePhase => usagePhase;
         public BoosterType BoosterType => boosterType;
         public BoosterTargetingMode TargetingMode => targetingMode;
         public bool IsUnlocked => isUnlocked;
@@ -33,6 +40,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Boosters
         public int CreatedTileId => createdTileId;
         public int InitialCount => initialCount;
         public int CoinPrice => coinPrice;
+        public PreLevelBoosterEffectType PreLevelEffectType => preLevelEffectType;
+        public int ExtraMovesAmount => extraMovesAmount;
+        public int StartingTileId => startingTileId;
 
         public bool IsUnlockedAtLevel(int playerLevel)
         {
@@ -51,7 +61,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Boosters
                 displayName = boosterId;
             }
 
-            if (boosterType == BoosterType.Shuffle)
+            if (usagePhase == BoosterUsagePhase.PreLevel)
+            {
+                boosterType = BoosterType.None;
+                targetingMode = BoosterTargetingMode.None;
+                consumesMove = false;
+                coinPrice = 0;
+            }
+            else if (boosterType == BoosterType.Shuffle)
             {
                 targetingMode = BoosterTargetingMode.Immediate;
             }
@@ -72,6 +89,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Boosters
             initialCount = Mathf.Max(0, initialCount);
             coinPrice = Mathf.Max(0, coinPrice);
             unlockLevel = Mathf.Max(1, unlockLevel);
+            extraMovesAmount = Mathf.Max(0, extraMovesAmount);
+            startingTileId = Mathf.Max(0, startingTileId);
         }
     }
 }

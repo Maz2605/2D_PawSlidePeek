@@ -24,7 +24,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move
             for (int i = 0; i < affectedCells.Count; i++)
             {
                 CellModel cell = affectedCells[i];
-                if (cell?.Tile != null)
+                if (cell == null) continue;
+
+                if (cell.LocksLine(request.Axis))
+                {
+                    return false;
+                }
+
+                if (cell.Tile != null)
                 {
                     hasAnyMovableState = true;
                     if (!cell.Tile.CanBeMoved())
@@ -33,7 +40,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move
                     }
                 }
 
-                if (cell?.Overlay != null)
+                if (cell.Overlay != null)
                 {
                     hasAnyMovableState = true;
                     if (!cell.Overlay.CanBeMoved())

@@ -56,6 +56,7 @@ namespace _PawSlidePopGame._Scripts.UI.Screens
             }
         }
 
+
         private void EnsureInitialized()
         {
             if (_isInitialized)

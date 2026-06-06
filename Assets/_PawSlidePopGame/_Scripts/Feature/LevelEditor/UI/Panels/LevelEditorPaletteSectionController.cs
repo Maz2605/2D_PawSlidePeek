@@ -177,11 +177,28 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI.Panels
             {
                 if (_spawnedItems[i] != null)
                 {
-                    Destroy(_spawnedItems[i].gameObject);
+                    DestroyViewObject(_spawnedItems[i].gameObject);
                 }
             }
 
             _spawnedItems.Clear();
+        }
+
+        private static void DestroyViewObject(GameObject target)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(target);
+            }
+            else
+            {
+                DestroyImmediate(target);
+            }
         }
 
         private void KillTween()

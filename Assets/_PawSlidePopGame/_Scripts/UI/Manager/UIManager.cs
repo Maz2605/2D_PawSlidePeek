@@ -318,7 +318,18 @@ namespace _PawSlidePopGame._Scripts.UI.Manager
             }
         }
 
-        public void ShowLoading(Action onCovered = null) => _loadingInstance?.ShowLoading(onCovered);
+        public bool ShowLoading(Action onCovered = null)
+        {
+            if (_loadingInstance == null)
+            {
+                onCovered?.Invoke();
+                return false;
+            }
+
+            _loadingInstance.ShowLoading(onCovered);
+            return true;
+        }
+
         public void HideLoading() => _loadingInstance?.HideLoading();
 
         private void PushPopupToTop(BasePopup popup)

@@ -18,10 +18,11 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         [SerializeField] private List<BoosterDefinitionSO> boosterDefinitions = new List<BoosterDefinitionSO>();
         [SerializeField] private bool rebuildOnEnable = true;
         [SerializeField] private ButtonBuildMode buildMode = ButtonBuildMode.ReuseExistingChildren;
+        [SerializeField] private BoosterWidgetInteractionMode interactionMode = BoosterWidgetInteractionMode.GameplayController;
 
         private readonly Dictionary<string, BoosterButtonView> _viewsByBoosterId = new Dictionary<string, BoosterButtonView>();
-        private readonly List<BoosterButtonView> _spawnedViews = new List<BoosterButtonView>();
         private readonly List<BoosterButtonView> _managedViews = new List<BoosterButtonView>();
+        private readonly List<BoosterButtonView> _tempViewsList = new List<BoosterButtonView>();
 
         public event Action<BoosterDefinitionSO> OnLockedBoosterClicked;
         public event Action<BoosterDefinitionSO> OnBoosterClicked;
@@ -41,7 +42,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                 BoosterInventory.Instance.RegisterDefinitions(boosterDefinitions);
             }
 
-            if (rebuildOnEnable || _spawnedViews.Count == 0)
+            if (rebuildOnEnable || _managedViews.Count == 0)
             {
                 Rebuild();
             }
@@ -68,7 +69,6 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             if (buildMode == ButtonBuildMode.ClearAndSpawnFromPrefab)
             {
                 ClearChildButtonViews();
-                _spawnedViews.Clear();
                 SpawnAndBindAll();
                 return;
             }
@@ -93,14 +93,13 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
                 BoosterButtonView view = Instantiate(buttonPrefab, contentRoot);
                 view.gameObject.SetActive(true);
-                _spawnedViews.Add(view);
                 RegisterAndBindView(view, definition);
             }
         }
 
         private void ReuseExistingChildrenAndBind()
         {
-            BoosterButtonView[] existingViews = contentRoot.GetComponentsInChildren<BoosterButtonView>(true);
+            GetImmediateChildViews(_tempViewsList);
             int existingIndex = 0;
 
             for (int i = 0; i < boosterDefinitions.Count; i++)
@@ -111,8 +110,8 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                     continue;
                 }
 
-                BoosterButtonView view = existingIndex < existingViews.Length
-                    ? existingViews[existingIndex]
+                BoosterButtonView view = existingIndex < _tempViewsList.Count
+                    ? _tempViewsList[existingIndex]
                     : CreateMissingView();
 
                 existingIndex++;
@@ -125,13 +124,15 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                 RegisterAndBindView(view, definition);
             }
 
-            for (int i = existingIndex; i < existingViews.Length; i++)
+            for (int i = existingIndex; i < _tempViewsList.Count; i++)
             {
-                if (existingViews[i] != null)
+                if (_tempViewsList[i] != null)
                 {
-                    existingViews[i].gameObject.SetActive(false);
+                    _tempViewsList[i].gameObject.SetActive(false);
                 }
             }
+
+            _tempViewsList.Clear();
         }
 
         private BoosterButtonView CreateMissingView()
@@ -141,9 +142,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                 return null;
             }
 
-            BoosterButtonView view = Instantiate(buttonPrefab, contentRoot);
-            _spawnedViews.Add(view);
-            return view;
+            return Instantiate(buttonPrefab, contentRoot);
         }
 
         private void RegisterAndBindView(BoosterButtonView view, BoosterDefinitionSO definition)
@@ -211,7 +210,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                 return;
             }
 
-            if (boosterController != null)
+            if (interactionMode == BoosterWidgetInteractionMode.GameplayController && boosterController != null)
             {
                 boosterController.TrySelectBooster(definition.BoosterType);
             }
@@ -234,20 +233,22 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         private bool IsSelected(BoosterDefinitionSO definition)
         {
-            return boosterController != null &&
+            return interactionMode == BoosterWidgetInteractionMode.GameplayController &&
+                   boosterController != null &&
                    boosterController.ActiveBooster != null &&
                    boosterController.ActiveBooster.BoosterId == definition.BoosterId;
         }
 
         private void Subscribe()
         {
-            if (BoosterInventory.Instance != null)
+            var inventory = BoosterInventory.Instance;
+            if (inventory != null)
             {
-                BoosterInventory.Instance.OnBoosterCountChanged -= HandleBoosterCountChanged;
-                BoosterInventory.Instance.OnBoosterCountChanged += HandleBoosterCountChanged;
+                inventory.OnBoosterCountChanged -= HandleBoosterCountChanged;
+                inventory.OnBoosterCountChanged += HandleBoosterCountChanged;
             }
 
-            if (boosterController != null)
+            if (interactionMode == BoosterWidgetInteractionMode.GameplayController && boosterController != null)
             {
                 boosterController.OnActiveBoosterChanged -= HandleActiveBoosterChanged;
                 boosterController.OnActiveBoosterChanged += HandleActiveBoosterChanged;
@@ -256,15 +257,29 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         private void Unsubscribe()
         {
-            if (BoosterInventory.Instance != null)
+            var inventory = BoosterInventory.Instance;
+            if (inventory != null)
             {
-                BoosterInventory.Instance.OnBoosterCountChanged -= HandleBoosterCountChanged;
+                inventory.OnBoosterCountChanged -= HandleBoosterCountChanged;
             }
 
             if (boosterController != null)
             {
                 boosterController.OnActiveBoosterChanged -= HandleActiveBoosterChanged;
             }
+        }
+
+        public void SetInteractionMode(BoosterWidgetInteractionMode mode)
+        {
+            if (interactionMode == mode)
+            {
+                return;
+            }
+
+            Unsubscribe();
+            interactionMode = mode;
+            Subscribe();
+            RefreshAll();
         }
 
         private void ResolveBoosterController()
@@ -283,23 +298,35 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         private void ClearChildButtonViews()
         {
-            BoosterButtonView[] childViews = contentRoot.GetComponentsInChildren<BoosterButtonView>(true);
-            for (int i = 0; i < childViews.Length; i++)
+            GetImmediateChildViews(_tempViewsList);
+            for (int i = 0; i < _tempViewsList.Count; i++)
             {
-                if (childViews[i] == null)
+                BoosterButtonView view = _tempViewsList[i];
+                if (view == null)
                 {
                     continue;
                 }
 
-                if (childViews[i] == buttonPrefab)
+                if (view == buttonPrefab)
                 {
-                    childViews[i].gameObject.SetActive(false);
+                    view.gameObject.SetActive(false);
                     continue;
                 }
 
-                if (childViews[i] != null)
+                DestroyView(view);
+            }
+            _tempViewsList.Clear();
+        }
+
+        private void GetImmediateChildViews(List<BoosterButtonView> results)
+        {
+            results.Clear();
+            int childCount = contentRoot.childCount;
+            for (int i = 0; i < childCount; i++)
+            {
+                if (contentRoot.GetChild(i).TryGetComponent<BoosterButtonView>(out var view))
                 {
-                    DestroyView(childViews[i]);
+                    results.Add(view);
                 }
             }
         }
@@ -320,6 +347,12 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         {
             ReuseExistingChildren = 0,
             ClearAndSpawnFromPrefab = 1
+        }
+
+        public enum BoosterWidgetInteractionMode
+        {
+            GameplayController = 0,
+            SelectionOnly = 1
         }
     }
 }

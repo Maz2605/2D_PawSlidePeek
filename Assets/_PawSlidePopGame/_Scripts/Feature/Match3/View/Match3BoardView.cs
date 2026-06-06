@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using DG.Tweening;
 using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
 using _PawSlidePopGame._Scripts.Feature.Match3.Data;
+using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Board;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presentation;
@@ -190,6 +191,32 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             }
 
             _previewedTileIds.Clear();
+        }
+
+        public void HighlightHint(BoardMoveRequest hint)
+        {
+            ClearPreview();
+            if (_board == null)
+            {
+                return;
+            }
+
+            if (hint.LineIndex >= 0)
+            {
+                List<CellModel> cells = _board.GetPlayableCellsForMove(hint.Axis, hint.LineIndex);
+                HighlightCellTiles(cells, TileShadowState.Preview);
+            }
+            else if (hint.HasSource)
+            {
+                CellModel cell = _board.GetCell(hint.SourceX, hint.SourceY);
+                if (cell?.Tile != null &&
+                    _tileViews.TryGetValue(cell.Tile.InstanceId, out Match3TileView tileView) &&
+                    tileView != null)
+                {
+                    tileView.SetShadowState(TileShadowState.Active);
+                    _previewedTileIds.Add(cell.Tile.InstanceId);
+                }
+            }
         }
 
         public void ShowPlacementCandidates(IReadOnlyList<CellModel> cells)

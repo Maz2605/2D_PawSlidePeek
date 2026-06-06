@@ -421,7 +421,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             {
                 return;
             }
-
+            UnityEngine.Debug.Log($"[Bubble] ClearMatchedBubbleOverlay called for Cell ({cell.X}, {cell.Y})");
             cell.Overlay?.Match(board, cell, fxContext);
         }
 
@@ -824,7 +824,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                 CellModel destinationCell = moveContext.AffectedCells[(i + normalizedStep) % count];
                 bool isWrapAround = IsWrapAround(moveContext.Request, sourceCell, destinationCell);
                 AddTravelOp(operations, moveContext.Snapshot.GetTile(i), TileStackLayer.Base, sourceCell, destinationCell, isWrapAround);
-                AddTravelOp(operations, moveContext.Snapshot.GetOverlay(i), TileStackLayer.Overlay, sourceCell, destinationCell, isWrapAround);
+                // Overlays are stationary in the model (never rotated), so they do not slide visually.
+                // AddTravelOp(operations, moveContext.Snapshot.GetOverlay(i), TileStackLayer.Overlay, sourceCell, destinationCell, isWrapAround);
             }
 
             return operations;
@@ -1023,6 +1024,178 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                 TargetCell = targetCell;
                 SourceTile = sourceTile;
             }
+        }
+
+        private static bool IsLineSlideValid(BoardModel board, List<CellModel> cells, MoveAxis axis)
+        {
+            if (cells == null || cells.Count <= 1)
+            {
+                return false;
+            }
+
+            bool hasAnyMovableState = false;
+            for (int i = 0; i < cells.Count; i++)
+            {
+                CellModel cell = cells[i];
+                if (cell == null) continue;
+
+                if (cell.LocksLine(axis))
+                {
+                    return false;
+                }
+
+                if (cell.Tile != null)
+                {
+                    hasAnyMovableState = true;
+                    if (!cell.Tile.CanBeMoved())
+                    {
+                        return false;
+                    }
+                }
+
+                if (cell.Overlay != null)
+                {
+                    hasAnyMovableState = true;
+                    if (!cell.Overlay.CanBeMoved())
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return hasAnyMovableState;
+        }
+
+        public static bool HasPossibleMoves(BoardModel board, Match.IBoardMatchRule matchRule)
+        {
+            if (board == null || matchRule == null)
+            {
+                return false;
+            }
+
+            // 0. Check for any activatable boosters on the board
+            foreach (CellModel cell in board.GetAllCells())
+            {
+                if (cell != null && cell.IsPlayable && cell.CanTileActivate() && cell.Tile != null && cell.Tile.TileKind == TileKind.Booster)
+                {
+                    return true;
+                }
+            }
+
+            // 1. Check rows
+            for (int y = 0; y < board.Height; y++)
+            {
+                List<CellModel> cells = board.GetPlayableCellsInRow(y);
+                if (!IsLineSlideValid(board, cells, MoveAxis.Row))
+                {
+                    continue;
+                }
+
+                for (int step = 1; step < cells.Count; step++)
+                {
+                    board.RotateTiles(cells, step);
+                    Match.BoardMatchAnalysis analysis = matchRule.Analyze(board);
+                    bool hasMatches = analysis.HasMatches;
+                    board.RotateTiles(cells, -step);
+
+                    if (hasMatches)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            // 2. Check columns
+            for (int x = 0; x < board.Width; x++)
+            {
+                List<CellModel> cells = board.GetPlayableCellsInColumn(x);
+                if (!IsLineSlideValid(board, cells, MoveAxis.Column))
+                {
+                    continue;
+                }
+
+                for (int step = 1; step < cells.Count; step++)
+                {
+                    board.RotateTiles(cells, step);
+                    Match.BoardMatchAnalysis analysis = matchRule.Analyze(board);
+                    bool hasMatches = analysis.HasMatches;
+                    board.RotateTiles(cells, -step);
+
+                    if (hasMatches)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        public static BoardMoveRequest? FindPossibleMove(BoardModel board, Match.IBoardMatchRule matchRule)
+        {
+            if (board == null || matchRule == null)
+            {
+                return null;
+            }
+
+            // 0. Check for any activatable boosters on the board
+            foreach (CellModel cell in board.GetAllCells())
+            {
+                if (cell != null && cell.IsPlayable && cell.CanTileActivate() && cell.Tile != null && cell.Tile.TileKind == TileKind.Booster)
+                {
+                    return new BoardMoveRequest(MoveAxis.Row, -1, LineSlideDirection.Left, cell.X, cell.Y);
+                }
+            }
+
+            // 1. Check rows
+            for (int y = 0; y < board.Height; y++)
+            {
+                List<CellModel> cells = board.GetPlayableCellsInRow(y);
+                if (!IsLineSlideValid(board, cells, MoveAxis.Row))
+                {
+                    continue;
+                }
+
+                for (int step = 1; step < cells.Count; step++)
+                {
+                    board.RotateTiles(cells, step);
+                    Match.BoardMatchAnalysis analysis = matchRule.Analyze(board);
+                    bool hasMatches = analysis.HasMatches;
+                    board.RotateTiles(cells, -step);
+
+                    if (hasMatches)
+                    {
+                        LineSlideDirection direction = step > 0 ? LineSlideDirection.Right : LineSlideDirection.Left;
+                        return new BoardMoveRequest(MoveAxis.Row, y, direction);
+                    }
+                }
+            }
+
+            // 2. Check columns
+            for (int x = 0; x < board.Width; x++)
+            {
+                List<CellModel> cells = board.GetPlayableCellsInColumn(x);
+                if (!IsLineSlideValid(board, cells, MoveAxis.Column))
+                {
+                    continue;
+                }
+
+                for (int step = 1; step < cells.Count; step++)
+                {
+                    board.RotateTiles(cells, step);
+                    Match.BoardMatchAnalysis analysis = matchRule.Analyze(board);
+                    bool hasMatches = analysis.HasMatches;
+                    board.RotateTiles(cells, -step);
+
+                    if (hasMatches)
+                    {
+                        LineSlideDirection direction = step > 0 ? LineSlideDirection.Down : LineSlideDirection.Up;
+                        return new BoardMoveRequest(MoveAxis.Column, x, direction);
+                    }
+                }
+            }
+
+            return null;
         }
     }
 }

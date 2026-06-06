@@ -7,9 +7,9 @@ namespace _PawSlidePopGame._Scripts.UI.Components
 {
     public enum StarVisualState
     {
-        Locked,         // Chưa tới: Màu xám/rỗng, KHÔNG shadow
-        ReachedNormal,  // Đạt mốc: Màu vàng, CÓ shadow
-        ReachedMax      // Đạt super star: Màu xanh nước biển, CÓ shadow
+        Locked,         
+        ReachedNormal,  
+        ReachedMax     
     }
 
     public class StarItemView : MonoBehaviour

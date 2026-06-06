@@ -67,7 +67,24 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
                     continue;
                 }
 
-                Destroy(child.gameObject);
+                DestroyViewObject(child.gameObject);
+            }
+        }
+
+        private static void DestroyViewObject(GameObject target)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(target);
+            }
+            else
+            {
+                DestroyImmediate(target);
             }
         }
     }

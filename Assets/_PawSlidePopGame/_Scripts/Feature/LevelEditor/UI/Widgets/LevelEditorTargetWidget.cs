@@ -35,9 +35,9 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
                 return;
             }
 
-            RebuildTargetLookup(_service.GetGoalOptions());
+            RebuildTargetLookup(_service.GetTargetOptions());
 
-            IReadOnlyList<LevelTargetRequirement> goals = _service.Targets;
+            IReadOnlyList<LevelTargetRequirement> targets = _service.Targets;
             int slotCount = targetSlots != null ? targetSlots.Length : 0;
 
             for (int i = 0; i < slotCount; i++)
@@ -48,11 +48,11 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
                     continue;
                 }
 
-                if (i < goals.Count && _targetEntryLookup.TryGetValue(goals[i].tileId, out LevelEditorPaletteEntryData entry))
+                if (i < targets.Count && _targetEntryLookup.TryGetValue(targets[i].tileId, out LevelEditorPaletteEntryData entry))
                 {
                     slot.Bind(
                         entry,
-                        goals[i].requiredCount,
+                        targets[i].requiredCount,
                         i,
                         HandleEditTargetRequested,
                         HandleTargetCountChanged,
@@ -66,7 +66,7 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
 
             if (btnAddTargets != null)
             {
-                btnAddTargets.gameObject.SetActive(goals.Count < slotCount);
+                btnAddTargets.gameObject.SetActive(targets.Count < slotCount);
             }
         }
 
@@ -74,18 +74,21 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
         {
             if (_service?.Session == null || targetSlots == null || _service.Targets.Count >= targetSlots.Length)
             {
+                Debug.LogWarning("[LevelEditor] Add Target button ignored. No active session or target slots are full.");
                 return;
             }
 
+            Debug.Log($"[LevelEditor] Add Target button clicked. Current targets={_service.Targets.Count}/{targetSlots.Length}.");
             LevelEditorTargetPickerPopup popup = ShowPickerPopup();
             if (popup == null)
             {
+                Debug.LogWarning("[LevelEditor] Add Target popup could not open. Check EditorUIManager and targetPickerPopupPrefab references.");
                 return;
             }
 
             popup.ShowForAdd(
-                _service.GetGoalOptions(),
-                tileId => _service.AddGoalWithTile(tileId, 1),
+                _service.GetTargetOptions(),
+                tileId => _service.AddTargetWithTile(tileId, 1),
                 () => editorUIManager?.ClosePopup(popup));
         }
 
@@ -93,31 +96,36 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
         {
             if (_service?.Session == null || slotIndex < 0 || slotIndex >= _service.Targets.Count)
             {
+                Debug.LogWarning($"[LevelEditor] Edit Target ignored. Invalid slot index {slotIndex}.");
                 return;
             }
 
+            Debug.Log($"[LevelEditor] Edit Target requested for slot #{slotIndex + 1}, tileId={_service.Targets[slotIndex].tileId}.");
             LevelEditorTargetPickerPopup popup = ShowPickerPopup();
             if (popup == null)
             {
+                Debug.LogWarning("[LevelEditor] Edit Target popup could not open. Check EditorUIManager and targetPickerPopupPrefab references.");
                 return;
             }
 
             popup.ShowForEdit(
                 slotIndex,
                 _service.Targets[slotIndex].tileId,
-                _service.GetGoalOptions(),
-                (index, tileId) => _service.UpdateGoalTile(index, tileId),
+                _service.GetTargetOptions(),
+                (index, tileId) => _service.UpdateTargetTile(index, tileId),
                 () => editorUIManager?.ClosePopup(popup));
         }
 
         private void HandleTargetCountChanged(int slotIndex, int requiredCount)
         {
-            _service?.UpdateGoalCount(slotIndex, requiredCount);
+            Debug.Log($"[LevelEditor] Target count changed for slot #{slotIndex + 1}. Requested count={requiredCount}.");
+            _service?.UpdateTargetCount(slotIndex, requiredCount);
         }
 
         private void HandleRemoveTargetRequested(int slotIndex)
         {
-            _service?.RemoveGoal(slotIndex);
+            Debug.Log($"[LevelEditor] Remove Target requested for slot #{slotIndex + 1}.");
+            _service?.RemoveTarget(slotIndex);
         }
 
         private LevelEditorTargetPickerPopup ShowPickerPopup()

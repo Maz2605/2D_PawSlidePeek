@@ -36,8 +36,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
 
         public void SetOverlay(TileModel newTile)
         {
+            if (ReferenceEquals(Overlay, newTile))
+            {
+                return;
+            }
+
             if (newTile != null && (!newTile.Definition.AllowsOverlayPlacement || !CanAcceptOverlay()))
             {
+                UnityEngine.Debug.Log($"[Cell] SetOverlay: Clear overlay on cell ({X}, {Y}) because newTile != null and CanAcceptOverlay() is false");
                 Overlay = null;
                 OnTileChanged?.Invoke(Tile);
                 return;
@@ -55,6 +61,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
 
         public void ClearOverlay()
         {
+            UnityEngine.Debug.Log($"[Cell] ClearOverlay called for Cell ({X}, {Y})");
             Overlay = null;
             OnTileChanged?.Invoke(Tile);
         }

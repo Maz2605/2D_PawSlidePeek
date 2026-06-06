@@ -10,6 +10,7 @@ namespace _PawSlidePopGame._Scripts.Core.System.SceneManagement
     public class SceneLoaderManager : Singleton<SceneLoaderManager>
     {
         [Header("Config")] [SerializeField] private float minLoadingTime = 1f;
+        [SerializeField] private float loadingCoverTimeout = 1f;
 
         public void LoadScene(string sceneName, Action onSceneLoaded = null)
         {
@@ -21,9 +22,17 @@ namespace _PawSlidePopGame._Scripts.Core.System.SceneManagement
             Time.timeScale = 1f;
 
             bool isCovered = false;
-            UIManager.Instance.ShowLoading(() => isCovered = true);
+            bool hasLoadingOverlay = UIManager.Instance.ShowLoading(() => isCovered = true);
 
-            yield return new WaitUntil(() => isCovered);
+            if (hasLoadingOverlay)
+            {
+                float coverDeadline = Time.unscaledTime + loadingCoverTimeout;
+                yield return new WaitUntil(() => isCovered || Time.unscaledTime >= coverDeadline);
+            }
+            else
+            {
+                yield return null;
+            }
 
 
             yield return Resources.UnloadUnusedAssets();

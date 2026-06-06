@@ -52,27 +52,22 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Match
             {
                 return null;
             }
-
             if (group.ClusterSize >= 6)
             {
                 return TileLogicType.AreaBombLarge;
             }
-
             if (group.ClusterSize == 5)
             {
                 return TileLogicType.AreaBombMedium;
             }
-
             if (group.ContainsSquare2X2)
             {
                 return TileLogicType.SquareBomb;
             }
-
             if (group.MaxStraightRunLength == 4)
             {
                 return TileLogicType.CrossBomb;
             }
-
             return null;
         }
 

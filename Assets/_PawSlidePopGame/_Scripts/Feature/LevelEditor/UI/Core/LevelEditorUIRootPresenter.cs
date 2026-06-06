@@ -68,6 +68,7 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
             boardPresenter?.Bind(applicationService);
             selectionPresenter?.Bind(applicationService);
             rightActionPresenter?.Bind(applicationService);
+            goalsPresenter?.gameObject.SetActive(false);
         }
 
         private void Refresh()

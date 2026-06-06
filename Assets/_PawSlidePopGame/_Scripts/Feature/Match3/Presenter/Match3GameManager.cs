@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using _PawSlidePopGame._Scripts.Feature.Match3.Boosters;
+using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
 using _PawSlidePopGame._Scripts.Feature.Match3.Data;
 using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move;
 using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution;
@@ -16,6 +19,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
         [Header("Runtime Config")]
         [SerializeField] private int randomSeed = 12345;
+        [SerializeField] private bool randomizeSeedEachGame = true;
         [SerializeField] private bool resolveBoardOnStart = true;
 
         private BoardModel _board;
@@ -25,6 +29,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         private BoardMoveExecutionResult _lastExecutionResult;
         private bool _isInitialized;
         private Match3LevelData _activeLevelData;
+        private readonly List<BoosterDefinitionSO> _preLevelBoosters = new List<BoosterDefinitionSO>();
 
         public BoardModel Board => _board;
         public Match3LevelData LevelData => _activeLevelData;
@@ -33,6 +38,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         public BoardMoveExecutionResult LastExecutionResult => _lastExecutionResult;
         public bool IsInitialized => _isInitialized;
         public System.Random Random => _random;
+        public BoardRuleSet RuleSet => _ruleSet;
 
         public event Action<BoardModel> OnBoardInitialized;
         public event Action<BoardMoveExecutionResult> OnMoveExecuted;
@@ -40,6 +46,24 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         public void SetLevelData(Match3LevelData levelData)
         {
             _activeLevelData = levelData;
+        }
+
+        public void SetPreLevelBoosters(IReadOnlyList<BoosterDefinitionSO> preLevelBoosters)
+        {
+            _preLevelBoosters.Clear();
+            if (preLevelBoosters == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < preLevelBoosters.Count; i++)
+            {
+                BoosterDefinitionSO definition = preLevelBoosters[i];
+                if (definition != null && definition.UsagePhase == BoosterUsagePhase.PreLevel)
+                {
+                    _preLevelBoosters.Add(definition);
+                }
+            }
         }
 
         public void InitializeGame()
@@ -62,7 +86,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 return;
             }
 
-            _random = new System.Random(randomSeed);
+            int seed = ResolveGameSeed();
+            _random = new System.Random(seed);
             _ruleSet = BoardRuleSet.Default;
             _board = new BoardModel(levelData);
             tileDatabase.RebuildCache();
@@ -72,7 +97,16 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             {
                 BoardRefillService.Apply(_board, levelData, tileDatabase, _random);
                 BoardResolutionService.ResolveBoard(_board, levelData, tileDatabase, _random, _ruleSet);
+
+                int safetyCount = 10;
+                while (!BoardResolutionService.HasPossibleMoves(_board, _ruleSet.MatchRule) && safetyCount > 0)
+                {
+                    BoosterResolutionService.ExecuteShuffle(_board, levelData, tileDatabase, _random, _ruleSet);
+                    safetyCount--;
+                }
             }
+
+            ApplyPreLevelBoosters();
 
             _lastMoveResult = new BoardResolutionResult();
             _lastExecutionResult = new BoardMoveExecutionResult
@@ -80,6 +114,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 ResolutionResult = _lastMoveResult
             };
             _isInitialized = true;
+            Debug.Log($"[Match3GameManager] Initialized level '{levelData.levelID}' with seed {seed}.", this);
             OnBoardInitialized?.Invoke(_board);
         }
 
@@ -91,6 +126,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             _lastMoveResult = null;
             _lastExecutionResult = null;
             _activeLevelData = null;
+            _preLevelBoosters.Clear();
             _isInitialized = false;
         }
 
@@ -148,6 +184,107 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             }
 
             return _lastExecutionResult;
+        }
+
+        private void ApplyPreLevelBoosters()
+        {
+            if (_preLevelBoosters.Count == 0 || _board == null)
+            {
+                return;
+            }
+
+            HashSet<CellModel> occupiedCells = new HashSet<CellModel>();
+            for (int i = 0; i < _preLevelBoosters.Count; i++)
+            {
+                BoosterDefinitionSO definition = _preLevelBoosters[i];
+                if (definition == null)
+                {
+                    continue;
+                }
+
+                switch (definition.PreLevelEffectType)
+                {
+                    case PreLevelBoosterEffectType.ExtraMoves:
+                        _board.AddMoves(definition.ExtraMovesAmount);
+                        break;
+                    case PreLevelBoosterEffectType.PlaceStartingTile:
+                        TryPlaceStartingTile(definition.StartingTileId, occupiedCells);
+                        break;
+                }
+            }
+        }
+
+        private int ResolveGameSeed()
+        {
+            if (!randomizeSeedEachGame)
+            {
+                return randomSeed;
+            }
+
+            unchecked
+            {
+                int seed = Environment.TickCount;
+                seed = (seed * 397) ^ Guid.NewGuid().GetHashCode();
+                seed = (seed * 397) ^ DateTime.UtcNow.Ticks.GetHashCode();
+                return seed;
+            }
+        }
+
+        private bool TryPlaceStartingTile(int tileId, HashSet<CellModel> occupiedCells)
+        {
+            if (tileId <= 0 || tileDatabase == null)
+            {
+                return false;
+            }
+
+            List<CellModel> candidates = CollectStartingTileCandidates(occupiedCells, requireNormalTile: true);
+            if (candidates.Count == 0)
+            {
+                candidates = CollectStartingTileCandidates(occupiedCells, requireNormalTile: false);
+            }
+
+            if (candidates.Count == 0)
+            {
+                Debug.LogWarning($"[Match3GameManager] Could not place pre-level starting tile {tileId}: no valid board cell.", this);
+                return false;
+            }
+
+            int index = _random != null ? _random.Next(0, candidates.Count) : UnityEngine.Random.Range(0, candidates.Count);
+            CellModel targetCell = candidates[index];
+            _board.SetTileFromDefinitionId(targetCell, tileId, tileDatabase);
+            occupiedCells?.Add(targetCell);
+            return targetCell.Tile != null && targetCell.Tile.TileId == tileId;
+        }
+
+        private List<CellModel> CollectStartingTileCandidates(HashSet<CellModel> occupiedCells, bool requireNormalTile)
+        {
+            List<CellModel> candidates = new List<CellModel>();
+            if (_board == null)
+            {
+                return candidates;
+            }
+
+            foreach (CellModel cell in _board.GetAllCells())
+            {
+                if (cell == null ||
+                    !cell.IsPlayable ||
+                    occupiedCells != null && occupiedCells.Contains(cell) ||
+                    cell.Underlay != null ||
+                    cell.Overlay != null ||
+                    cell.Tile == null)
+                {
+                    continue;
+                }
+
+                if (requireNormalTile && cell.Tile.TileKind != TileKind.Normal)
+                {
+                    continue;
+                }
+
+                candidates.Add(cell);
+            }
+
+            return candidates;
         }
     }
 }

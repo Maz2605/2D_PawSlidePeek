@@ -34,6 +34,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum
 
         //Charged Ability
         ChargedSweepBooster = 12,
+        [InspectorName("Board Clear Bomb")]
+        BoardClearBomb = 13,
     }
 }
 

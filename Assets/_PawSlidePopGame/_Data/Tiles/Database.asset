@@ -28,6 +28,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 05a8ea5196a901c4daf8bbd7ac9726b5, type: 2}
   - {fileID: 11400000, guid: 414747f8b689a464b8d090c5abd48692, type: 2}
   - {fileID: 11400000, guid: 1f58fdbb4ef5479aa0c5282ac903b8bc, type: 2}
+  - {fileID: 11400000, guid: d58c90fb4ec24394910adc75ff673cb2, type: 2}
   blockerTileDefinitions:
   - {fileID: 11400000, guid: 30509fd770f34d6497d45b0d1de8610f, type: 2}
   targetTileDefinitions:
@@ -52,5 +53,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 05a8ea5196a901c4daf8bbd7ac9726b5, type: 2}
   - {fileID: 11400000, guid: 414747f8b689a464b8d090c5abd48692, type: 2}
   - {fileID: 11400000, guid: 1f58fdbb4ef5479aa0c5282ac903b8bc, type: 2}
+  - {fileID: 11400000, guid: d58c90fb4ec24394910adc75ff673cb2, type: 2}
   - {fileID: 11400000, guid: 30509fd770f34d6497d45b0d1de8610f, type: 2}
   - {fileID: 11400000, guid: 9798d861bd754b48b76dc197a972d5e4, type: 2}

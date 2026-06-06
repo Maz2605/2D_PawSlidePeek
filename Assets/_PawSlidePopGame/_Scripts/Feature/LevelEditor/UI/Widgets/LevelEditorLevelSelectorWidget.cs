@@ -17,17 +17,21 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
         private readonly ILevelCatalogProvider _catalogProvider = new ResourcesLevelCatalogProvider();
         private readonly List<string> _displayedLevelIds = new List<string>();
 
-        private string _currentLevelId = "Level_001";
+        private string _currentLevelId = string.Empty;
         private bool _suppressCallbacks;
 
-        public string CurrentLevelId => string.IsNullOrWhiteSpace(_currentLevelId) ? "Level_001" : _currentLevelId;
+        public string CurrentLevelId => NormalizeLevelId(_currentLevelId, DefaultLevelId);
+        public bool IsEditingLevelId => levelSuffixInput != null && levelSuffixInput.isFocused;
 
         public void Bind()
         {
             if (levelSuffixInput != null)
             {
-                levelSuffixInput.onValueChanged.RemoveListener(HandleSuffixChanged);
-                levelSuffixInput.onValueChanged.AddListener(HandleSuffixChanged);
+                levelSuffixInput.onValueChanged.RemoveListener(HandleLevelIdChanged);
+                levelSuffixInput.onValueChanged.AddListener(HandleLevelIdChanged);
+                levelSuffixInput.onEndEdit.RemoveListener(HandleLevelIdEndEdit);
+                levelSuffixInput.onEndEdit.AddListener(HandleLevelIdEndEdit);
+                SetLevelInputPlaceholder();
             }
 
             if (searchInput != null)
@@ -42,30 +46,30 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
                 levelDropdown.onValueChanged.AddListener(HandleDropdownSelectionChanged);
             }
 
-            Refresh();
+            ShowDefaultInputPrefix();
         }
 
         public void Refresh()
         {
+            if (string.IsNullOrWhiteSpace(_currentLevelId) || IsPrefixOnly(_currentLevelId))
+            {
+                ShowDefaultInputPrefix();
+                return;
+            }
+
             SetLevelId(CurrentLevelId);
         }
 
         public void SetLevelId(string levelId)
         {
-            string sanitizedLevelId = LevelPathUtility.SanitizeLevelId(levelId);
-            if (string.IsNullOrWhiteSpace(sanitizedLevelId))
-            {
-                sanitizedLevelId = "Level_001";
-            }
-
-            _currentLevelId = sanitizedLevelId;
+            _currentLevelId = NormalizeLevelId(levelId, DefaultLevelId);
 
             _suppressCallbacks = true;
             try
             {
                 if (levelSuffixInput != null)
                 {
-                    levelSuffixInput.SetTextWithoutNotify(ExtractSuffix(_currentLevelId));
+                    levelSuffixInput.SetTextWithoutNotify(_currentLevelId);
                 }
 
                 SyncSelectedText();
@@ -78,16 +82,32 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
             }
         }
 
-        private void HandleSuffixChanged(string suffix)
+        private void HandleLevelIdChanged(string levelId)
         {
             if (_suppressCallbacks)
             {
                 return;
             }
 
-            _currentLevelId = BuildLevelId(suffix);
+            _currentLevelId = IsPrefixOnly(levelId) ? LevelPrefix : NormalizeLevelId(levelId, DefaultLevelId);
             SyncSelectedText();
             RebuildDropdownOptions(GetActiveFilter());
+        }
+
+        private void HandleLevelIdEndEdit(string levelId)
+        {
+            if (_suppressCallbacks)
+            {
+                return;
+            }
+
+            if (IsPrefixOnly(levelId))
+            {
+                ShowDefaultInputPrefix();
+                return;
+            }
+
+            SetLevelId(levelId);
         }
 
         private void HandleSearchChanged(string _)
@@ -165,37 +185,75 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
 
             if (levelSuffixInput != null && !string.IsNullOrWhiteSpace(levelSuffixInput.text))
             {
-                return levelSuffixInput.text.Trim();
+                if (IsPrefixOnly(levelSuffixInput.text))
+                {
+                    return string.Empty;
+                }
+
+                return NormalizeLevelId(levelSuffixInput.text, string.Empty);
             }
 
             return string.Empty;
         }
 
-        private string BuildLevelId(string suffix)
+        private string NormalizeLevelId(string rawLevelId, string fallback)
         {
-            string trimmedSuffix = string.IsNullOrWhiteSpace(suffix) ? string.Empty : suffix.Trim();
-            if (trimmedSuffix.StartsWith(levelPrefix, StringComparison.OrdinalIgnoreCase))
+            string normalizedPrefix = LevelPrefix;
+            string trimmedLevelId = string.IsNullOrWhiteSpace(rawLevelId) ? string.Empty : rawLevelId.Trim();
+            string fallbackLevelId = string.IsNullOrWhiteSpace(fallback) ? string.Empty : fallback.Trim();
+            if (string.IsNullOrWhiteSpace(trimmedLevelId))
             {
-                trimmedSuffix = trimmedSuffix.Substring(levelPrefix.Length);
+                return LevelPathUtility.SanitizeLevelId(fallbackLevelId);
             }
 
-            string fullLevelId = $"{levelPrefix}{trimmedSuffix}";
-            return LevelPathUtility.SanitizeLevelId(fullLevelId);
+            string fullLevelId = trimmedLevelId.StartsWith(normalizedPrefix, StringComparison.OrdinalIgnoreCase)
+                ? trimmedLevelId
+                : $"{normalizedPrefix}{trimmedLevelId}";
+            string sanitizedLevelId = LevelPathUtility.SanitizeLevelId(fullLevelId);
+            return string.Equals(sanitizedLevelId, normalizedPrefix, StringComparison.OrdinalIgnoreCase)
+                ? LevelPathUtility.SanitizeLevelId(fallbackLevelId)
+                : sanitizedLevelId;
         }
 
-        private string ExtractSuffix(string levelId)
+        private void ShowDefaultInputPrefix()
         {
-            if (string.IsNullOrWhiteSpace(levelId))
-            {
-                return string.Empty;
-            }
+            _currentLevelId = LevelPrefix;
 
-            if (levelId.StartsWith(levelPrefix, StringComparison.OrdinalIgnoreCase))
+            _suppressCallbacks = true;
+            try
             {
-                return levelId.Substring(levelPrefix.Length);
-            }
+                if (levelSuffixInput != null)
+                {
+                    levelSuffixInput.SetTextWithoutNotify(LevelPrefix);
+                }
 
-            return levelId;
+                SyncSelectedText();
+                RebuildDropdownOptions(string.Empty);
+                SelectDropdownValue(DefaultLevelId);
+            }
+            finally
+            {
+                _suppressCallbacks = false;
+            }
         }
+
+        private bool IsPrefixOnly(string levelId)
+        {
+            return string.Equals(
+                string.IsNullOrWhiteSpace(levelId) ? string.Empty : levelId.Trim(),
+                LevelPrefix,
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void SetLevelInputPlaceholder()
+        {
+            if (levelSuffixInput?.placeholder is TMP_Text placeholderText)
+            {
+                placeholderText.text = LevelPrefix;
+            }
+        }
+
+        private string LevelPrefix => string.IsNullOrWhiteSpace(levelPrefix) ? "Level_" : levelPrefix.Trim();
+        private string DefaultLevelId => $"{LevelPrefix}001";
     }
 }

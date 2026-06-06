@@ -3,6 +3,7 @@ using _PawSlidePopGame._Scripts.Feature.Match3.Boosters;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
 namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 {
@@ -15,6 +16,12 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         [SerializeField] private Image iconImage;
         [SerializeField] private TMP_Text countText;
         [SerializeField] private GameObject lockRoot;
+        [SerializeField] private GameObject lockBubbleRoot;
+        [SerializeField] private GameObject countNotifyRoot;
+        [SerializeField] private GameObject priceRoot;
+        [SerializeField] private TMP_Text priceText;
+        [SerializeField] private GameObject checkboxRoot;
+        [SerializeField] private Toggle checkboxToggle;
 
         [Header("Visuals")]
         [SerializeField] private Sprite unlockedBackgroundSprite;
@@ -31,11 +38,25 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         private Vector3 _iconBaseScale = Vector3.one;
         private bool _hasIconBaseState;
 
+        private Vector3 _checkboxBaseScale = Vector3.one;
+        private bool _hasCheckboxBaseState;
+        private Tween _checkboxTween;
+
         public BoosterDefinitionSO Definition => _definition;
 
         private void Awake()
         {
             CacheIconBaseState();
+            CacheCheckboxBaseState();
+        }
+
+        private void OnEnable()
+        {
+            if (button != null)
+            {
+                button.onClick.RemoveListener(HandleClicked);
+                button.onClick.AddListener(HandleClicked);
+            }
         }
 
         private void OnDisable()
@@ -44,6 +65,12 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             {
                 button.onClick.RemoveListener(HandleClicked);
             }
+
+            if (_checkboxTween != null)
+            {
+                _checkboxTween.Kill();
+                _checkboxTween = null;
+            }
         }
 
         public void Bind(BoosterDefinitionSO definition, int count, bool isSelected, Action<BoosterDefinitionSO> onClicked)
@@ -51,11 +78,10 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             _definition = definition;
             _onClicked = onClicked;
             CacheIconBaseState();
+            CacheCheckboxBaseState();
 
             if (button != null)
             {
-                button.onClick.RemoveListener(HandleClicked);
-                button.onClick.AddListener(HandleClicked);
                 button.interactable = definition != null;
             }
 
@@ -64,6 +90,8 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                 iconImage.sprite = definition != null ? definition.Icon : null;
                 iconImage.enabled = definition != null && definition.Icon != null;
             }
+
+            SetCheckboxVisible(false, animate: false);
 
             SetState(count, isSelected);
         }
@@ -88,17 +116,98 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                 lockRoot.SetActive(!isUnlocked);
             }
 
+            if (lockBubbleRoot != null)
+            {
+                lockBubbleRoot.SetActive(!isUnlocked);
+            }
+
             ApplySelectedIconState(isSelected);
+
+            bool showCount = count > 0 || (_definition != null && _definition.IsUnlimitedForDev);
+            bool showPrice = isUnlocked && !showCount;
+
+            if (countNotifyRoot != null)
+            {
+                countNotifyRoot.SetActive(showCount);
+            }
 
             if (countText != null)
             {
                 countText.SetText(ResolveCountText(count));
             }
+
+            if (priceRoot != null)
+            {
+                priceRoot.SetActive(showPrice);
+            }
+
+            if (priceText != null && _definition != null)
+            {
+                priceText.SetText(_definition.CoinPrice.ToString());
+            }
+        }
+
+        public void SetCheckboxVisible(bool visible, bool animate = true)
+        {
+            CacheCheckboxBaseState();
+
+            if (checkboxRoot == null)
+            {
+                return;
+            }
+
+            if (_checkboxTween != null)
+            {
+                _checkboxTween.Kill();
+                _checkboxTween = null;
+            }
+
+            if (visible)
+            {
+                checkboxRoot.SetActive(true);
+                if (animate && Application.isPlaying)
+                {
+                    checkboxRoot.transform.localScale = Vector3.zero;
+                    _checkboxTween = checkboxRoot.transform
+                        .DOScale(_checkboxBaseScale, 0.3f)
+                        .SetEase(Ease.OutBack)
+                        .SetUpdate(true);
+                }
+                else
+                {
+                    checkboxRoot.transform.localScale = _checkboxBaseScale;
+                }
+            }
+            else
+            {
+                if (animate && Application.isPlaying && checkboxRoot.activeSelf)
+                {
+                    _checkboxTween = checkboxRoot.transform
+                        .DOScale(Vector3.zero, 0.2f)
+                        .SetEase(Ease.InQuad)
+                        .SetUpdate(true)
+                        .OnComplete(() => checkboxRoot.SetActive(false));
+                }
+                else
+                {
+                    checkboxRoot.transform.localScale = Vector3.zero;
+                    checkboxRoot.SetActive(false);
+                }
+            }
+        }
+
+        public void SetCheckboxState(bool visible, bool isChecked = false, bool animate = true)
+        {
+            SetCheckboxVisible(visible, animate);
+            if (checkboxToggle != null)
+            {
+                checkboxToggle.isOn = isChecked;
+            }
         }
 
         private void CacheIconBaseState()
         {
-            if (iconImage == null)
+            if (_hasIconBaseState || iconImage == null)
             {
                 return;
             }
@@ -107,6 +216,17 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             _iconBaseAnchoredPosition = _iconRectTransform.anchoredPosition;
             _iconBaseScale = _iconRectTransform.localScale;
             _hasIconBaseState = true;
+        }
+
+        private void CacheCheckboxBaseState()
+        {
+            if (_hasCheckboxBaseState || checkboxRoot == null)
+            {
+                return;
+            }
+
+            _checkboxBaseScale = checkboxRoot.transform.localScale;
+            _hasCheckboxBaseState = true;
         }
 
         private void ApplySelectedIconState(bool isSelected)

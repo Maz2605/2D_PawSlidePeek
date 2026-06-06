@@ -16,6 +16,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
 
         public string CurrentLevelId { get; private set; }
         public Match3LevelData CurrentLevelData { get; private set; }
+        public Match3TileDatabaseSO TileDatabase => tileDatabase;
 
         public void SetRequestedLevelId(string levelId)
         {

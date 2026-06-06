@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using _PawSlidePopGame._Scripts.Core.Audio;
 using _PawSlidePopGame._Scripts.Data.Audio;
 using UnityEditor;
@@ -42,3 +43,4 @@ namespace _PawSlidePopGame._Scripts.Utils.UI
         }
     }
 }
+#endif

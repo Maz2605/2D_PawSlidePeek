@@ -1,9 +1,11 @@
-﻿using UnityEditor;
+﻿#if UNITY_EDITOR
+using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace _PawSlidePopGame._Scripts.Utils.DevTest
 {
+    
     public class SceneSwitcherWindow : EditorWindow
     {
         private const string GameScenePath = "Assets/_PawSlidePopGame/Scenes/GameplayScene.unity";
@@ -61,4 +63,6 @@ namespace _PawSlidePopGame._Scripts.Utils.DevTest
             }
         }
     }
+    
 }
+#endif

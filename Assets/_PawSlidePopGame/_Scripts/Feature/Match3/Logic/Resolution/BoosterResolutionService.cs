@@ -237,7 +237,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             return executionResult;
         }
 
-        private static BoardMoveExecutionResult ExecuteShuffle(
+        public static BoardMoveExecutionResult ExecuteShuffle(
             BoardModel board,
             Match3LevelData levelData,
             Match3TileDatabaseSO tileDatabase,

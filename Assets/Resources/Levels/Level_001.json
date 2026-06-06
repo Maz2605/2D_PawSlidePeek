@@ -305,10 +305,7 @@
       "energyFromBoosterActivate": 1,
       "energyFromBlockerClear": 2,
       "energyFromMechanicClear": 2,
-      "maxStoredCharges": 1,
-      "IsEnabled": true
-    },
-    "CellCount": 64,
-    "DisplayLevelNumber": 1
+      "maxStoredCharges": 1
+    }
   }
 }

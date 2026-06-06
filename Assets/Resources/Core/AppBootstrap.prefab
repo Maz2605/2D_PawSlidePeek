@@ -142,6 +142,9 @@ GameObject:
   - component: {fileID: 823730163174776434}
   - component: {fileID: 6412311779083642}
   - component: {fileID: 6138519104609171712}
+  - component: {fileID: 680991663035619336}
+  - component: {fileID: 5077149861647906391}
+  - component: {fileID: 7959588473251290888}
   m_Layer: 0
   m_Name: AppBootstrap
   m_TagString: Untagged
@@ -183,9 +186,10 @@ MonoBehaviour:
   coreServices:
   - {fileID: 6138519104609171712}
   - {fileID: 823730163174776434}
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 680991663035619336}
+  - {fileID: 5077149861647906391}
   - {fileID: 6412311779083642}
+  - {fileID: 7959588473251290888}
 --- !u!114 &823730163174776434
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -233,3 +237,49 @@ MonoBehaviour:
   targetFPS: 60
   disableVSync: 1
   keepScreenAwake: 1
+--- !u!114 &680991663035619336
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d332a8f1e6a8014f9da0d1ca2bcbb06, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Services.Analytics.FirebaseService
+  analyticsEnabled: 1
+  crashlyticsEnabled: 1
+  logLifecycleEvents: 1
+--- !u!114 &5077149861647906391
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfd2a3c2e16c90f44bc83594b6e96962, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Services.Ads.AdsService
+  useGoogleTestAdUnits: 1
+  androidRewardedAdUnitId: ca-app-pub-9449221549788378/3393389056
+  androidInterstitialAdUnitId: 
+  loadRewardedOnInit: 1
+  loadInterstitialOnInit: 0
+--- !u!114 &7959588473251290888
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 252df52cf140297478459416c0622536, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Services.Ads.RewardedAdRewardService
+  placementCatalog: {fileID: 11400000, guid: 39032d454048a5b43ae9d45ac931f8fb, type: 2}
+  logRewardGrants: 1

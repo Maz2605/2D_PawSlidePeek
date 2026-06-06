@@ -14,11 +14,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Boosters
     public sealed class BoosterController : MonoBehaviour
     {
         [SerializeField] private List<BoosterDefinitionSO> boosterDefinitions = new List<BoosterDefinitionSO>();
-        [SerializeField] private bool enableDevHotkeys = true;
-        [SerializeField] private UnityEngine.InputSystem.Key hammerKey = UnityEngine.InputSystem.Key.Digit1;
-        [SerializeField] private UnityEngine.InputSystem.Key lineClearKey = UnityEngine.InputSystem.Key.Digit2;
-        [SerializeField] private UnityEngine.InputSystem.Key rainbowKey = UnityEngine.InputSystem.Key.Digit3;
-        [SerializeField] private UnityEngine.InputSystem.Key shuffleKey = UnityEngine.InputSystem.Key.Digit4;
+
         [SerializeField] private bool logDebugMessages = true;
 
         private BoosterDefinitionSO _activeBooster;
@@ -36,35 +32,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Boosters
             BoosterInventory.Instance.RegisterDefinitions(boosterDefinitions);
         }
 
-        private void Update()
-        {
-            UnityEngine.InputSystem.Keyboard keyboard = UnityEngine.InputSystem.Keyboard.current;
-            if (!enableDevHotkeys || keyboard == null)
-            {
-                return;
-            }
 
-            if (WasPressedThisFrame(keyboard, hammerKey))
-            {
-                TrySelectBooster(BoosterType.Hammer);
-            }
-            else if (WasPressedThisFrame(keyboard, lineClearKey))
-            {
-                TrySelectBooster(BoosterType.LineClear);
-            }
-            else if (WasPressedThisFrame(keyboard, rainbowKey))
-            {
-                TrySelectBooster(BoosterType.RainbowPlacement);
-            }
-            else if (WasPressedThisFrame(keyboard, shuffleKey))
-            {
-                TrySelectBooster(BoosterType.Shuffle);
-            }
-            else if (keyboard.escapeKey.wasPressedThisFrame)
-            {
-                CancelSelection();
-            }
-        }
 
         public bool SelectBooster(BoosterType boosterType)
         {
@@ -139,7 +107,6 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Boosters
             {
                 return false;
             }
-
             if (cell == null || GameFlowManager.Instance == null || !GameFlowManager.Instance.CanUseBoosterAt(_activeBooster, cell.X, cell.Y))
             {
                 LogDebug($"Tap booster rejected. Booster={_activeBooster.BoosterType}, Cell={cell?.X},{cell?.Y}, State={GameFlowManager.Instance?.CurrentInGameSubState}.");
@@ -227,11 +194,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Boosters
             return null;
         }
 
-        private static bool WasPressedThisFrame(UnityEngine.InputSystem.Keyboard keyboard, UnityEngine.InputSystem.Key key)
-        {
-            UnityEngine.InputSystem.Controls.KeyControl control = keyboard[key];
-            return control != null && control.wasPressedThisFrame;
-        }
+
 
         private static BoosterPaymentSource ResolvePaymentSource(BoosterDefinitionSO definition)
         {

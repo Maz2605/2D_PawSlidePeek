@@ -5,5 +5,7 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
         WinPopup = 1,
         LosePopup = 2,
         PausePopup = 3,
+        LevelIntroductionPopup = 4,
+        SettingsPopup = 5,
     }
 }

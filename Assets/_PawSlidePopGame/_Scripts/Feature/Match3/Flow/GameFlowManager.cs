@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using _PawSlidePopGame._Scripts.Core.System.DesignPattern.Singleton;
 using _PawSlidePopGame._Scripts.Core.System.GameFlow;
@@ -11,6 +12,7 @@ using _PawSlidePopGame._Scripts.Feature.Match3.Model.Board;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presentation;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presenter;
 using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
+using _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager;
 using UnityEngine;
 
 namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
@@ -30,6 +32,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
         public GameState CurrentGameState { get; private set; } = GameState.None;
         public InGameSubState CurrentInGameSubState { get; private set; } = InGameSubState.None;
         public GameplayHudSnapshot LastSnapshot => _lastSnapshot;
+        public event Action<BoardMoveExecutionResult> OnAutoShuffleTriggered;
 
         public bool CanAcceptGameplayCommands =>
             CurrentGameState == GameState.Gameplay &&
@@ -540,6 +543,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
         {
             SetGameState(GameState.Result);
             SetInGameSubState(InGameSubState.Victory);
+            HeartManager.Instance.SetMatchFinished(true);
             EventManager<LogicGameEvent>.Post(LogicGameEvent.GameplayWon, _lastSnapshot?.Clone());
         }
 
@@ -547,6 +551,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
         {
             SetGameState(GameState.Result);
             SetInGameSubState(InGameSubState.Defeat);
+            HeartManager.Instance.SetMatchFinished(false);
             EventManager<LogicGameEvent>.Post(LogicGameEvent.GameplayLost, _lastSnapshot?.Clone());
         }
 
@@ -570,7 +575,31 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
                 return;
             }
 
+            if (gameManager?.Board != null &&
+                gameManager.RuleSet != null &&
+                !BoardResolutionService.HasPossibleMoves(gameManager.Board, gameManager.RuleSet.MatchRule))
+            {
+                TriggerAutoShuffle();
+                return;
+            }
+
             EnterPlayerTurn();
+        }
+
+        private void TriggerAutoShuffle()
+        {
+            SetInGameSubState(InGameSubState.ResolvingBoard);
+
+            BoardMoveExecutionResult executionResult = BoosterResolutionService.ExecuteShuffle(
+                gameManager.Board,
+                gameManager.LevelData,
+                gameManager.TileDatabase,
+                gameManager.Random,
+                gameManager.RuleSet);
+
+            executionResult.Kind = BoardExecutionKind.Booster;
+
+            OnAutoShuffleTriggered?.Invoke(executionResult);
         }
 
         private void PublishHudInitialized()

@@ -31,7 +31,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                         continue;
                     }
 
-                    if (!tile.CanFall())
+                    if (!tile.CanFall() || cell.HasBlockingOverlay())
                     {
                         writeY = y - 1;
                         continue;

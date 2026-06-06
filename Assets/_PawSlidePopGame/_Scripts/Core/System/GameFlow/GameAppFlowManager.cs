@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using _PawSlidePopGame._Scripts.Core.System.DesignPattern.Singleton;
 using _PawSlidePopGame._Scripts.Data.Events;
 using _PawSlidePopGame._Scripts.Data.Events.Payloads;
+using _PawSlidePopGame._Scripts.Feature.Match3.Boosters;
 using _PawSlidePopGame._Scripts.Feature.Match3.Flow;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presenter;
 using _PawSlidePopGame._Scripts.UI.Manager;
@@ -9,6 +11,7 @@ using _PawSlidePopGame._Scripts.UI.Popups;
 using _PawSlidePopGame._Scripts.UI.Screens;
 using _PawSlidePopGame._Scripts.UI.Screens.Gameplay;
 using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
+using _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -50,6 +53,8 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
                 LogicGameEvent.InGameSubStateChanged,
                 HandleInGameSubStateChanged);
 
+            HeartManager.Instance.InitializeHeartSystem();
+
             SetAppState(GameAppState.Bootstrapping);
             TryResolveGameplayFlowManager();
         }
@@ -67,7 +72,7 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
             SetAppState(GameAppState.MainMenu);
         }
 
-        public bool StartGameplaySession(string levelId = null)
+        public bool StartGameplaySession(string levelId = null, IReadOnlyList<BoosterDefinitionSO> preLevelBoosters = null)
         {
             if (CurrentAppState == GameAppState.EnteringGameplay)
             {
@@ -76,6 +81,16 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
 
             if (!EnsureUiManager())
             {
+                return false;
+            }
+
+            if (!HeartManager.Instance.CanSpendHeart())
+            {
+                UIManager.Instance?.ShowToast("Not enough hearts!");
+                if (CurrentAppState == GameAppState.Gameplay || CurrentAppState == GameAppState.EnteringGameplay)
+                {
+                    EnterMainMenu();
+                }
                 return false;
             }
 
@@ -108,6 +123,10 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
             }
 
             _gameManager?.SetLevelData(levelData);
+            _gameManager?.SetPreLevelBoosters(preLevelBoosters);
+
+            HeartManager.Instance.SetMatchStarted();
+
             SetAppState(GameAppState.EnteringGameplay);
             SetGameplaySessionActive(true);
             UIManager.Instance.ClearAllPopups();
@@ -124,7 +143,35 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
 
         public bool RequestStartLevel(string levelId = null)
         {
-            return StartGameplaySession(levelId);
+            if (!EnsureUiManager())
+            {
+                return false;
+            }
+
+            if (!TryResolveLevelManager())
+            {
+                Debug.LogError("[GameAppFlowManager] Missing Match3LevelManager in active scene.", this);
+                return false;
+            }
+
+            string targetLevelId = string.IsNullOrWhiteSpace(levelId) ? tempLevelId : levelId;
+
+            _levelManager.SetRequestedLevelId(targetLevelId);
+            if (!_levelManager.TryLoadCurrentLevel(out var levelData))
+            {
+                Debug.LogError($"[GameAppFlowManager] Failed to load level '{targetLevelId}' for introduction.", this);
+                return false;
+            }
+
+            UIManager.Instance.ShowPopup<LevelIntroductionPopup>(PopupID.LevelIntroductionPopup, popup =>
+            {
+                popup.Setup(targetLevelId, levelData, selectedPreLevelBoosters =>
+                {
+                    StartGameplaySession(targetLevelId, selectedPreLevelBoosters);
+                });
+            });
+
+            return true;
         }
 
         public void ExitGameplaySession()
@@ -137,6 +184,11 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
                 _gameFlowManager.ExitGameplay();
             }
 
+            if (HeartManager.Instance.IsMatchActive)
+            {
+                HeartManager.Instance.SetMatchFinished(false);
+            }
+
             CloseGameplayPopups();
             _boardPresenter?.ResetPresentation();
             _gameManager?.ResetGame();
@@ -147,6 +199,44 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
         public void RestartGameplay()
         {
             StartGameplaySession(CurrentLevelId);
+        }
+
+        public void StartNextLevel()
+        {
+            string nextLevelId = GetNextLevelId(CurrentLevelId);
+
+            if (TryResolveLevelManager())
+            {
+                if (_levelManager.TryLoadLevel(nextLevelId, out _))
+                {
+                    RequestStartLevel(nextLevelId);
+                    return;
+                }
+            }
+
+            Debug.LogWarning($"[GameAppFlowManager] Next level '{nextLevelId}' could not be loaded or level manager is missing. Returning to main menu.", this);
+            EnterMainMenu();
+        }
+
+        private string GetNextLevelId(string currentId)
+        {
+            if (string.IsNullOrWhiteSpace(currentId))
+            {
+                return "Level_001";
+            }
+
+            int idx = currentId.LastIndexOf('_');
+            if (idx >= 0 && idx < currentId.Length - 1)
+            {
+                string prefix = currentId.Substring(0, idx + 1);
+                string numStr = currentId.Substring(idx + 1);
+                if (int.TryParse(numStr, out int num))
+                {
+                    return $"{prefix}{(num + 1):D3}";
+                }
+            }
+
+            return "Level_001";
         }
 
         protected override void OnDestroy()
@@ -263,6 +353,8 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
             UIManager.Instance.ClosePopup(PopupID.PausePopup);
             UIManager.Instance.ClosePopup(PopupID.WinPopup);
             UIManager.Instance.ClosePopup(PopupID.LosePopup);
+            UIManager.Instance.ClosePopup(PopupID.LevelIntroductionPopup);
+            UIManager.Instance.ClosePopup(PopupID.SettingsPopup);
         }
 
         private void SetAppState(GameAppState nextState)
