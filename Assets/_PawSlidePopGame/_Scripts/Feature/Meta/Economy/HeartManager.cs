@@ -13,10 +13,32 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager
 
         public event Action<int, int> OnHeartsChanged;
 
+        public bool IsInfiniteHeartsActive => !string.IsNullOrEmpty(Repository.Data.infiniteHeartsEndUtc)
+            && DateTime.TryParse(Repository.Data.infiniteHeartsEndUtc, out DateTime endUtc)
+            && DateTime.UtcNow < endUtc.ToUniversalTime();
+
+        public double RemainingInfiniteHeartsSeconds
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(Repository.Data.infiniteHeartsEndUtc)
+                    && DateTime.TryParse(Repository.Data.infiniteHeartsEndUtc, out DateTime endUtc))
+                {
+                    double remaining = (endUtc.ToUniversalTime() - DateTime.UtcNow).TotalSeconds;
+                    return Mathf.Max(0f, (float)remaining);
+                }
+                return 0;
+            }
+        }
+
         public int Hearts
         {
             get
             {
+                if (IsInfiniteHeartsActive)
+                {
+                    return MaxHearts;
+                }
                 UpdateHeartRegeneration();
                 return Repository.Data.hearts;
             }
@@ -26,6 +48,10 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager
         {
             get
             {
+                if (IsInfiniteHeartsActive)
+                {
+                    return 0;
+                }
                 int currentHearts = Hearts; // This triggers regeneration calculation first
                 if (currentHearts >= MaxHearts)
                 {
@@ -77,6 +103,11 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager
 
         public bool TrySpendHeart()
         {
+            if (IsInfiniteHeartsActive)
+            {
+                return true;
+            }
+
             int currentHearts = Hearts;
             if (currentHearts <= 0)
             {
@@ -94,6 +125,33 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager
 
             OnHeartsChanged?.Invoke(previous, Repository.Data.hearts);
             return true;
+        }
+
+        public void AddInfiniteHearts(int durationSeconds)
+        {
+            if (durationSeconds <= 0)
+            {
+                return;
+            }
+
+            DateTime baseTime = DateTime.UtcNow;
+            if (IsInfiniteHeartsActive && DateTime.TryParse(Repository.Data.infiniteHeartsEndUtc, out DateTime existingEnd))
+            {
+                baseTime = existingEnd.ToUniversalTime();
+            }
+
+            DateTime newEnd = baseTime.AddSeconds(durationSeconds);
+            Repository.Data.infiniteHeartsEndUtc = newEnd.ToString("o");
+            Repository.Save();
+
+            OnHeartsChanged?.Invoke(Hearts, Hearts);
+        }
+
+        public void ClearInfiniteHearts()
+        {
+            Repository.Data.infiniteHeartsEndUtc = string.Empty;
+            Repository.Save();
+            OnHeartsChanged?.Invoke(Hearts, Hearts);
         }
 
         public void AddHearts(int amount, bool allowOverfill = false)

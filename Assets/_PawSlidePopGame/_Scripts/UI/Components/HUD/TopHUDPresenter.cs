@@ -64,6 +64,18 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             EventManager<VisualGameEvent>.AddListener<StarReachedPayload>(VisualGameEvent.TopHudStarReachedFx, HandleStarReachedFx);
             EventManager<VisualGameEvent>.AddListener(VisualGameEvent.TopHudTargetsCompletedFx, HandleTargetsCompletedFx);
         }
+        private void HandleHudSnapshot(GameplayHudSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return;
+            }
+
+            _currentSnapshot = snapshot.Clone();
+            movesCounterView?.SetValue(_currentSnapshot.remainingMoves);
+            targetListView?.SetTargets(_currentSnapshot.targets);
+            levelProgressView?.SetData(_currentSnapshot);
+        }
 
         private void OnDisable()
         {
@@ -92,18 +104,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             levelProgressView?.ResetView();
         }
 
-        private void HandleHudSnapshot(GameplayHudSnapshot snapshot)
-        {
-            if (snapshot == null)
-            {
-                return;
-            }
-
-            _currentSnapshot = snapshot.Clone();
-            movesCounterView?.SetValue(_currentSnapshot.remainingMoves);
-            targetListView?.SetTargets(_currentSnapshot.targets);
-            levelProgressView?.SetData(_currentSnapshot);
-        }
+        
 
         private void HandleSubStateChanged(InGameSubStateChangedPayload payload)
         {

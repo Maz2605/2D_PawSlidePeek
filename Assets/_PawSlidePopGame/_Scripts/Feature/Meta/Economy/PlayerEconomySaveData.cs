@@ -12,6 +12,7 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager
         public int hearts = 5;
         public string lastHeartRegenTime = string.Empty;
         public bool isMatchActive = false;
+        public string infiniteHeartsEndUtc = string.Empty;
 
         public void Sanitize()
         {
@@ -20,6 +21,7 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager
             boosterCounts ??= new Dictionary<string, int>();
             hearts = Math.Max(0, hearts);
             lastHeartRegenTime ??= string.Empty;
+            infiniteHeartsEndUtc ??= string.Empty;
 
             List<string> keys = new List<string>(boosterCounts.Keys);
             for (int i = 0; i < keys.Count; i++)

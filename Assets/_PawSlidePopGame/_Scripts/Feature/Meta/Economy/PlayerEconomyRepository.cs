@@ -33,6 +33,12 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager
             Data.Sanitize();
             SaveSystem.Save(_saveKey, Data);
         }
+        private PlayerEconomySaveData Load()
+        {
+            PlayerEconomySaveData loaded = SaveSystem.Load<PlayerEconomySaveData>(_saveKey) ?? new PlayerEconomySaveData();
+            loaded.Sanitize();
+            return loaded;
+        }
 
         public void DeleteSave()
         {
@@ -73,11 +79,6 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager
             return changed;
         }
 
-        private PlayerEconomySaveData Load()
-        {
-            PlayerEconomySaveData loaded = SaveSystem.Load<PlayerEconomySaveData>(_saveKey) ?? new PlayerEconomySaveData();
-            loaded.Sanitize();
-            return loaded;
-        }
+        
     }
 }

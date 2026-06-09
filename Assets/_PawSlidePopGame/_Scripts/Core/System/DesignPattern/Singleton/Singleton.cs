@@ -74,6 +74,11 @@ namespace _PawSlidePopGame._Scripts.Core.System.DesignPattern.Singleton
             _applicationIsQuitting = true;
         }
 
+        public static void ResetQuittingFlag()
+        {
+            _applicationIsQuitting = false;
+        }
+
         protected virtual void OnDestroy()
         {
             if (_instance == this)

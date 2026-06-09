@@ -14,6 +14,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Meta.Tests.Editor
         [SetUp]
         public void Setup()
         {
+            Singleton<HeartManager>.ResetQuittingFlag();
             _testSaveKey = $"player_economy_hearts_test_{Guid.NewGuid()}";
             
             // Set save key for repository manually or let it use the test key
@@ -26,6 +27,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Meta.Tests.Editor
             // Let's back up the current save in PlayerEconomyRepository.Instance to be safe,
             // or just use the default instance and restore it after testing.
             PlayerEconomyRepository.Instance.Reload();
+            PlayerEconomyRepository.Instance.Data.infiniteHeartsEndUtc = string.Empty;
+            PlayerEconomyRepository.Instance.Save();
             
             // Disable DontDestroyOnLoad for tests to avoid editor errors
             Singleton<HeartManager>.DontDestroyOnLoadEnabled = false;
@@ -34,6 +37,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Meta.Tests.Editor
         [TearDown]
         public void TearDown()
         {
+            Singleton<HeartManager>.ResetQuittingFlag();
             if (HeartManager.Instance != null)
             {
                 Object.DestroyImmediate(HeartManager.Instance.gameObject);
@@ -44,6 +48,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Meta.Tests.Editor
             repository.DeleteSave();
             
             // Restore default repository
+            PlayerEconomyRepository.Instance.Data.infiniteHeartsEndUtc = string.Empty;
+            PlayerEconomyRepository.Instance.Save();
             PlayerEconomyRepository.Instance.Reload();
         }
 
@@ -122,6 +128,42 @@ namespace _PawSlidePopGame._Scripts.Feature.Meta.Tests.Editor
             Assert.That(HeartManager.Instance.Hearts, Is.EqualTo(4));
             Assert.That(HeartManager.Instance.IsMatchActive, Is.False);
             Assert.That(string.IsNullOrEmpty(PlayerEconomyRepository.Instance.Data.lastHeartRegenTime), Is.False);
+        }
+
+        [Test]
+        public void InfiniteHearts_BypassesDeductionAndReportsMax()
+        {
+            PlayerEconomyRepository.Instance.Data.hearts = 3;
+            PlayerEconomyRepository.Instance.Data.infiniteHeartsEndUtc = DateTime.UtcNow.AddMinutes(30).ToString("o");
+            PlayerEconomyRepository.Instance.Save();
+
+            Assert.That(HeartManager.Instance.IsInfiniteHeartsActive, Is.True);
+            Assert.That(HeartManager.Instance.Hearts, Is.EqualTo(HeartManager.MaxHearts));
+            Assert.That(HeartManager.Instance.SecondsUntilNextHeart, Is.EqualTo(0));
+
+            bool success = HeartManager.Instance.TrySpendHeart();
+            Assert.That(success, Is.True);
+            // Verify hearts count remains unchanged in data
+            Assert.That(PlayerEconomyRepository.Instance.Data.hearts, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void AddInfiniteHearts_StacksCorrectly()
+        {
+            PlayerEconomyRepository.Instance.Data.infiniteHeartsEndUtc = string.Empty;
+            PlayerEconomyRepository.Instance.Save();
+
+            // Add 10 minutes
+            HeartManager.Instance.AddInfiniteHearts(600);
+            DateTime firstEnd = DateTime.Parse(PlayerEconomyRepository.Instance.Data.infiniteHeartsEndUtc).ToUniversalTime();
+            double diff = (firstEnd - DateTime.UtcNow).TotalSeconds;
+            Assert.That(diff, Is.EqualTo(600).Within(3));
+
+            // Stack another 10 minutes (600 seconds)
+            HeartManager.Instance.AddInfiniteHearts(600);
+            DateTime secondEnd = DateTime.Parse(PlayerEconomyRepository.Instance.Data.infiniteHeartsEndUtc).ToUniversalTime();
+            double finalDiff = (secondEnd - DateTime.UtcNow).TotalSeconds;
+            Assert.That(finalDiff, Is.EqualTo(1200).Within(3));
         }
     }
 }

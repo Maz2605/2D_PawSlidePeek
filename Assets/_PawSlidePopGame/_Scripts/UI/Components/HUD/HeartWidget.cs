@@ -10,20 +10,46 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
     [DisallowMultipleComponent]
     public sealed class HeartWidget : MonoBehaviour
     {
+        private struct IconState
+        {
+            public Vector3 Scale;
+            public Vector2 Position;
+            public Quaternion Rotation;
+
+            public void Cache(Image icon)
+            {
+                if (icon != null)
+                {
+                    Scale = icon.transform.localScale;
+                    Position = icon.rectTransform.anchoredPosition;
+                    Rotation = icon.transform.localRotation;
+                }
+            }
+
+            public void Restore(Image icon)
+            {
+                if (icon != null)
+                {
+                    icon.transform.localScale = Scale;
+                    icon.rectTransform.anchoredPosition = Position;
+                    icon.transform.localRotation = Rotation;
+                }
+            }
+        }
+
         [Header("Refs")]
-        [SerializeField] private TMP_Text amountText; // Inside the heart icon
+        [SerializeField] private TMP_Text amountText;
         [SerializeField] private RectTransform amountTextRoot;
         [SerializeField] private Image heartIcon;
-        [SerializeField] private TMP_Text statusText; // Displays "Full" or timer "MM:SS"
-        [SerializeField] private Button addButton; // Green plus button
-
-
+        [SerializeField] private Image infiniteHeartIcon;
+        [SerializeField] private TMP_Text statusText;
+        [SerializeField] private Button addButton;
 
         [Header("Format")]
         [SerializeField] private string amountFormat = "{0}";
         [SerializeField] private string fullText = "Full";
 
-        [Header("Count Animation")]
+        [Header("Obsolete Count Anim Refs (Kept for Serialization)")]
         [SerializeField] private bool subscribeHeartManager = true;
         [SerializeField] private bool pollHeartManagerValue = true;
         [SerializeField] private bool useUnscaledTime = true;
@@ -52,33 +78,35 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         [SerializeField] private float shakeRotationStrength = 15f;
         [SerializeField] private float shakeScaleStrength = 0.15f;
 
+        // Private State
         private int _displayedAmount;
         private int _targetAmount;
-        private Sequence _updateSequence;
-        private Tween _countTween;
-        private Vector2 _amountBaseAnchoredPosition;
-        private Vector3 _amountBaseScale;
-        private Vector3 _iconBaseScale;
-        private Vector2 _iconBaseAnchoredPosition;
-        private Tween _idleTween;
-        private Sequence _shakeTween;
         private bool _hasCachedBaseState;
         private bool _initialized;
         private bool _isAnimating;
+        private bool? _lastInfiniteState;
+
+        private Vector2 _amountBaseAnchoredPosition;
+        private Vector3 _amountBaseScale;
+        private IconState _normalIconState;
+        private IconState _infiniteIconState;
+
+        // Tweens & Sequences
+        private Sequence _animationSequence;
+        private Sequence _shakeSequence;
+        private Sequence _transitionSequence;
+        private Tween _idleTween;
         private HeartManager _heartManager;
 
-        private RectTransform AmountRoot
-        {
-            get
-            {
-                if (amountTextRoot != null)
-                {
-                    return amountTextRoot;
-                }
+        private Image ActiveHeartIcon => 
+            (GetHeartManager() != null && GetHeartManager().IsInfiniteHeartsActive && infiniteHeartIcon != null)
+                ? infiniteHeartIcon
+                : heartIcon;
 
-                return amountText != null ? amountText.rectTransform : null;
-            }
-        }
+        private RectTransform AmountRoot => 
+            amountTextRoot != null ? amountTextRoot : (amountText != null ? amountText.rectTransform : null);
+
+        #region Unity Lifecycle
 
         private void Awake()
         {
@@ -91,12 +119,12 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             CacheBaseState(force: false);
             RestoreBaseState();
 
-            HeartManager heartManager = GetHeartManager();
-            if (subscribeHeartManager && heartManager != null)
+            HeartManager manager = GetHeartManager();
+            if (subscribeHeartManager && manager != null)
             {
-                heartManager.OnHeartsChanged -= HandleHeartsChanged;
-                heartManager.OnHeartsChanged += HandleHeartsChanged;
-                SetAmount(heartManager.Hearts, animate: false);
+                manager.OnHeartsChanged -= HandleHeartsChanged;
+                manager.OnHeartsChanged += HandleHeartsChanged;
+                SetAmount(manager.Hearts, animate: false);
             }
 
             StartIdleAnimation();
@@ -110,8 +138,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             }
 
             _heartManager = null;
-            KillTweens();
-            KillIdleAndShakeTweens();
+            KillAllTweens();
             RestoreBaseState();
             _isAnimating = false;
         }
@@ -123,44 +150,34 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         private void Update()
         {
-            HeartManager heartManager = GetHeartManager();
-            if (heartManager == null)
-            {
-                return;
-            }
+            HeartManager manager = GetHeartManager();
+            if (manager == null) return;
 
-            // 1. Update amount text if not animating and amount changed
-            int currentHearts = heartManager.Hearts;
-            if (pollHeartManagerValue && !_isAnimating && _targetAmount != currentHearts)
-            {
-                SetAmount(currentHearts, animate: _initialized);
-            }
+            bool isInfinite = manager.IsInfiniteHeartsActive;
+            UpdateIconVisibility(isInfinite);
 
-            // 2. Update status (Full or Countdown timer)
-            if (statusText != null)
+            if (pollHeartManagerValue && !_isAnimating)
             {
-                if (currentHearts >= HeartManager.MaxHearts)
+                int currentHearts = manager.Hearts;
+                if (_targetAmount != currentHearts)
                 {
-                    statusText.text = fullText;
-                }
-                else
-                {
-                    double secondsRemaining = heartManager.SecondsUntilNextHeart;
-                    int minutes = (int)(secondsRemaining / 60);
-                    int seconds = (int)(secondsRemaining % 60);
-                    statusText.text = $"{minutes:00}:{seconds:00}";
+                    SetAmount(currentHearts, animate: _initialized);
                 }
             }
 
-
+            UpdateStatusText(manager, isInfinite);
         }
+
+        #endregion
+
+        #region Public API
 
         public void RefreshFromManager(bool animate)
         {
-            HeartManager heartManager = GetHeartManager();
-            if (heartManager != null)
+            HeartManager manager = GetHeartManager();
+            if (manager != null)
             {
-                SetAmount(heartManager.Hearts, animate);
+                SetAmount(manager.Hearts, animate);
             }
         }
 
@@ -187,6 +204,10 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             }
         }
 
+        #endregion
+
+        #region Private Handlers & Helpers
+
         private void HandleHeartsChanged(int previousAmount, int currentAmount)
         {
             if (!_initialized)
@@ -200,92 +221,14 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         private HeartManager GetHeartManager()
         {
-            if (_heartManager != null)
-            {
-                return _heartManager;
-            }
-
+            if (_heartManager != null) return _heartManager;
             _heartManager = FindFirstObjectByType<HeartManager>(FindObjectsInactive.Include);
             return _heartManager;
         }
 
-        private void PlayAmountChanged(int previousAmount, int currentAmount)
+        private IconState GetIconBaseState(Image icon)
         {
-            currentAmount = Mathf.Max(0, currentAmount);
-            if (previousAmount == currentAmount)
-            {
-                SetAmount(currentAmount, animate: false);
-                return;
-            }
-
-            KillTweens();
-            KillIdleAndShakeTweens();
-            CacheBaseState(force: false);
-            RestoreBaseState();
-
-            _displayedAmount = Mathf.Max(0, previousAmount);
-            _targetAmount = currentAmount;
-            RefreshText();
-            _isAnimating = true;
-
-            int direction = currentAmount > previousAmount ? 1 : -1;
-            RectTransform root = AmountRoot;
-            Vector2 outPosition = _amountBaseAnchoredPosition + new Vector2(0f, slideOffsetY * direction);
-            Vector2 inStartPosition = _amountBaseAnchoredPosition - new Vector2(0f, slideOffsetY * direction);
-            Vector3 feedbackScale = _amountBaseScale * (direction > 0 ? increaseScale : decreaseScale);
-
-            _updateSequence = DOTween.Sequence()
-                .SetUpdate(useUnscaledTime)
-                .SetLink(gameObject, LinkBehaviour.KillOnDisable);
-
-            if (root != null)
-            {
-                _updateSequence.Append(root.DOAnchorPos(outPosition, slideOutDuration).SetEase(slideOutEase));
-                _updateSequence.Join(root.DOScale(feedbackScale, slideOutDuration).SetEase(slideOutEase));
-                _updateSequence.AppendCallback(() =>
-                {
-                    root.anchoredPosition = inStartPosition;
-                    _displayedAmount = _targetAmount;
-                    RefreshText();
-                });
-                _updateSequence.Append(root.DOAnchorPos(_amountBaseAnchoredPosition, slideInDuration).SetEase(slideInEase));
-                _updateSequence.Join(root.DOScale(_amountBaseScale, slideInDuration).SetEase(slideInEase));
-            }
-            else
-            {
-                _updateSequence.AppendInterval(slideOutDuration);
-                _updateSequence.AppendCallback(() =>
-                {
-                    _displayedAmount = _targetAmount;
-                    RefreshText();
-                });
-                _updateSequence.AppendInterval(slideInDuration);
-            }
-
-            _countTween = DOTween.To(() => previousAmount, value =>
-                {
-                    _displayedAmount = Mathf.Max(0, value);
-                    RefreshText();
-                }, currentAmount, countDuration)
-                .SetEase(countEase)
-                .SetUpdate(useUnscaledTime)
-                .SetLink(gameObject, LinkBehaviour.KillOnDisable);
-
-            if (heartIcon != null)
-            {
-                heartIcon.transform.localScale = _iconBaseScale;
-                _updateSequence.Join(heartIcon.transform.DOPunchScale(_iconBaseScale * iconPunchScale, iconPunchDuration, 8, 0.75f)
-                    .SetUpdate(useUnscaledTime));
-            }
-
-            _updateSequence.OnComplete(() =>
-            {
-                _displayedAmount = _targetAmount;
-                RefreshText();
-                RestoreBaseState();
-                _isAnimating = false;
-                StartIdleAnimation();
-            });
+            return icon == infiniteHeartIcon ? _infiniteIconState : _normalIconState;
         }
 
         private void RefreshText()
@@ -296,12 +239,241 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             }
         }
 
-        private void CacheBaseState(bool force)
+        private void UpdateIconVisibility(bool isInfinite)
         {
-            if (_hasCachedBaseState && !force)
+            if (_lastInfiniteState == isInfinite) return;
+
+            bool isFirstTime = _lastInfiniteState == null;
+            _lastInfiniteState = isInfinite;
+
+            if (isFirstTime)
             {
+                if (heartIcon != null) heartIcon.gameObject.SetActive(!isInfinite);
+                if (infiniteHeartIcon != null) infiniteHeartIcon.gameObject.SetActive(isInfinite);
+                RestoreBaseState();
+                StartIdleAnimation();
                 return;
             }
+
+            PlayTransitionAnimation(isInfinite);
+        }
+
+        private void UpdateStatusText(HeartManager manager, bool isInfinite)
+        {
+            if (statusText == null) return;
+
+            if (isInfinite)
+            {
+                double infiniteSeconds = manager.RemainingInfiniteHeartsSeconds;
+                int hours = (int)(infiniteSeconds / 3600);
+                int minutes = (int)((infiniteSeconds % 3600) / 60);
+                int seconds = (int)(infiniteSeconds % 60);
+                statusText.text = hours > 0 ? $"{hours}:{minutes:00}:{seconds:00}" : $"{minutes:00}:{seconds:00}";
+            }
+            else if (manager.Hearts >= HeartManager.MaxHearts)
+            {
+                statusText.text = fullText;
+            }
+            else
+            {
+                double secondsRemaining = manager.SecondsUntilNextHeart;
+                int minutes = (int)(secondsRemaining / 60);
+                int seconds = (int)(secondsRemaining % 60);
+                statusText.text = $"{minutes:00}:{seconds:00}";
+            }
+        }
+
+        #endregion
+
+        #region Animation Control
+
+        private void PlayAmountChanged(int previousAmount, int currentAmount)
+        {
+            currentAmount = Mathf.Max(0, currentAmount);
+            if (previousAmount == currentAmount)
+            {
+                SetAmount(currentAmount, animate: false);
+                return;
+            }
+
+            KillAllTweens();
+            CacheBaseState(force: false);
+            RestoreBaseState();
+
+            _displayedAmount = Mathf.Max(0, previousAmount);
+            _targetAmount = currentAmount;
+            RefreshText();
+            _isAnimating = true;
+
+            int direction = currentAmount > previousAmount ? 1 : -1;
+            RectTransform root = AmountRoot;
+
+            _animationSequence = DOTween.Sequence()
+                .SetUpdate(useUnscaledTime)
+                .SetLink(gameObject, LinkBehaviour.KillOnDisable);
+
+            if (root != null)
+            {
+                Vector2 outPosition = _amountBaseAnchoredPosition + new Vector2(0f, slideOffsetY * direction);
+                Vector2 inStartPosition = _amountBaseAnchoredPosition - new Vector2(0f, slideOffsetY * direction);
+                Vector3 feedbackScale = _amountBaseScale * (direction > 0 ? increaseScale : decreaseScale);
+
+                _animationSequence.Append(root.DOAnchorPos(outPosition, slideOutDuration).SetEase(slideOutEase));
+                _animationSequence.Join(root.DOScale(feedbackScale, slideOutDuration).SetEase(slideOutEase));
+                
+                _animationSequence.AppendCallback(() =>
+                {
+                    root.anchoredPosition = inStartPosition;
+                    _displayedAmount = _targetAmount;
+                    RefreshText();
+                });
+                
+                _animationSequence.Append(root.DOAnchorPos(_amountBaseAnchoredPosition, slideInDuration).SetEase(slideInEase));
+                _animationSequence.Join(root.DOScale(_amountBaseScale, slideInDuration).SetEase(slideInEase));
+            }
+            else
+            {
+                _animationSequence.AppendInterval(slideOutDuration);
+                _animationSequence.AppendCallback(() =>
+                {
+                    _displayedAmount = _targetAmount;
+                    RefreshText();
+                });
+                _animationSequence.AppendInterval(slideInDuration);
+            }
+
+            Image activeIcon = ActiveHeartIcon;
+            if (activeIcon != null)
+            {
+                IconState baseState = GetIconBaseState(activeIcon);
+                activeIcon.transform.localScale = baseState.Scale;
+                _animationSequence.Join(activeIcon.transform
+                    .DOPunchScale(baseState.Scale * iconPunchScale, iconPunchDuration, 8, 0.75f)
+                    .SetUpdate(useUnscaledTime));
+            }
+
+            _animationSequence.OnComplete(() =>
+            {
+                _displayedAmount = _targetAmount;
+                RefreshText();
+                RestoreBaseState();
+                _isAnimating = false;
+                StartIdleAnimation();
+            });
+        }
+
+        private void PlayTransitionAnimation(bool isInfinite)
+        {
+            KillAllTweens();
+
+            Image oldIcon = isInfinite ? heartIcon : infiniteHeartIcon;
+            Image newIcon = isInfinite ? infiniteHeartIcon : heartIcon;
+            IconState newBaseState = GetIconBaseState(newIcon);
+
+            _transitionSequence = DOTween.Sequence()
+                .SetUpdate(useUnscaledTime)
+                .SetLink(gameObject, LinkBehaviour.KillOnDisable);
+
+            if (newIcon != null)
+            {
+                newIcon.gameObject.SetActive(true);
+                newIcon.transform.localScale = Vector3.zero;
+                newIcon.transform.localRotation = newBaseState.Rotation;
+            }
+
+            float duration = 0.25f;
+
+            if (oldIcon != null)
+            {
+                _transitionSequence.Join(oldIcon.transform.DOScale(Vector3.zero, duration).SetEase(Ease.InQuad));
+            }
+            if (newIcon != null)
+            {
+                _transitionSequence.Join(newIcon.transform.DOScale(newBaseState.Scale, duration).SetEase(Ease.OutBack));
+            }
+
+            RectTransform textRoot = AmountRoot;
+            if (textRoot != null)
+            {
+                _transitionSequence.Join(textRoot.DOPunchScale(textRoot.localScale * 0.12f, duration, 5, 0.5f));
+            }
+            if (statusText != null)
+            {
+                _transitionSequence.Join(statusText.transform.DOPunchScale(statusText.transform.localScale * 0.12f, duration, 5, 0.5f));
+            }
+
+            _transitionSequence.OnComplete(() =>
+            {
+                if (oldIcon != null) oldIcon.gameObject.SetActive(false);
+                RestoreBaseState();
+                StartIdleAnimation();
+            });
+        }
+
+        private void StartIdleAnimation()
+        {
+            Image activeIcon = ActiveHeartIcon;
+            if (activeIcon == null || iconIdleAnimType == IconIdleAnimType.None) return;
+
+            _idleTween?.Kill();
+            IconState baseState = GetIconBaseState(activeIcon);
+
+            if (iconIdleAnimType == IconIdleAnimType.Floating)
+            {
+                float startY = baseState.Position.y;
+                float targetY = startY + idleFloatAmount;
+                activeIcon.rectTransform.anchoredPosition = new Vector2(baseState.Position.x, startY);
+
+                _idleTween = activeIcon.rectTransform.DOAnchorPosY(targetY, idleDuration)
+                    .SetEase(Ease.InOutSine)
+                    .SetLoops(-1, LoopType.Yoyo)
+                    .SetUpdate(useUnscaledTime)
+                    .SetLink(activeIcon.gameObject);
+            }
+            else if (iconIdleAnimType == IconIdleAnimType.Pulsing)
+            {
+                activeIcon.transform.localScale = baseState.Scale;
+                Vector3 targetScale = baseState.Scale * idlePulseScale;
+
+                _idleTween = activeIcon.transform.DOScale(targetScale, idleDuration)
+                    .SetEase(Ease.InOutSine)
+                    .SetLoops(-1, LoopType.Yoyo)
+                    .SetUpdate(useUnscaledTime)
+                    .SetLink(activeIcon.gameObject);
+            }
+        }
+
+        private void PlayIconShake()
+        {
+            Image activeIcon = ActiveHeartIcon;
+            if (activeIcon == null) return;
+
+            KillAllTweens();
+
+            IconState baseState = GetIconBaseState(activeIcon);
+            baseState.Restore(activeIcon);
+
+            _shakeSequence = DOTween.Sequence()
+                .SetUpdate(useUnscaledTime)
+                .SetLink(activeIcon.gameObject);
+
+            _shakeSequence.Append(activeIcon.transform.DOPunchRotation(new Vector3(0f, 0f, shakeRotationStrength), shakeDuration, 10, 1f));
+            _shakeSequence.Join(activeIcon.transform.DOPunchScale(baseState.Scale * shakeScaleStrength, shakeDuration, 10, 1f));
+
+            _shakeSequence.OnComplete(() =>
+            {
+                _shakeSequence = null;
+                StartIdleAnimation();
+            });
+        }
+
+        #endregion
+
+        #region Base State Cache/Restore
+
+        private void CacheBaseState(bool force)
+        {
+            if (_hasCachedBaseState && !force) return;
 
             RectTransform root = AmountRoot;
             if (root != null)
@@ -310,12 +482,8 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                 _amountBaseScale = root.localScale;
             }
 
-            if (heartIcon != null)
-            {
-                _iconBaseScale = heartIcon.transform.localScale;
-                _iconBaseAnchoredPosition = heartIcon.rectTransform.anchoredPosition;
-            }
-
+            _normalIconState.Cache(heartIcon);
+            _infiniteIconState.Cache(infiniteHeartIcon);
             _hasCachedBaseState = true;
         }
 
@@ -328,107 +496,41 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                 root.localScale = _amountBaseScale;
             }
 
-            if (heartIcon != null)
-            {
-                heartIcon.transform.localScale = _iconBaseScale;
-                heartIcon.rectTransform.anchoredPosition = _iconBaseAnchoredPosition;
-                heartIcon.transform.localRotation = Quaternion.identity;
-            }
+            _normalIconState.Restore(heartIcon);
+            _infiniteIconState.Restore(infiniteHeartIcon);
         }
 
-        private void KillTweens()
+        private void KillAllTweens()
         {
-            _updateSequence?.Kill();
-            _updateSequence = null;
-            _countTween?.Kill();
-            _countTween = null;
-        }
-
-        private void KillIdleAndShakeTweens()
-        {
+            _animationSequence?.Kill();
+            _animationSequence = null;
+            _shakeSequence?.Kill();
+            _shakeSequence = null;
+            _transitionSequence?.Kill();
+            _transitionSequence = null;
             _idleTween?.Kill();
             _idleTween = null;
-            _shakeTween?.Kill();
-            _shakeTween = null;
         }
 
         private void SetupIconInteraction()
         {
-            if (heartIcon != null)
-            {
-                Button button = heartIcon.GetComponent<Button>();
-                if (button == null)
-                {
-                    button = heartIcon.gameObject.AddComponent<Button>();
-                    button.transition = Selectable.Transition.None;
-                }
-                button.onClick.RemoveListener(PlayIconShake);
-                button.onClick.AddListener(PlayIconShake);
-            }
+            RegisterShakeHandler(heartIcon);
+            RegisterShakeHandler(infiniteHeartIcon);
         }
 
-        private void StartIdleAnimation()
+        private void RegisterShakeHandler(Image icon)
         {
-            if (heartIcon == null || iconIdleAnimType == IconIdleAnimType.None)
+            if (icon == null) return;
+            Button button = icon.GetComponent<Button>();
+            if (button == null)
             {
-                return;
+                button = icon.gameObject.AddComponent<Button>();
+                button.transition = Selectable.Transition.None;
             }
-
-            _idleTween?.Kill();
-
-            if (iconIdleAnimType == IconIdleAnimType.Floating)
-            {
-                float startY = _iconBaseAnchoredPosition.y;
-                float targetY = startY + idleFloatAmount;
-                heartIcon.rectTransform.anchoredPosition = new Vector2(_iconBaseAnchoredPosition.x, startY);
-
-                _idleTween = heartIcon.rectTransform.DOAnchorPosY(targetY, idleDuration)
-                    .SetEase(Ease.InOutSine)
-                    .SetLoops(-1, LoopType.Yoyo)
-                    .SetUpdate(useUnscaledTime)
-                    .SetLink(heartIcon.gameObject);
-            }
-            else if (iconIdleAnimType == IconIdleAnimType.Pulsing)
-            {
-                heartIcon.transform.localScale = _iconBaseScale;
-                Vector3 targetScale = _iconBaseScale * idlePulseScale;
-
-                _idleTween = heartIcon.transform.DOScale(targetScale, idleDuration)
-                    .SetEase(Ease.InOutSine)
-                    .SetLoops(-1, LoopType.Yoyo)
-                    .SetUpdate(useUnscaledTime)
-                    .SetLink(heartIcon.gameObject);
-            }
+            button.onClick.RemoveListener(PlayIconShake);
+            button.onClick.AddListener(PlayIconShake);
         }
 
-        private void PlayIconShake()
-        {
-            if (heartIcon == null)
-            {
-                return;
-            }
-
-            _idleTween?.Kill();
-            _idleTween = null;
-            _shakeTween?.Kill();
-            _shakeTween = null;
-
-            heartIcon.transform.localScale = _iconBaseScale;
-            heartIcon.rectTransform.anchoredPosition = _iconBaseAnchoredPosition;
-            heartIcon.transform.localRotation = Quaternion.identity;
-
-            _shakeTween = DOTween.Sequence()
-                .SetUpdate(useUnscaledTime)
-                .SetLink(heartIcon.gameObject);
-
-            _shakeTween.Append(heartIcon.transform.DOPunchRotation(new Vector3(0f, 0f, shakeRotationStrength), shakeDuration, 10, 1f));
-            _shakeTween.Join(heartIcon.transform.DOPunchScale(_iconBaseScale * shakeScaleStrength, shakeDuration, 10, 1f));
-
-            _shakeTween.OnComplete(() =>
-            {
-                _shakeTween = null;
-                StartIdleAnimation();
-            });
-        }
+        #endregion
     }
 }
