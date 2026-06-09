@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using _PawSlidePopGame._Scripts.Feature.Meta.Wheel;
+using _PawSlidePopGame._Scripts.Feature.Meta.Reward;
 using NUnit.Framework;
-using UnityEditor;
 using UnityEngine;
 
 namespace _PawSlidePopGame._Scripts.Feature.Meta.Tests.Editor
@@ -14,9 +14,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Meta.Tests.Editor
         {
             List<WheelRewardEntryData> rewards = new List<WheelRewardEntryData>
             {
-                CreateReward("zero", WheelRewardKind.Coins, 10, 0, true),
-                CreateReward("disabled", WheelRewardKind.Coins, 10, 10, false),
-                CreateReward("valid", WheelRewardKind.Coins, 10, 1, true)
+                CreateReward("zero", RewardKind.Coins, 10, 0, true),
+                CreateReward("disabled", RewardKind.Coins, 10, 10, false),
+                CreateReward("valid", RewardKind.Coins, 10, 1, true)
             };
 
             int selectedIndex = WheelSpinService.SelectRewardIndex(rewards, 0.99f);
@@ -107,47 +107,22 @@ namespace _PawSlidePopGame._Scripts.Feature.Meta.Tests.Editor
             repository.DeleteSave();
         }
 
-        [Test]
-        public void JsonProvider_RejectsEmptyRewardConfig()
-        {
-            TextAsset json = new TextAsset("{\"rewards\":[]}");
-
-            bool success = WheelJsonConfigProvider.TryCreateSnapshot(json, null, out WheelConfigSnapshot snapshot, out string error);
-
-            Assert.That(success, Is.False);
-            Assert.That(snapshot, Is.Null);
-            Assert.That(error, Is.Not.Empty);
-        }
-
         private static WheelRewardEntryData CreateReward(
             string id,
-            WheelRewardKind kind,
+            RewardKind kind,
             int amount,
             int weight,
             bool enabled)
         {
+            var rewardSO = ScriptableObject.CreateInstance<RewardEntrySO>();
+            rewardSO.name = id;
+            // boosterDefinition = null vì test này dùng Coins/Heart không cần Booster
+            rewardSO.EditorSetValues(kind, amount, boosterDef: null);
+
             WheelRewardEntryData reward = new WheelRewardEntryData();
-            SerializedObject serializedObject = new SerializedObject(ScriptableObject.CreateInstance<WheelRewardEntryDataProxy>());
-            WheelRewardEntryDataProxy proxy = (WheelRewardEntryDataProxy)serializedObject.targetObject;
-            proxy.reward = reward;
-
-            SerializedObject rewardObject = new SerializedObject(proxy);
-            SerializedProperty rewardProperty = rewardObject.FindProperty("reward");
-            rewardProperty.FindPropertyRelative("rewardId").stringValue = id;
-            rewardProperty.FindPropertyRelative("rewardKind").enumValueIndex = (int)kind;
-            rewardProperty.FindPropertyRelative("amount").intValue = amount;
-            rewardProperty.FindPropertyRelative("weight").intValue = weight;
-            rewardProperty.FindPropertyRelative("enabled").boolValue = enabled;
-            rewardObject.ApplyModifiedPropertiesWithoutUndo();
-
+            reward.EditorSetup(rewardSO, weight, enabled);
             reward.Sanitize();
-            UnityEngine.Object.DestroyImmediate(proxy);
             return reward;
-        }
-
-        private sealed class WheelRewardEntryDataProxy : ScriptableObject
-        {
-            public WheelRewardEntryData reward;
         }
     }
 }

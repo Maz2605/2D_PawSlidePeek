@@ -63,8 +63,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Meta.Wheel
             }
 
             float segmentAngle = 360f / rewardCount;
-            float maxOffset = Mathf.Max(0f, segmentAngle * 0.5f - landingPaddingDegrees);
-            float offset = Mathf.Lerp(-maxOffset, maxOffset, Mathf.Clamp01(random01));
+            // Force offset to 0 so the winning item lands exactly centered at the pointer (pointing straight UP)
+            float offset = 0f;
             float rewardCenterAngle = pointerAngleDegrees - rewardIndex * segmentAngle + offset;
             float desiredWheelAngle = pointerAngleDegrees - rewardCenterAngle;
             float normalizedCurrent = NormalizeAngle(currentZAngle);

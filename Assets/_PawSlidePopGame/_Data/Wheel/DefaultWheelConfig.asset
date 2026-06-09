@@ -13,78 +13,30 @@ MonoBehaviour:
   m_Name: DefaultWheelConfig
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Meta.Wheel.WheelConfigSO
   rewards:
-  - rewardId: Coins 100
-    rewardKind: 0
-    amount: 100
+  - reward: {fileID: 11400000, guid: 0758ca4125529844b805b17bcb982bf7, type: 2}
     weight: 20
     enabled: 1
-    displayName: Coins 100
-    icon: {fileID: 21300000, guid: ee18696bad3da4fb4ab6b1a61eef4d8a, type: 3}
-    boosterDefinition: {fileID: 0}
-    boosterIdOverride: 
-  - rewardId: Hammer
-    rewardKind: 1
-    amount: 1
+  - reward: {fileID: 11400000, guid: e77a153d9033824439aaa4744b654caa, type: 2}
     weight: 12
     enabled: 1
-    displayName: Extra Moves +3
-    icon: {fileID: 21300000, guid: ac5d84d05c2684e5bbfe2c056bccd450, type: 3}
-    boosterDefinition: {fileID: 11400000, guid: 81fc0b1d33c54cd4a23644c4ba1fab1f, type: 2}
-    boosterIdOverride: 
-  - rewardId: Heart
-    rewardKind: 2
-    amount: 1
+  - reward: {fileID: 11400000, guid: aef72d62a48fce5489c83bd919de27f9, type: 2}
     weight: 12
     enabled: 1
-    displayName: Heart
-    icon: {fileID: 21300000, guid: 6523f7e3386b346cf982584dde88039d, type: 3}
-    boosterDefinition: {fileID: 0}
-    boosterIdOverride: 
-  - rewardId: Coins 250
-    rewardKind: 0
-    amount: 250
+  - reward: {fileID: 11400000, guid: 0c052f424ee2fa741b045446b1e3734b, type: 2}
     weight: 10
     enabled: 1
-    displayName: Coins 250
-    icon: {fileID: 21300000, guid: d247447218461464aa452052bfc6014d, type: 3}
-    boosterDefinition: {fileID: 0}
-    boosterIdOverride: 
-  - rewardId: Shuffle
-    rewardKind: 1
-    amount: 1
+  - reward: {fileID: 11400000, guid: a9c23f0afa83e5f4798b09dedc8f4d56, type: 2}
     weight: 10
     enabled: 1
-    displayName: Hammer
-    icon: {fileID: 21300000, guid: 0bca1d72478dc4fdda3e48662c98cb9c, type: 3}
-    boosterDefinition: {fileID: 11400000, guid: 2d3d4fc7e1e1d6a4f9bda98cc5f9611e, type: 2}
-    boosterIdOverride: 
-  - rewardId: Coins 500
-    rewardKind: 0
-    amount: 500
+  - reward: {fileID: 11400000, guid: 98cc79a235d52dc459b3ebc5b1abcde0, type: 2}
     weight: 6
     enabled: 1
-    displayName: Coins 500
-    icon: {fileID: 21300000, guid: 4c279ca6f578e4002a0b02af7c32b8a4, type: 3}
-    boosterDefinition: {fileID: 0}
-    boosterIdOverride: 
-  - rewardId: Booster
-    rewardKind: 1
-    amount: 1
+  - reward: {fileID: 11400000, guid: 6b5131d09f8fc0f47874c968ef95df63, type: 2}
     weight: 8
     enabled: 1
-    displayName: Line Clear
-    icon: {fileID: 21300000, guid: 7fdd287a734d547efb9e97773ecabb08, type: 3}
-    boosterDefinition: {fileID: 11400000, guid: 07500bde85c13504999bd0eb5a61d14f, type: 2}
-    boosterIdOverride: 
-  - rewardId: Heart 2
-    rewardKind: 2
-    amount: 2
+  - reward: {fileID: 11400000, guid: 3ccb43e95a92a864ea65ee6f3e9e27e9, type: 2}
     weight: 6
     enabled: 1
-    displayName: Heart 2
-    icon: {fileID: 21300000, guid: c4fb8a68119c84ae58af37d7e2dade58, type: 3}
-    boosterDefinition: {fileID: 0}
-    boosterIdOverride: 
   spinDuration: 4.2
   minimumFullTurns: 7
   cooldownSeconds: 86400

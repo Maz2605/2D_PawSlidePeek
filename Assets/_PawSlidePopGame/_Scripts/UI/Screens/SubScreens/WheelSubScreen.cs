@@ -15,8 +15,7 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
     {
         [Header("Data")]
         [SerializeField] private WheelConfigSO config;
-        [SerializeField] private TextAsset jsonOverride;
-        [SerializeField] private List<BoosterDefinitionSO> boosterCatalog = new List<BoosterDefinitionSO>();
+
 
         [Header("Refs")]
         [SerializeField] private RectTransform wheelRoot;
@@ -105,18 +104,6 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
 
         private void LoadSnapshot()
         {
-            string jsonError = null;
-            if (jsonOverride != null && WheelJsonConfigProvider.TryCreateSnapshot(jsonOverride, boosterCatalog, out WheelConfigSnapshot jsonSnapshot, out jsonError))
-            {
-                _snapshot = jsonSnapshot;
-                return;
-            }
-
-            if (jsonOverride != null && !string.IsNullOrWhiteSpace(jsonError))
-            {
-                Debug.LogWarning($"[WheelSubScreen] Failed to load JSON override: {jsonError}", this);
-            }
-
             _snapshot = config != null ? config.CreateSnapshot() : null;
         }
 
@@ -127,6 +114,8 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
                 return;
             }
 
+            int count = _snapshot.Rewards.Count;
+
             for (int i = 0; i < segmentViews.Count; i++)
             {
                 WheelSegmentView view = segmentViews[i];
@@ -135,8 +124,16 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
                     continue;
                 }
 
-                WheelRewardEntryData reward = i < _snapshot.Rewards.Count ? _snapshot.Rewards[i] : null;
-                view.Bind(reward);
+                if (i < count)
+                {
+                    view.gameObject.SetActive(true);
+                    WheelRewardEntryData reward = _snapshot.Rewards[i];
+                    view.Bind(reward);
+                }
+                else
+                {
+                    view.gameObject.SetActive(false);
+                }
             }
         }
 
@@ -248,9 +245,25 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
                 spinDirection);
 
             float startAngle = wheelRoot.localEulerAngles.z;
-            float spinSign = Mathf.Sign(targetAngle - startAngle);
-            float settleOffset = Mathf.Max(0f, settleOvershootDegrees) * (spinSign == 0f ? 1f : spinSign);
-            float mainEndAngle = targetAngle + settleOffset;
+            float spinDistance = targetAngle - startAngle;
+
+            float totalDuration = _snapshot.SpinDuration + settleDuration;
+            float targetRatio = Mathf.Abs(spinDistance) > 0.01f ? settleOvershootDegrees / Mathf.Abs(spinDistance) : 0f;
+
+            float tZero;
+            float c;
+            if (targetRatio > 0.0001f)
+            {
+                // Clamp target ratio to a safe range to prevent extreme overshoot shapes
+                targetRatio = Mathf.Min(targetRatio, 0.12f);
+                tZero = FindTZero(targetRatio);
+                c = 60f / (5f * tZero - 2f);
+            }
+            else
+            {
+                tZero = 1.0f;
+                c = 20f;
+            }
 
             _spinSequence = DOTween.Sequence()
                 .SetUpdate(useUnscaledTime)
@@ -263,26 +276,18 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
                     .SetUpdate(useUnscaledTime));
             }
 
-            _spinSequence.Append(DOVirtual.Float(0f, 1f, _snapshot.SpinDuration, progress =>
+            _spinSequence.Append(DOVirtual.Float(0f, 1f, totalDuration, progress =>
                 {
-                    float angle = Mathf.LerpUnclamped(startAngle, mainEndAngle, EvaluateSpinProgress(progress));
+                    float unifiedProgress = EvaluateUnifiedProgress(progress, tZero, c);
+                    float angle = Mathf.LerpUnclamped(startAngle, targetAngle, unifiedProgress);
                     wheelRoot.localRotation = Quaternion.Euler(0f, 0f, angle);
                 })
                 .SetEase(Ease.Linear));
 
-            if (Mathf.Abs(settleOffset) > 0.01f && settleDuration > 0f)
+            if (settleShakeStrength > 0f && settleShakeVibrato > 0 && settleDuration > 0f)
             {
-                _spinSequence.Append(DOVirtual.Float(mainEndAngle, targetAngle, settleDuration, angle =>
-                    {
-                        wheelRoot.localRotation = Quaternion.Euler(0f, 0f, angle);
-                    })
-                    .SetEase(settleEase));
-            }
-
-            if (settleShakeStrength > 0f && settleShakeVibrato > 0)
-            {
-                _spinSequence.Join(wheelRoot
-                    .DOShakeRotation(Mathf.Max(0.05f, settleDuration), new Vector3(0f, 0f, settleShakeStrength), settleShakeVibrato, 60f, false)
+                _spinSequence.Insert(_snapshot.SpinDuration, wheelRoot
+                    .DOShakeRotation(settleDuration, new Vector3(0f, 0f, settleShakeStrength), settleShakeVibrato, 60f, false)
                     .SetUpdate(useUnscaledTime));
             }
 
@@ -351,45 +356,54 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
             _isSpinning = false;
         }
 
-        private float EvaluateSpinProgress(float timeProgress)
+        private float EvaluateUnifiedProgress(float timeProgress, float tZero, float c)
         {
-            float accelerationTime = Mathf.Clamp01(accelerationTimeRatio);
-            float cruiseTime = Mathf.Clamp01(cruiseTimeRatio);
-            if (accelerationTime + cruiseTime > 0.85f)
-            {
-                float scale = 0.85f / (accelerationTime + cruiseTime);
-                accelerationTime *= scale;
-                cruiseTime *= scale;
-            }
-
-            float accelerationDistance = Mathf.Clamp01(accelerationDistanceRatio);
-            float cruiseDistance = Mathf.Clamp01(cruiseDistanceRatio);
-            if (accelerationDistance + cruiseDistance > 0.85f)
-            {
-                float scale = 0.85f / (accelerationDistance + cruiseDistance);
-                accelerationDistance *= scale;
-                cruiseDistance *= scale;
-            }
-
-            float decelerationTime = Mathf.Max(0.0001f, 1f - accelerationTime - cruiseTime);
-            float decelerationDistance = Mathf.Max(0f, 1f - accelerationDistance - cruiseDistance);
             float t = Mathf.Clamp01(timeProgress);
+            float t2 = t * t;
+            float t3 = t2 * t;
+            float t4 = t3 * t;
+            float t5 = t4 * t;
 
-            if (t < accelerationTime)
+            float fRaw = tZero * (t2 / 2f)
+                         - (2f * tZero + 1f) * (t3 / 3f)
+                         + (tZero + 2f) * (t4 / 4f)
+                         - (t5 / 5f);
+            return c * fRaw;
+        }
+
+        private static float FindTZero(float targetRatio)
+        {
+            float low = 0.5f;
+            float high = 0.88f;
+            for (int i = 0; i < 15; i++)
             {
-                float p = t / Mathf.Max(0.0001f, accelerationTime);
-                return accelerationDistance * p * p * p;
+                float mid = (low + high) * 0.5f;
+                float ratio = CalculateOvershootRatio(mid);
+                if (ratio < targetRatio)
+                {
+                    high = mid; // Lower t_zero gives larger overshoot
+                }
+                else
+                {
+                    low = mid;
+                }
             }
+            return (low + high) * 0.5f;
+        }
 
-            if (t < accelerationTime + cruiseTime)
-            {
-                float p = (t - accelerationTime) / Mathf.Max(0.0001f, cruiseTime);
-                return accelerationDistance + cruiseDistance * p;
-            }
+        private static float CalculateOvershootRatio(float tZero)
+        {
+            float c = 60f / (5f * tZero - 2f);
+            float tZero2 = tZero * tZero;
+            float tZero3 = tZero2 * tZero;
+            float tZero4 = tZero3 * tZero;
+            float tZero5 = tZero4 * tZero;
 
-            float decelP = (t - accelerationTime - cruiseTime) / decelerationTime;
-            float easedDecel = 1f - Mathf.Pow(1f - Mathf.Clamp01(decelP), 4f);
-            return accelerationDistance + cruiseDistance + decelerationDistance * easedDecel;
+            float fRaw = tZero * (tZero2 / 2f)
+                         - (2f * tZero + 1f) * (tZero3 / 3f)
+                         + (tZero + 2f) * (tZero4 / 4f)
+                         - (tZero5 / 5f);
+            return c * fRaw - 1f;
         }
 
         private static string FormatTime(double seconds)
