@@ -15,6 +15,8 @@ namespace _PawSlidePopGame._Scripts.Utils.Dev
         [SerializeField] private bool enableDevRefillHearts = true;
         [SerializeField] private Key devRefillHeartsKey = Key.Digit9;
         [SerializeField] private int refillHeartsAmount = 5;
+        [SerializeField] private Key devInfiniteHeartsKey = Key.Digit7;
+        [SerializeField] private Key devClearInfiniteHeartsKey = Key.Digit6;
 
         [Header("Coin Options")]
         [SerializeField] private bool enableDevAddCoin = true;
@@ -61,6 +63,28 @@ namespace _PawSlidePopGame._Scripts.Utils.Dev
                 {
                     heartManager.AddHearts(refillHeartsAmount, allowOverfill: false);
                     Debug.Log($"[DevTest] Refilled {refillHeartsAmount} hearts.");
+                }
+            }
+
+            // 1b. Infinite Hearts (Add 30 Min)
+            if (keyboard[devInfiniteHeartsKey].wasPressedThisFrame)
+            {
+                var heartManager = HeartManager.Instance;
+                if (heartManager != null)
+                {
+                    heartManager.AddInfiniteHearts(1800); // 30 mins
+                    Debug.Log("[DevTest] Activated 30 Min Infinite Hearts.");
+                }
+            }
+
+            // 1c. Clear Infinite Hearts
+            if (keyboard[devClearInfiniteHeartsKey].wasPressedThisFrame)
+            {
+                var heartManager = HeartManager.Instance;
+                if (heartManager != null)
+                {
+                    heartManager.ClearInfiniteHearts();
+                    Debug.Log("[DevTest] Cleared Infinite Hearts.");
                 }
             }
 

@@ -15,34 +15,28 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Validation
                 result.Add(new Match3LevelDataValidationIssue(Match3LevelDataValidationSeverity.Error, "LEVEL_NULL", "Level data is null.", "levelData"));
                 return result;
             }
-
             if (string.IsNullOrWhiteSpace(levelData.levelID))
             {
                 result.Add(new Match3LevelDataValidationIssue(Match3LevelDataValidationSeverity.Error, "LEVEL_ID_EMPTY", "Level id is required.", "levelID"));
             }
-
             if (levelData.width <= 0 || levelData.height <= 0)
             {
                 result.Add(new Match3LevelDataValidationIssue(Match3LevelDataValidationSeverity.Error, "BOARD_SIZE_INVALID", "Width and height must be greater than zero.", "width/height"));
             }
-
             int cellCount = Math.Max(0, levelData.width) * Math.Max(0, levelData.height);
             ValidateLayout(result, levelData.tileLayout, "tileLayout", cellCount, levelData.width);
             ValidateLayout(result, levelData.overlayLayout, "overlayLayout", cellCount, levelData.width);
             ValidateLayout(result, levelData.underlayLayout, "underlayLayout", cellCount, levelData.width);
-
             if (levelData.playableMask == null || levelData.playableMask.Length != cellCount)
             {
                 result.Add(new Match3LevelDataValidationIssue(Match3LevelDataValidationSeverity.Error, "PLAYABLE_MASK_INVALID", "Playable mask must match cell count.", "playableMask"));
             }
-
             ValidateTargets(result, levelData.targets, database);
             ValidateSpawnables(result, levelData.spawnableTileIds, database);
             ValidateKnownContent(result, levelData.tileLayout, "tileLayout", levelData.width, database);
             ValidateKnownContent(result, levelData.overlayLayout, "overlayLayout", levelData.width, database);
             ValidateKnownContent(result, levelData.underlayLayout, "underlayLayout", levelData.width, database);
             ValidateNoInitialMatches(result, levelData);
-
             return result;
         }
 

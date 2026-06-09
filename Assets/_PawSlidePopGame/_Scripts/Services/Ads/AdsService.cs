@@ -160,7 +160,6 @@ namespace _PawSlidePopGame._Scripts.Services.Ads
                 PostRewardedFailed(payload, "already_showing");
                 return false;
             }
-
             if (!IsRewardedReady)
             {
                 onComplete?.Invoke(false);
@@ -170,14 +169,12 @@ namespace _PawSlidePopGame._Scripts.Services.Ads
                 LoadRewardedAd();
                 return false;
             }
-
             _isShowingAd = true;
             _activeRewardedRequest = payload;
             _activeRewardedCallback = onComplete;
             _rewardEarnedThisShow = false;
             LogAdEvent(EventAdShow, "rewarded", "requested");
             EventManager<AdsGameEvent>.Post(AdsGameEvent.RewardedAdStarted, payload);
-
             _rewardedAd.Show(reward =>
             {
                 _rewardEarnedThisShow = true;
@@ -192,7 +189,6 @@ namespace _PawSlidePopGame._Scripts.Services.Ads
                         amount));
                 CompleteRewardedCallback(true);
             });
-
             return true;
         }
 

@@ -13,13 +13,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move
             {
                 return false;
             }
-
             List<CellModel> affectedCells = board.GetPlayableCellsForMove(request.Axis, request.LineIndex);
             if (affectedCells.Count <= 1)
             {
                 return false;
             }
-
             bool hasAnyMovableState = false;
             for (int i = 0; i < affectedCells.Count; i++)
             {
@@ -30,7 +28,6 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move
                 {
                     return false;
                 }
-
                 if (cell.Tile != null)
                 {
                     hasAnyMovableState = true;
@@ -39,7 +36,6 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move
                         return false;
                     }
                 }
-
                 if (cell.Overlay != null)
                 {
                     hasAnyMovableState = true;
@@ -49,12 +45,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move
                     }
                 }
             }
-
             if (!hasAnyMovableState)
             {
                 return false;
             }
-
             BoardMoveSnapshot snapshot = BoardMoveSnapshot.Capture(affectedCells);
             board.RotateTiles(affectedCells, request.GetRotationStep());
             moveContext = new BoardMoveContext(request, affectedCells, snapshot);

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Match3.Boosters.BoosterDefinitionSO
   boosterId: pre_start_board_clear_boom
   displayName: Start Board Clear Boom
-  icon: {fileID: 21300000, guid: d86c411050449496f8d1b06a903bef2f, type: 3}
+  icon: {fileID: 21300000, guid: eafb7adef376a430089a94d71e2765b4, type: 3}
   usagePhase: 1
   boosterType: 0
   targetingMode: 0

@@ -11,6 +11,20 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move
         public int SourceY { get; }
         public bool HasSource => SourceX >= 0 && SourceY >= 0;
 
+        public int GetRotationStep()
+        {
+            switch (Direction)
+            {
+                case LineSlideDirection.Right:
+                case LineSlideDirection.Down:
+                    return 1;
+                case LineSlideDirection.Left:
+                case LineSlideDirection.Up:
+                    return -1;
+                default:
+                    return 0;
+            }
+        }
         public BoardMoveRequest(MoveAxis axis, int lineIndex, LineSlideDirection direction)
             : this(axis, lineIndex, direction, -1, -1)
         {
@@ -32,20 +46,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move
                 : Direction == LineSlideDirection.Up || Direction == LineSlideDirection.Down;
         }
 
-        public int GetRotationStep()
-        {
-            switch (Direction)
-            {
-                case LineSlideDirection.Right:
-                case LineSlideDirection.Down:
-                    return 1;
-                case LineSlideDirection.Left:
-                case LineSlideDirection.Up:
-                    return -1;
-                default:
-                    return 0;
-            }
-        }
+        
     }
 }
 

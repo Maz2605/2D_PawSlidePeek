@@ -35,7 +35,6 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Persistence
             {
                 Directory.CreateDirectory(directory);
             }
-
             document.levelId = sanitizedLevelId;
             document.levelData.levelID = sanitizedLevelId;
             string json = JsonConvert.SerializeObject(document, Formatting.Indented);

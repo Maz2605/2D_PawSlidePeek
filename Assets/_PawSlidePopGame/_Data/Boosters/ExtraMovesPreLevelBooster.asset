@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Match3.Boosters.BoosterDefinitionSO
   boosterId: pre_extra_moves_3
   displayName: Extra Moves +3
-  icon: {fileID: 21300000, guid: 1e8350befc60e420d99e5c408e799df1, type: 3}
+  icon: {fileID: 21300000, guid: b059a007b86d844f2be69ecba78df9cb, type: 3}
   usagePhase: 1
   boosterType: 0
   targetingMode: 0
