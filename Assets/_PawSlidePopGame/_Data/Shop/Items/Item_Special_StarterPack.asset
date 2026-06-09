@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 021deb72aa589ad47bb2a66874371cda, type: 3}
+  m_Name: Item_Special_StarterPack
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Meta.Shop.ShopItemSO
+  displayName: "G\xF3i Kh\u1EDFi \u0110\u1EA7u"
+  description: "B\xFA\u1EA1: 3 B\xFAa + 1 X\xE1o tr\u1ED9n + 2 Tim. Ti\u1EBFt ki\u1EC7m
+    30%!"
+  icon: {fileID: 0}
+  priceCoins: 700
+  originalPriceCoins: 1000
+  rewards:
+  - {fileID: 11400000, guid: 4aa28bab5c85be942a781bef7720f004, type: 2}
+  - {fileID: 11400000, guid: 7bb1623e67d007049974986dfc1d00ff, type: 2}
+  - {fileID: 11400000, guid: 875edb7266a3eb54e814d2cf985fe16d, type: 2}
+  isSpecial: 1
+  tagText: New items

@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5d822ce2a2652c4d81c816525d28776, type: 3}
+  m_Name: Shuffle
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Meta.Reward.RewardEntrySO
+  rewardKind: 1
+  amount: 1
+  displayName: Hammer
+  icon: {fileID: 21300000, guid: 0bca1d72478dc4fdda3e48662c98cb9c, type: 3}
+  boosterDefinition: {fileID: 11400000, guid: 5d9d160c7ac421941a0bf96ea3c92d07, type: 2}
