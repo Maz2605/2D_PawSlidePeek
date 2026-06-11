@@ -1,4 +1,5 @@
 using System;
+using _PawSlidePopGame._Scripts.Core.System;
 using _PawSlidePopGame._Scripts.UI.Base;
 using DG.Tweening;
 using UnityEngine;
@@ -47,6 +48,15 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
 
         private Sequence _showSequence;
         private Vector2 _contentOriginalPos;
+        private float _initialMusicVolume;
+        private float _initialSfxVolume;
+        private bool _initialVibrationEnabled;
+        private float _currentMusicVolume;
+        private float _currentSfxVolume;
+        private bool _currentVibrationEnabled;
+        private bool _lastPreviewedVibrationState;
+        private bool _shouldRestoreSettingsOnHide;
+        private bool _hasActiveSession;
 
         // ──────────────────────────────────────────────────────────
         // Lifecycle
@@ -77,6 +87,9 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
         {
             KillActiveTweens();
             ResetLayoutState();
+            _shouldRestoreSettingsOnHide = true;
+            _hasActiveSession = true;
+            LoadRuntimeValues();
             BindButtons();
             BindSliderIcons();
             RefreshMusicIcon(animate: false);
@@ -138,19 +151,19 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
             if (musicSlider != null)
             {
                 musicSlider.onValueChanged.RemoveAllListeners();
-                musicSlider.onValueChanged.AddListener(_ => RefreshMusicIcon(animate: true));
+                musicSlider.onValueChanged.AddListener(HandleMusicSliderChanged);
             }
 
             if (sfxSlider != null)
             {
                 sfxSlider.onValueChanged.RemoveAllListeners();
-                sfxSlider.onValueChanged.AddListener(_ => RefreshSfxIcon(animate: true));
+                sfxSlider.onValueChanged.AddListener(HandleSfxSliderChanged);
             }
 
             if (vibrationSlider != null)
             {
                 vibrationSlider.onValueChanged.RemoveAllListeners();
-                vibrationSlider.onValueChanged.AddListener(_ => RefreshVibrationIcon(animate: true));
+                vibrationSlider.onValueChanged.AddListener(HandleVibrationSliderChanged);
             }
         }
 
@@ -220,17 +233,20 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
         // Handlers
         // ──────────────────────────────────────────────────────────
 
-        private void HandleClosePressed() => Hide();
+        private void HandleClosePressed()
+        {
+            Hide();
+        }
 
         private void HandleCancelPressed()
         {
-            // TODO: khoi phuc gia tri cu truoc khi dong
             Hide();
         }
 
         private void HandleSavePressed()
         {
-            // TODO: luu gia tri Music, SFX, Vibration vao PlayerPrefs
+            CommitSettingsState();
+            _shouldRestoreSettingsOnHide = false;
             Hide();
         }
 
@@ -259,6 +275,140 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
             animatedContent.localRotation = Quaternion.identity;
         }
 
+        private void LoadRuntimeValues()
+        {
+            SettingsManager settingsManager = SettingsManager.Instance;
+            if (settingsManager != null)
+            {
+                settingsManager.RestoreSavedSettings();
+                _initialMusicVolume = settingsManager.MusicVolume;
+                _initialSfxVolume = settingsManager.SfxVolume;
+                _initialVibrationEnabled = settingsManager.IsVibrationEnabled;
+            }
+            else
+            {
+                _initialMusicVolume = 1f;
+                _initialSfxVolume = 1f;
+                _initialVibrationEnabled = true;
+            }
+
+            _currentMusicVolume = _initialMusicVolume;
+            _currentSfxVolume = _initialSfxVolume;
+            _currentVibrationEnabled = _initialVibrationEnabled;
+
+            ApplyAudioState(_currentMusicVolume, _currentSfxVolume, animate: false);
+            ApplyVibrationState(_currentVibrationEnabled, animate: false);
+        }
+
+        private void ApplyVibrationState(bool enabled, bool animate)
+        {
+            SettingsManager.Instance?.PreviewVibration(enabled);
+
+            if (vibrationSlider == null)
+            {
+                _lastPreviewedVibrationState = enabled;
+                return;
+            }
+
+            vibrationSlider.SetValueWithoutNotify(enabled ? 1f : 0f);
+            _lastPreviewedVibrationState = enabled;
+            RefreshVibrationIcon(animate);
+        }
+
+        private void HandleVibrationSliderChanged(float _)
+        {
+            bool isOn = vibrationSlider != null && vibrationSlider.value >= 0.5f;
+            _currentVibrationEnabled = isOn;
+            RefreshVibrationIcon(animate: true);
+            SettingsManager.Instance?.PreviewVibration(_currentVibrationEnabled, playFeedback: _currentVibrationEnabled && !_lastPreviewedVibrationState);
+
+            _lastPreviewedVibrationState = _currentVibrationEnabled;
+        }
+
+        private void ApplyAudioState(float musicValue, float sfxValue, bool animate)
+        {
+            if (musicSlider != null)
+            {
+                musicSlider.SetValueWithoutNotify(Mathf.Clamp01(musicValue));
+                RefreshMusicIcon(animate);
+            }
+
+            if (sfxSlider != null)
+            {
+                sfxSlider.SetValueWithoutNotify(Mathf.Clamp01(sfxValue));
+                RefreshSfxIcon(animate);
+            }
+
+            ApplyAudioRuntime(musicValue, sfxValue);
+        }
+
+        private void RestoreInitialSettingsState()
+        {
+            SettingsManager settingsManager = SettingsManager.Instance;
+            settingsManager?.RestoreSavedSettings();
+            _currentMusicVolume = _initialMusicVolume;
+            _currentSfxVolume = _initialSfxVolume;
+            _currentVibrationEnabled = _initialVibrationEnabled;
+            ApplyAudioState(_currentMusicVolume, _currentSfxVolume, animate: false);
+            ApplyVibrationState(_currentVibrationEnabled, animate: false);
+        }
+
+        private void CommitSettingsState()
+        {
+            SettingsManager settingsManager = SettingsManager.Instance;
+            if (settingsManager == null)
+            {
+                return;
+            }
+
+            settingsManager.Save(_currentMusicVolume, _currentSfxVolume, _currentVibrationEnabled);
+            _initialMusicVolume = settingsManager.MusicVolume;
+            _initialSfxVolume = settingsManager.SfxVolume;
+            _initialVibrationEnabled = settingsManager.IsVibrationEnabled;
+            _currentMusicVolume = _initialMusicVolume;
+            _currentSfxVolume = _initialSfxVolume;
+            _currentVibrationEnabled = _initialVibrationEnabled;
+        }
+
+        private void ApplyAudioRuntime(float musicValue, float sfxValue)
+        {
+            SettingsManager settingsManager = SettingsManager.Instance;
+            if (settingsManager == null)
+            {
+                return;
+            }
+
+            float clampedMusic = Mathf.Clamp01(musicValue);
+            float clampedSfx = Mathf.Clamp01(sfxValue);
+            settingsManager.PreviewAudio(clampedMusic, clampedSfx);
+        }
+
+        private void HandleMusicSliderChanged(float value)
+        {
+            _currentMusicVolume = Mathf.Clamp01(value);
+            RefreshMusicIcon(animate: true);
+            SettingsManager settingsManager = SettingsManager.Instance;
+            if (settingsManager == null)
+            {
+                return;
+            }
+
+            settingsManager.PreviewAudio(_currentMusicVolume, _currentSfxVolume);
+        }
+
+        private void HandleSfxSliderChanged(float value)
+        {
+            _currentSfxVolume = Mathf.Clamp01(value);
+            RefreshSfxIcon(animate: true);
+            SettingsManager settingsManager = SettingsManager.Instance;
+            if (settingsManager == null)
+            {
+                return;
+            }
+
+            settingsManager.PreviewAudio(_currentMusicVolume, _currentSfxVolume);
+        }
+
         private void KillActiveTweens()
         {
             _showSequence?.Kill();
@@ -275,6 +425,22 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
             if (musicSlider != null && musicSlider.handleRect != null) musicSlider.handleRect.DOKill();
             if (sfxSlider != null && sfxSlider.handleRect != null) sfxSlider.handleRect.DOKill();
             if (vibrationSlider != null && vibrationSlider.handleRect != null) vibrationSlider.handleRect.DOKill();
+        }
+
+        private void OnDisable()
+        {
+            if (!_hasActiveSession)
+            {
+                return;
+            }
+
+            if (_shouldRestoreSettingsOnHide)
+            {
+                RestoreInitialSettingsState();
+            }
+
+            _hasActiveSession = false;
+            _shouldRestoreSettingsOnHide = false;
         }
 
         // ──────────────────────────────────────────────────────────

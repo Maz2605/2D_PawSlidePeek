@@ -140,6 +140,8 @@ GameObject:
   - component: {fileID: 5460611236376780927}
   - component: {fileID: 1180178159475771711}
   - component: {fileID: 823730163174776434}
+  - component: {fileID: 1462053929463590512}
+  - component: {fileID: 4990262461949793357}
   - component: {fileID: 6412311779083642}
   - component: {fileID: 6138519104609171712}
   - component: {fileID: 680991663035619336}
@@ -186,6 +188,8 @@ MonoBehaviour:
   coreServices:
   - {fileID: 6138519104609171712}
   - {fileID: 823730163174776434}
+  - {fileID: 1462053929463590512}
+  - {fileID: 4990262461949793357}
   - {fileID: 680991663035619336}
   - {fileID: 5077149861647906391}
   - {fileID: 6412311779083642}
@@ -202,7 +206,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c527da5f7bee47cfb2ba106d13050e74, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Core.Managers.AudioManager
-  uiAudioConfig: {fileID: 11400000, guid: 3e01c76db4dba9d4787a0635f545727e, type: 2}
+  uiAudioConfig: {fileID: 11400000, guid: 833ceea1341d0134794c409d90ee330b, type: 2}
   musicSource: {fileID: 4740574780641216476}
   sfxSourcePrefab: {fileID: 8137346615327625935, guid: d0ac3ca8a4619684ca0d7a63a9db39d6, type: 3}
   initialSfxPoolSize: 15
@@ -210,6 +214,48 @@ MonoBehaviour:
   masterVolume: 1
   musicVolume: 1
   sfxVolume: 1
+--- !u!114 &1462053929463590512
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5b42c23f7b84b94bbf49d1c3fd7dd2a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Core.Vibration.VibrationManager
+  defaultEnabled: 1
+  vibrationEnabled: 1
+  hasVibrator: 1
+--- !u!114 &4990262461949793357
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c19cc2da57db4f28a3832d8d0fa27308, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Core.System.SettingsManager
+  defaultMusicVolume: 1
+  defaultSfxVolume: 1
+  defaultMusicEnabled: 1
+  defaultSfxEnabled: 1
+  defaultVibrationEnabled: 1
+  musicVolume: 1
+  sfxVolume: 1
+  musicEnabled: 1
+  sfxEnabled: 1
+  vibrationEnabled: 1
+  previewMusicVolume: 1
+  previewSfxVolume: 1
+  previewMusicEnabled: 1
+  previewSfxEnabled: 1
+  previewVibrationEnabled: 1
 --- !u!114 &6412311779083642
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -267,6 +313,8 @@ MonoBehaviour:
   useGoogleTestAdUnits: 1
   androidRewardedAdUnitId: ca-app-pub-9449221549788378/3393389056
   androidInterstitialAdUnitId: 
+  iosRewardedAdUnitId: 
+  iosInterstitialAdUnitId: 
   loadRewardedOnInit: 1
   loadInterstitialOnInit: 0
 --- !u!114 &7959588473251290888

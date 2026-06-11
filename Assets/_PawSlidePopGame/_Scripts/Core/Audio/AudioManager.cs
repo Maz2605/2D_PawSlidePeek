@@ -27,9 +27,12 @@ namespace _PawSlidePopGame._Scripts.Core.Audio
         
         public bool IsSfxEnabled { get; private set; } = true; 
         public bool IsMusicEnabled { get; private set; } = true;
+        public float MusicVolume => musicVolume;
+        public float SfxVolume => sfxVolume;
 
         private Queue<AudioSource> _sfxPool;
         private Transform _poolRoot;
+        private bool _initialized;
 
         // protected override void Awake()
         // {
@@ -39,7 +42,15 @@ namespace _PawSlidePopGame._Scripts.Core.Audio
         
         public void Init()
         {
+            if (_initialized)
+            {
+                return;
+            }
+
             InitializePool();
+            UpdateMusicVolume();
+            SetSfxState(IsSfxEnabled);
+            _initialized = true;
         }
 
         private void InitializePool()
@@ -91,7 +102,7 @@ namespace _PawSlidePopGame._Scripts.Core.Audio
         public void SetMusicState(bool state)
         {
             IsMusicEnabled = state;
-            if (musicSource) musicSource.mute = !IsMusicEnabled;
+            UpdateMusicMuteState();
         }
 
         public void SetSfxVolume(float volume)
@@ -140,6 +151,8 @@ namespace _PawSlidePopGame._Scripts.Core.Audio
                 musicSource.DOKill(); 
                 musicSource.volume = musicVolume * masterVolume;
             }
+
+            UpdateMusicMuteState();
         }
 
         public void PlaySfx(AudioClip clip, float volScale = 1f, float pitchVar = 0f)
@@ -201,6 +214,14 @@ namespace _PawSlidePopGame._Scripts.Core.Audio
             }
         }
 
-        
+        private void UpdateMusicMuteState()
+        {
+            if (musicSource == null)
+            {
+                return;
+            }
+
+            musicSource.mute = !IsMusicEnabled || musicSource.volume <= 0.001f;
+        }
     }
 }
