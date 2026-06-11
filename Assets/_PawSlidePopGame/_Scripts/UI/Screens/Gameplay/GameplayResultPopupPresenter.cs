@@ -36,7 +36,6 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.Gameplay
 
             RecordLevelProgress(resolvedSnapshot);
             UIManager.Instance?.ShowPopup<WinPopup>(
-                PopupID.WinPopup,
                 popup => popup.SetSnapshot(resolvedSnapshot));
         }
 
@@ -50,7 +49,6 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.Gameplay
             }
 
             UIManager.Instance?.ShowPopup<LosePopup>(
-                PopupID.LosePopup,
                 popup => popup.SetSnapshot(resolvedSnapshot));
         }
 

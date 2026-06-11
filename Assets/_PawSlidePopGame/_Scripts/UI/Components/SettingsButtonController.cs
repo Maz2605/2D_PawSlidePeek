@@ -69,7 +69,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components
 
         private void OpenSettingsPopup()
         {
-            UIManager.Instance.ShowPopup<SettingsPopup>(PopupID.SettingsPopup);
+            UIManager.Instance.ShowPopup<SettingsPopup>();
         }
     }
 }

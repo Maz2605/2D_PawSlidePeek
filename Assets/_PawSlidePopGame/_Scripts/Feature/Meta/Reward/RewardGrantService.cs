@@ -1,16 +1,38 @@
 using System.Collections.Generic;
-using _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager;
-using _PawSlidePopGame._Scripts.Gameplay.Meta.Inventory;
 using UnityEngine;
 
 namespace _PawSlidePopGame._Scripts.Feature.Meta.Reward
 {
     /// <summary>
     /// Dịch vụ trao thưởng dùng chung cho toàn game (Wheel, Shop, Star Rewards, v.v.).
-    /// Không kéo theo singleton – chỉ là static utility class.
+    /// Hỗ trợ cơ chế Registry cho phép dễ dàng đăng ký thêm các loại phần thưởng mới.
     /// </summary>
     public static class RewardGrantService
     {
+        private static readonly Dictionary<RewardKind, IRewardHandler> Handlers = new Dictionary<RewardKind, IRewardHandler>();
+
+        static RewardGrantService()
+        {
+            // Tự động đăng ký các bộ xử lý mặc định
+            RegisterHandler(new CoinsRewardHandler());
+            RegisterHandler(new BoosterRewardHandler());
+            RegisterHandler(new HeartRewardHandler());
+            RegisterHandler(new InfiniteHeartRewardHandler());
+        }
+
+        /// <summary>Đăng ký thêm một trình xử lý phần thưởng mới (dùng để mở rộng).</summary>
+        public static void RegisterHandler(IRewardHandler handler)
+        {
+            if (handler == null) return;
+            Handlers[handler.Kind] = handler;
+        }
+
+        /// <summary>Hủy đăng ký một trình xử lý phần thưởng.</summary>
+        public static void UnregisterHandler(RewardKind kind)
+        {
+            Handlers.Remove(kind);
+        }
+
         /// <summary>Trao một phần thưởng đơn lẻ cho người chơi.</summary>
         /// <param name="reward">Asset cấu hình phần thưởng.</param>
         /// <param name="reason">Lý do trao thưởng (dùng cho analytics/log).</param>
@@ -21,54 +43,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Meta.Reward
             {
                 return false;
             }
-            switch (reward.RewardKind)
+
+            if (Handlers.TryGetValue(reward.RewardKind, out var handler))
             {
-                case RewardKind.Coins:
-                    if (EconomyManager.Instance == null)
-                    {
-                        Debug.LogWarning("[RewardGrantService] EconomyManager.Instance is null.");
-                        return false;
-                    }
-                    EconomyManager.Instance.AddCoins(reward.Amount, reason);
-                    return true;
-                case RewardKind.Booster:
-                    if (reward.BoosterDefinition == null)
-                    {
-                        Debug.LogWarning($"[RewardGrantService] Reward '{reward.RewardId}' là loại Booster nhưng không có BoosterDefinitionSO nào được gán.");
-                        return false;
-                    }
-                    if (BoosterInventory.Instance == null)
-                    {
-                        Debug.LogWarning("[RewardGrantService] BoosterInventory.Instance is null.");
-                        return false;
-                    }
-                    BoosterInventory.Instance.AddBooster(reward.BoosterDefinition, reward.Amount, reason);
-                    return true;
-                case RewardKind.Heart:
-                    if (HeartManager.Instance == null)
-                    {
-                        Debug.LogWarning("[RewardGrantService] HeartManager.Instance is null.");
-                        return false;
-                    }
-
-                    HeartManager.Instance.AddHearts(reward.Amount);
-                    return true;
-
-                case RewardKind.InfiniteHeart:
-                    if (HeartManager.Instance == null)
-                    {
-                        Debug.LogWarning("[RewardGrantService] HeartManager.Instance is null.");
-                        return false;
-                    }
-
-                    // reward.Amount is minutes of infinite hearts. Convert to seconds.
-                    HeartManager.Instance.AddInfiniteHearts(reward.Amount * 60);
-                    return true;
-
-                default:
-                    Debug.LogWarning($"[RewardGrantService] Loại phần thưởng chưa được hỗ trợ: {reward.RewardKind}");
-                    return false;
+                return handler.TryGrant(reward, reason);
             }
+
+            Debug.LogWarning($"[RewardGrantService] Không tìm thấy Handler nào cho loại phần thưởng: {reward.RewardKind}");
+            return false;
         }
 
         /// <summary>

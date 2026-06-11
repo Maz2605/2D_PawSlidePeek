@@ -56,7 +56,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Meta.Shop.Editor
         public static void CreateMoreTestItems()
         {
             // Đường dẫn lưu trữ test items
-            string itemsFolder = "Assets/_PawSlidePopGame/_Data/Shop/TestItems";
+            string itemsFolder = "Assets/Resources/Shop/TestItems";
             if (!Directory.Exists(itemsFolder))
             {
                 Directory.CreateDirectory(itemsFolder);
@@ -130,7 +130,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Meta.Shop.Editor
             }
 
             // 4. Thêm các Item mới vào DefaultShopCatalog.asset
-            string catalogPath = "Assets/_PawSlidePopGame/_Data/Shop/DefaultShopCatalog.asset";
+            string catalogPath = "Assets/Resources/Shop/DefaultShopCatalog.asset";
             var catalog = AssetDatabase.LoadAssetAtPath<ShopCatalogSO>(catalogPath);
             if (catalog != null)
             {

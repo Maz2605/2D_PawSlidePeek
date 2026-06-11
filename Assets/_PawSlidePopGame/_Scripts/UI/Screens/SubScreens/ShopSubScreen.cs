@@ -15,18 +15,18 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
     /// </summary>
     public class ShopSubScreen : BaseSubScreen
     {
-        [Header("Dữ Liệu")]
-        [SerializeField] private ShopCatalogSO catalog;
+        [Header("Cấu Hình UI Động")]
+        [Tooltip("Prefab cho gói vật phẩm thường (Normal).")]
+        [SerializeField] private ShopItemView normalItemPrefab;
+        [Tooltip("Prefab cho gói vật phẩm đặc biệt (Special).")]
+        [SerializeField] private ShopItemView specialItemPrefab;
 
-        [Header("UI Tĩnh (Ưu tiên sử dụng)")]
-        [Tooltip("Kéo thả trực tiếp các ShopItemView đã có sẵn trên scene vào đây (theo thứ tự).")]
-        [SerializeField] private List<ShopItemView> staticItemViews = new List<ShopItemView>();
+        [Tooltip("Nơi chứa các gói vật phẩm thường.")]
+        [SerializeField] private Transform normalContentRoot;
+        [Tooltip("Nơi chứa các gói vật phẩm đặc biệt.")]
+        [SerializeField] private Transform specialContentRoot;
 
-        [Header("UI Động (Dùng khi không đủ ô tĩnh)")]
-        [Tooltip("Prefab ShopItemView để sinh tự động nếu không dùng staticItemViews.")]
-        [SerializeField] private ShopItemView itemPrefab;
-        [Tooltip("Transform cha chứa các ô sinh động.")]
-        [SerializeField] private Transform contentRoot;
+        private readonly List<ShopItemSO> _items = new List<ShopItemSO>();
 
         private readonly List<ShopItemView> _activeViews = new List<ShopItemView>();
 
@@ -65,45 +65,58 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
 
         private void BindViews()
         {
-            if (catalog == null)
+            // Dọn dẹp các ô cũ nếu có
+            foreach (var view in _activeViews)
             {
-                catalog = Resources.Load<ShopCatalogSO>("Shop/DefaultShopCatalog");
+                if (view != null)
+                {
+                    Destroy(view.gameObject);
+                }
+            }
+            _activeViews.Clear();
+            _items.Clear();
+
+            // Tải tất cả các ShopItemSO từ Resources/Shop/Items
+            ShopItemSO[] loadedItems = Resources.LoadAll<ShopItemSO>("Shop/Items");
+            if (loadedItems != null)
+            {
+                _items.AddRange(loadedItems);
+                // Sắp xếp: SortOrder tăng dần, sau đó sắp xếp theo tên ItemId (alphabet)
+                _items.Sort((a, b) =>
+                {
+                    int cmp = a.SortOrder.CompareTo(b.SortOrder);
+                    if (cmp == 0)
+                    {
+                        cmp = string.Compare(a.ItemId, b.ItemId, System.StringComparison.Ordinal);
+                    }
+                    return cmp;
+                });
             }
 
-            if (catalog == null)
+            if (_items.Count == 0)
             {
-                Debug.LogWarning("[ShopSubScreen] Không có ShopCatalogSO nào được gán hoặc tìm thấy trong Resources/Shop/DefaultShopCatalog.", this);
-                return;
+                Debug.LogWarning("[ShopSubScreen] Không tìm thấy file ShopItemSO nào trong thư mục Resources/Shop/Items.", this);
             }
 
-            bool useStatic = staticItemViews != null && staticItemViews.Count > 0;
-
-            for (int i = 0; i < catalog.Items.Count; i++)
+            // Sinh động các ô vật phẩm tương ứng
+            foreach (ShopItemSO item in _items)
             {
-                ShopItemSO item = catalog.Items[i];
                 if (item == null)
                     continue;
 
-                ShopItemView view = useStatic
-                    ? GetStaticView(i)
-                    : SpawnDynamicView();
+                ShopItemView prefab = item.IsSpecial ? specialItemPrefab : normalItemPrefab;
+                Transform parent = item.IsSpecial ? specialContentRoot : normalContentRoot;
 
-                if (view == null)
+                if (prefab == null || parent == null)
+                {
+                    Debug.LogWarning($"[ShopSubScreen] Thiếu prefab hoặc content root cho vật phẩm '{item.ItemId}' (IsSpecial: {item.IsSpecial}).", this);
                     continue;
+                }
 
+                ShopItemView view = Instantiate(prefab, parent);
                 bool canAfford = CanPlayerAfford(item);
                 view.Bind(item, HandleItemPurchaseClicked, canAfford);
                 _activeViews.Add(view);
-            }
-
-            // Ẩn các ô tĩnh thừa
-            if (useStatic)
-            {
-                for (int i = catalog.Items.Count; i < staticItemViews.Count; i++)
-                {
-                    if (staticItemViews[i] != null)
-                        staticItemViews[i].gameObject.SetActive(false);
-                }
             }
 
             // Đăng ký lắng nghe kết quả mua hàng
@@ -111,38 +124,16 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
             ShopService.OnPurchaseFailed += HandlePurchaseFailed;
         }
 
-        private ShopItemView GetStaticView(int index)
-        {
-            if (index < 0 || index >= staticItemViews.Count)
-            {
-                Debug.LogWarning($"[ShopSubScreen] Không có đủ staticItemViews cho index {index}. Hãy thêm ô vào scene hoặc dùng itemPrefab.", this);
-                return null;
-            }
-
-            return staticItemViews[index];
-        }
-
-        private ShopItemView SpawnDynamicView()
-        {
-            if (itemPrefab == null || contentRoot == null)
-            {
-                Debug.LogWarning("[ShopSubScreen] itemPrefab hoặc contentRoot chưa được gán.", this);
-                return null;
-            }
-
-            return Instantiate(itemPrefab, contentRoot);
-        }
-
         // ───── Affordability ─────
 
         private void RefreshAllAffordability()
         {
-            if (catalog == null)
+            if (_items == null)
                 return;
 
-            for (int i = 0; i < _activeViews.Count && i < catalog.Items.Count; i++)
+            for (int i = 0; i < _activeViews.Count && i < _items.Count; i++)
             {
-                ShopItemSO item = catalog.Items[i];
+                ShopItemSO item = _items[i];
                 if (item == null)
                     continue;
 

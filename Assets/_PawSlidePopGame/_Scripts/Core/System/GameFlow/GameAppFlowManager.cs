@@ -68,7 +68,7 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
 
             ExitGameplaySession();
             UIManager.Instance.ClearAllPopups();
-            UIManager.Instance.ShowScreen<GameMenuScreen>(ScreenID.GameMenuScreen);
+            UIManager.Instance.ShowScreen<GameMenuScreen>();
             SetAppState(GameAppState.MainMenu);
         }
 
@@ -130,7 +130,7 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
             SetAppState(GameAppState.EnteringGameplay);
             SetGameplaySessionActive(true);
             UIManager.Instance.ClearAllPopups();
-            UIManager.Instance.ShowScreen<GameplayScreen>(ScreenID.GameplayScreen);
+            UIManager.Instance.ShowScreen<GameplayScreen>();
             _gameFlowManager.EnterGameplay();
 
             if (_gameFlowManager.CurrentInGameSubState == InGameSubState.PlayerTurn)
@@ -163,7 +163,7 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
                 return false;
             }
 
-            UIManager.Instance.ShowPopup<LevelIntroductionPopup>(PopupID.LevelIntroductionPopup, popup =>
+            UIManager.Instance.ShowPopup<LevelIntroductionPopup>(popup =>
             {
                 popup.Setup(targetLevelId, levelData, selectedPreLevelBoosters =>
                 {
@@ -350,11 +350,11 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
                 return;
             }
 
-            UIManager.Instance.ClosePopup(PopupID.PausePopup);
-            UIManager.Instance.ClosePopup(PopupID.WinPopup);
-            UIManager.Instance.ClosePopup(PopupID.LosePopup);
-            UIManager.Instance.ClosePopup(PopupID.LevelIntroductionPopup);
-            UIManager.Instance.ClosePopup(PopupID.SettingsPopup);
+            UIManager.Instance.ClosePopup<PausePopup>();
+            UIManager.Instance.ClosePopup<WinPopup>();
+            UIManager.Instance.ClosePopup<LosePopup>();
+            UIManager.Instance.ClosePopup<LevelIntroductionPopup>();
+            UIManager.Instance.ClosePopup<SettingsPopup>();
         }
 
         private void SetAppState(GameAppState nextState)

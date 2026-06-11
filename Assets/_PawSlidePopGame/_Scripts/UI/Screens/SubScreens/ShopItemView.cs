@@ -29,6 +29,10 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
         [Tooltip("Object hiển thị khi không đủ tiền (ví dụ icon khoá, tô màu đỏ).")]
         [SerializeField] private GameObject notEnoughCoinsIndicator;
 
+        [Header("Cấu Hình Màu Sắc Khi Thiếu Tiền")]
+        [SerializeField] private Color normalPriceColor = Color.white;
+        [SerializeField] private Color notEnoughCoinsPriceColor = Color.red;
+
         [Header("Badge Đặc Biệt (Special Item Only)")]
         [Tooltip("Badge nổi bật – chỉ hiển thị khi item.IsSpecial = true.")]
         [SerializeField] private GameObject specialBadge;
@@ -104,8 +108,17 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
         /// <summary>Cập nhật trạng thái nút mua khi số dư Coin thay đổi (không cần Bind lại toàn bộ).</summary>
         public void RefreshAffordability(bool canAfford)
         {
+            // Nút mua luôn luôn hoạt động để người chơi có thể click nhận thông báo "Không đủ Coin"
             if (purchaseButton != null)
-                purchaseButton.interactable = canAfford;
+            {
+                purchaseButton.interactable = true;
+            }
+
+            // Chỉ thay đổi màu chữ của giá tiền
+            if (priceText != null)
+            {
+                priceText.color = canAfford ? normalPriceColor : notEnoughCoinsPriceColor;
+            }
 
             if (notEnoughCoinsIndicator != null)
                 notEnoughCoinsIndicator.SetActive(!canAfford);

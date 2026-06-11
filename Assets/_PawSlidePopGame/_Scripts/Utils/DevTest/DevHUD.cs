@@ -10,17 +10,17 @@ namespace _PawSlidePopGame._Scripts.Utils.DevTest
     {
         public void PlayWinPopup()
         {
-            UIManager.Instance.ShowPopup<BasePopup>(PopupID.WinPopup);
+            UIManager.Instance.ShowPopup<WinPopup>();
         }
 
         public void PlayLosePopup()
         {
-            UIManager.Instance.ShowPopup<BasePopup>(PopupID.LosePopup);
+            UIManager.Instance.ShowPopup<LosePopup>();
         }
 
         public void PlayPauseButton()
         {
-            UIManager.Instance.ShowPopup<BasePopup>(PopupID.PausePopup);
+            UIManager.Instance.ShowPopup<PausePopup>();
         }
 
         public void ShowGameMenuScreen()

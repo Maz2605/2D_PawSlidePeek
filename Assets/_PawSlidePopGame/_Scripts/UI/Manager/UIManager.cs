@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using _PawSlidePopGame._Scripts.Core.System.DesignPattern.Singleton;
 using _PawSlidePopGame._Scripts.UI.Base;
@@ -10,19 +10,6 @@ using UnityEngine.UI;
 
 namespace _PawSlidePopGame._Scripts.UI.Manager
 {
-    [Serializable]
-    public struct ScreenConfig
-    {
-        public ScreenID id;
-        public BaseScreen prefab; 
-    }
-    [Serializable]
-    public struct PopupConfig
-    {
-        public PopupID id;
-        public BasePopup prefab;
-    }
-
    public class UIManager : Singleton<UIManager>
     {
         [Header("--- UI Roots ---")]
@@ -30,22 +17,22 @@ namespace _PawSlidePopGame._Scripts.UI.Manager
         [SerializeField] private Transform popupRoot;  
         [SerializeField] private Transform topRoot;    
 
-        [Header("--- Screen Configs (Layer 1) ---")]
-        [SerializeField] private List<ScreenConfig> screenConfigs = new List<ScreenConfig>();
+        [Header("--- Screen Prefabs (Layer 1) ---")]
+        [SerializeField] private List<BaseScreen> screenPrefabs = new List<BaseScreen>();
 
-        [Header("--- Popup Configs (Layer 2) ---")]
-        [SerializeField] private List<PopupConfig> popupConfigs = new List<PopupConfig>();
+        [Header("--- Popup Prefabs (Layer 2) ---")]
+        [SerializeField] private List<BasePopup> popupPrefabs = new List<BasePopup>();
         
         [Header("--- Top UI Prefabs (Layer 3) ---")]
         [SerializeField] private ToastNotification toastPrefab;
         [SerializeField] private LoadingScreen loadingScreenPrefab;
 
         // --- Caches ---
-        private Dictionary<ScreenID, BaseScreen> _screenPrefabDict = new Dictionary<ScreenID, BaseScreen>();
-        private Dictionary<PopupID, BasePopup> _popupPrefabDict = new Dictionary<PopupID, BasePopup>();
+        private Dictionary<Type, BaseScreen> _screenPrefabDict = new Dictionary<Type, BaseScreen>();
+        private Dictionary<Type, BasePopup> _popupPrefabDict = new Dictionary<Type, BasePopup>();
         
-        private Dictionary<ScreenID, BaseScreen> _screenCache = new Dictionary<ScreenID, BaseScreen>();
-        private Dictionary<PopupID, BasePopup> _popupCache = new Dictionary<PopupID, BasePopup>();
+        private Dictionary<Type, BaseScreen> _screenCache = new Dictionary<Type, BaseScreen>();
+        private Dictionary<Type, BasePopup> _popupCache = new Dictionary<Type, BasePopup>();
         
         // --- Flow State ---
         private Stack<BasePopup> _popupStack = new Stack<BasePopup>();
@@ -75,16 +62,24 @@ namespace _PawSlidePopGame._Scripts.UI.Manager
 
         private void InitPrefabDictionaries()
         {
-            foreach (var config in popupConfigs)
+            foreach (var prefab in popupPrefabs)
             {
-                if (config.prefab != null && !_popupPrefabDict.ContainsKey(config.id))
-                    _popupPrefabDict.Add(config.id, config.prefab);
+                if (prefab != null)
+                {
+                    Type type = prefab.GetType();
+                    if (!_popupPrefabDict.ContainsKey(type))
+                        _popupPrefabDict.Add(type, prefab);
+                }
             }
 
-            foreach (var config in screenConfigs)
+            foreach (var prefab in screenPrefabs)
             {
-                if (config.prefab != null && !_screenPrefabDict.ContainsKey(config.id))
-                    _screenPrefabDict.Add(config.id, config.prefab);
+                if (prefab != null)
+                {
+                    Type type = prefab.GetType();
+                    if (!_screenPrefabDict.ContainsKey(type))
+                        _screenPrefabDict.Add(type, prefab);
+                }
             }
         }
         
@@ -186,30 +181,32 @@ namespace _PawSlidePopGame._Scripts.UI.Manager
         }
 
         
-        public T ShowScreen<T>(ScreenID id, Action onOpened = null) where T : BaseScreen
+        public T ShowScreen<T>(Action onOpened = null) where T : BaseScreen
         {
             if (_currentScreen != null && _currentScreen.gameObject.activeInHierarchy)
             {
                 _currentScreen.Hide();
             }
 
-            if (!_screenCache.TryGetValue(id, out BaseScreen instance) || instance == null)
+            Type type = typeof(T);
+
+            if (!_screenCache.TryGetValue(type, out BaseScreen instance) || instance == null)
             {
-                if (!_screenPrefabDict.TryGetValue(id, out BaseScreen prefab))
+                if (!_screenPrefabDict.TryGetValue(type, out BaseScreen prefab))
                 {
-                    string resourcePath = $"UI/Screens/{id}";
-                    prefab = Resources.Load<BaseScreen>(resourcePath);
+                    string resourcePath = $"UI/Screens/{type.Name}";
+                    prefab = Resources.Load<T>(resourcePath);
                     
                     if (prefab == null)
                     {
-                        Debug.LogError($"[UIManager] Lỗi: Không tìm thấy Screen Prefab cho ID '{id}'!");
+                        Debug.LogError($"[UIManager] Lỗi: Không tìm thấy Screen Prefab cho Type '{type.Name}' tại '{resourcePath}'!");
                         return null;
                     }
-                    _screenPrefabDict[id] = prefab;
+                    _screenPrefabDict[type] = prefab;
                 }
 
                 instance = Instantiate(prefab, screenRoot);
-                _screenCache[id] = instance;
+                _screenCache[type] = instance;
             }
 
             instance.transform.SetAsLastSibling();
@@ -219,31 +216,33 @@ namespace _PawSlidePopGame._Scripts.UI.Manager
             return instance as T;
         }
 
-        public T ShowPopup<T>(PopupID id, Action<T> beforeShow = null, Action onOpened = null) where T : BasePopup
+        public T ShowPopup<T>(Action<T> beforeShow = null, Action onOpened = null) where T : BasePopup
         {
-            if (!_popupCache.TryGetValue(id, out BasePopup instance) || instance == null)
+            Type type = typeof(T);
+
+            if (!_popupCache.TryGetValue(type, out BasePopup instance) || instance == null)
             {
-                if (!_popupPrefabDict.TryGetValue(id, out BasePopup prefab))
+                if (!_popupPrefabDict.TryGetValue(type, out BasePopup prefab))
                 {
-                    string resourcePath = $"UI/Popups/{id}";
-                    prefab = Resources.Load<BasePopup>(resourcePath);
+                    string resourcePath = $"UI/Popups/{type.Name}";
+                    prefab = Resources.Load<T>(resourcePath);
                     
                     if (prefab == null)
                     {
-                        Debug.LogError($"[UIManager] Lỗi: Không tìm thấy Popup Prefab cho ID '{id}'!");
+                        Debug.LogError($"[UIManager] Lỗi: Không tìm thấy Popup Prefab cho Type '{type.Name}' tại '{resourcePath}'!");
                         return null;
                     }
-                    _popupPrefabDict[id] = prefab;
+                    _popupPrefabDict[type] = prefab;
                 }
 
                 instance = Instantiate(prefab, popupRoot);
-                _popupCache[id] = instance;
+                _popupCache[type] = instance;
             }
 
             T typedInstance = instance as T;
             if (typedInstance == null)
             {
-                Debug.LogError($"[UIManager] Popup '{id}' không phải kiểu '{typeof(T).Name}'.");
+                Debug.LogError($"[UIManager] Popup không phải kiểu '{typeof(T).Name}'.");
                 return null;
             }
 
@@ -266,9 +265,10 @@ namespace _PawSlidePopGame._Scripts.UI.Manager
             }
         }
 
-        public bool ClosePopup(PopupID id)
+        public bool ClosePopup<T>() where T : BasePopup
         {
-            if (!_popupCache.TryGetValue(id, out BasePopup popup) || popup == null)
+            Type type = typeof(T);
+            if (!_popupCache.TryGetValue(type, out BasePopup popup) || popup == null)
             {
                 return false;
             }
@@ -284,9 +284,9 @@ namespace _PawSlidePopGame._Scripts.UI.Manager
             return wasVisible;
         }
 
-        public bool IsPopupVisible(PopupID id)
+        public bool IsPopupVisible<T>() where T : BasePopup
         {
-            return _popupCache.TryGetValue(id, out BasePopup popup) &&
+            return _popupCache.TryGetValue(typeof(T), out BasePopup popup) &&
                    popup != null &&
                    popup.gameObject.activeInHierarchy;
         }

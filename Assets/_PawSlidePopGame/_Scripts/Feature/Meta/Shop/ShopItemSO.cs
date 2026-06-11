@@ -25,13 +25,16 @@ namespace _PawSlidePopGame._Scripts.Feature.Meta.Shop
         [Tooltip("Danh sách quà tặng người chơi nhận được khi mua thành công. Hỗ trợ gói nhiều phần thưởng.")]
         [SerializeField] private List<RewardEntrySO> rewards = new List<RewardEntrySO>();
 
-        [Header("Loại Vật Phẩm")]
+        [Tooltip("Thứ tự sắp xếp hiển thị trong Shop (thấp xếp trước).")]
+        [SerializeField] private int sortOrder;
         [Tooltip("Vật phẩm đặc biệt sẽ có khung nền khác biệt và badge nổi bật hơn.")]
         [SerializeField] private bool isSpecial;
         [Tooltip("Nhãn text hiển thị trên badge (ví dụ: 'New items', 'Hot', '-20%'). Chỉ hiển thị khi isSpecial = true.")]
         [SerializeField] private string tagText;
 
         // ───── Properties ─────
+
+        public int SortOrder => sortOrder;
 
         /// <summary>Mã ID tự động lấy từ tên file asset – không cần GD nhập tay.</summary>
         public string ItemId => name;

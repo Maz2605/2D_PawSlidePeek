@@ -45,17 +45,17 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.Gameplay
             bool shouldShowPausePopup = subState == InGameSubState.Paused;
             if (shouldShowPausePopup)
             {
-                if (!uiManager.IsPopupVisible(PopupID.PausePopup))
+                if (!uiManager.IsPopupVisible<PausePopup>())
                 {
-                    uiManager.ShowPopup<PausePopup>(PopupID.PausePopup);
+                    uiManager.ShowPopup<PausePopup>();
                 }
 
                 return;
             }
 
-            if (uiManager.IsPopupVisible(PopupID.PausePopup))
+            if (uiManager.IsPopupVisible<PausePopup>())
             {
-                uiManager.ClosePopup(PopupID.PausePopup);
+                uiManager.ClosePopup<PausePopup>();
             }
         }
     }
