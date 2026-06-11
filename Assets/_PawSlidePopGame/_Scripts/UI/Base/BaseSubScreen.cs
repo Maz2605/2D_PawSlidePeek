@@ -1,5 +1,7 @@
 ﻿using System;
+using _PawSlidePopGame._Scripts.Data.Events;
 using DG.Tweening;
+using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -17,6 +19,7 @@ namespace _PawSlidePopGame._Scripts.UI.Base
             btn.onClick?.RemoveAllListeners();
             btn.onClick?.AddListener(() =>
             {
+                EventManager<FeedbackEvent>.Post(FeedbackEvent.UiButtonTap);
                 btn.transform.DOKill();
                 btn.transform.localScale = Vector3.one;
                 btn.transform

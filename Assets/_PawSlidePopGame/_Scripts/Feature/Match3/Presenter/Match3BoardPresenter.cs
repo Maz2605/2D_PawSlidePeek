@@ -61,7 +61,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
             if (boardView != null)
             {
+                boardView.OnTileActivatePlaybackStarted += HandleTileActivatePlaybackStarted;
                 boardView.OnTileClearPlaybackStarted += HandleTileClearPlaybackStarted;
+                boardView.OnSpecialCreatePlaybackStarted += HandleSpecialCreatePlaybackStarted;
                 boardView.OnScoreGainPlaybackStarted += HandleScoreGainPlaybackStarted;
             }
 
@@ -114,7 +116,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
             if (boardView != null)
             {
+                boardView.OnTileActivatePlaybackStarted -= HandleTileActivatePlaybackStarted;
                 boardView.OnTileClearPlaybackStarted -= HandleTileClearPlaybackStarted;
+                boardView.OnSpecialCreatePlaybackStarted -= HandleSpecialCreatePlaybackStarted;
                 boardView.OnScoreGainPlaybackStarted -= HandleScoreGainPlaybackStarted;
             }
 
@@ -251,6 +255,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             {
                 if (!GameFlowManager.Instance.CanPlaceChargedBoosterAt(cell.X, cell.Y))
                 {
+                    EventManager<FeedbackEvent>.Post(FeedbackEvent.MoveReject);
                     return;
                 }
 
@@ -271,6 +276,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             {
                 if (!GameFlowManager.Instance.CanConfirmChargedComboAt(cell.X, cell.Y))
                 {
+                    EventManager<FeedbackEvent>.Post(FeedbackEvent.MoveReject);
                     GameFlowManager.Instance.CancelChargedAbilityMode();
                     return;
                 }
@@ -361,8 +367,13 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
             if (executionResult.IsApplied && boardView != null)
             {
+                EventManager<FeedbackEvent>.Post(FeedbackEvent.MoveSuccess);
                 yield return StartCoroutine(boardView.PlayMoveExecution(executionResult));
                 boardView.SyncToBoardState();
+            }
+            else if (!executionResult.IsAccepted)
+            {
+                EventManager<FeedbackEvent>.Post(FeedbackEvent.MoveReject);
             }
 
             GameFlowManager.Instance?.NotifyResolutionPlaybackComplete(executionResult);
@@ -403,9 +414,33 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             boardView?.ClearPreview();
         }
 
+        private void HandleTileActivatePlaybackStarted(TileActivateOp activateOp)
+        {
+            if (activateOp == null)
+            {
+                return;
+            }
+
+            EventManager<FeedbackEvent>.Post(
+                FeedbackEvent.SpecialTileActivated,
+                new SpecialTileFeedbackPayload(activateOp.LogicType));
+        }
+
         private void HandleTileClearPlaybackStarted(TileClearOp clearOp, Vector3 worldPosition)
         {
             GameFlowManager.Instance?.NotifyTileClearedDuringPlayback(clearOp, worldPosition);
+        }
+
+        private void HandleSpecialCreatePlaybackStarted(SpecialCreateOp specialCreateOp)
+        {
+            if (specialCreateOp == null)
+            {
+                return;
+            }
+
+            EventManager<FeedbackEvent>.Post(
+                FeedbackEvent.SpecialTileCreated,
+                new SpecialTileFeedbackPayload(specialCreateOp.LogicType));
         }
 
         private void HandleScoreGainPlaybackStarted(ScoreGainOp scoreGainOp)
@@ -466,4 +501,3 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         }
     }
 }
-

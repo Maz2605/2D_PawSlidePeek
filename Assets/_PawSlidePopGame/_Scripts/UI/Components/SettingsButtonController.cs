@@ -1,6 +1,8 @@
+using _PawSlidePopGame._Scripts.Data.Events;
 using _PawSlidePopGame._Scripts.UI.Manager;
 using _PawSlidePopGame._Scripts.UI.Popups;
 using DG.Tweening;
+using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -47,6 +49,8 @@ namespace _PawSlidePopGame._Scripts.UI.Components
 
         private void HandleClicked()
         {
+            EventManager<FeedbackEvent>.Post(FeedbackEvent.UiButtonTap);
+
             if (UIManager.Instance == null)
             {
                 Debug.LogWarning("[SettingsButtonController] UIManager.Instance is null.", this);

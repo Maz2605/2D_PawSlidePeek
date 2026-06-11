@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6f7289b5566482e8c11a15285684b45, type: 3}
+  m_Name: AudioConfig
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Config.PawSlidePopAudioConfig
+  music:
+    mainMenuBackground: {fileID: 0}
+    gameplayBackground: {fileID: 0}
+    resultWinBackground: {fileID: 0}
+    resultLoseBackground: {fileID: 0}
+  match3Sfx:
+    levelStart: {fileID: 8300000, guid: 21bbd37c1b0634c7aa294395bed81a50, type: 3}
+    levelWin: {fileID: 8300000, guid: 9538dd74cce5d4422a47dae36a732579, type: 3}
+    levelLose: {fileID: 8300000, guid: 4eef04df83c0743a484eff6e6a81112f, type: 3}
+    swapSuccess: {fileID: 8300000, guid: 35cdc1d6ac78041ee8994bc3db67432c, type: 3}
+    swapInvalid: {fileID: 8300000, guid: f9e969344ac7245b5b7fb98e947c19bb, type: 3}
+    tileSlide: {fileID: 8300000, guid: 0d4b74e639eda4b93a5a21be0ce2c4b5, type: 3}
+    tileDrop: {fileID: 8300000, guid: 4d5fdd0bc208f4b75a15e6262a3d475d, type: 3}
+    matchBasic: {fileID: 0}
+    matchBig: {fileID: 0}
+    combo: {fileID: 0}
+    targetCollected: {fileID: 0}
+    objectiveCompleted: {fileID: 0}
+    specialCreated: {fileID: 0}
+    specialActivated: {fileID: 0}
+    boosterSelect: {fileID: 0}
+    boosterUse: {fileID: 0}
+    boosterReject: {fileID: 8300000, guid: f9e969344ac7245b5b7fb98e947c19bb, type: 3}
+    shuffle: {fileID: 0}
+    explosion: {fileID: 0}

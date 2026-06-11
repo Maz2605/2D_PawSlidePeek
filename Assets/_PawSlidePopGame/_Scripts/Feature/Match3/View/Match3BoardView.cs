@@ -44,7 +44,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         private Match3TileDatabaseSO _tileDatabase;
         private bool _isIdleEnabled = true;
 
+        public event Action<TileActivateOp> OnTileActivatePlaybackStarted;
         public event Action<TileClearOp, Vector3> OnTileClearPlaybackStarted;
+        public event Action<SpecialCreateOp> OnSpecialCreatePlaybackStarted;
         public event Action<ScoreGainOp> OnScoreGainPlaybackStarted;
 
         public void Bind(BoardModel board, Match3LevelData levelData, Match3TileDatabaseSO tileDatabase)
@@ -567,6 +569,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             for (int i = 0; i < clearPhase.ActivateOps.Count; i++)
             {
                 TileActivateOp op = clearPhase.ActivateOps[i];
+                OnTileActivatePlaybackStarted?.Invoke(op);
                 routines.Add(PlayActivateOp(op));
             }
 
@@ -620,6 +623,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             for (int i = 0; i < clearPhase.SpecialCreateOps.Count; i++)
             {
                 SpecialCreateOp op = clearPhase.SpecialCreateOps[i];
+                OnSpecialCreatePlaybackStarted?.Invoke(op);
                 DispatchScoreGainsForSpecialCreateOp(op, pendingScoreGains);
                 routines.Add(PlaySpecialCreateOp(op));
             }
@@ -1133,4 +1137,3 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         }
     }
 }
-
