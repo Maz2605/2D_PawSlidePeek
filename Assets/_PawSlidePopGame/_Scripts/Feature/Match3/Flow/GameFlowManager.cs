@@ -11,8 +11,8 @@ using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Board;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presentation;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presenter;
-using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
 using _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager;
+using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
 using UnityEngine;
 
 namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
@@ -599,6 +599,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
 
             executionResult.Kind = BoardExecutionKind.Booster;
 
+            if (!executionResult.IsAccepted)
+            {
+                Debug.LogWarning("[GameFlowManager] Auto-shuffle failed to produce a valid board. Entering defeat.");
+                SetInGameSubState(InGameSubState.CheckingResult);
+                EnterDefeat();
+                return;
+            }
+
             OnAutoShuffleTriggered?.Invoke(executionResult);
         }
 
@@ -703,6 +711,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
                     return nextState == InGameSubState.CheckingResult || nextState == InGameSubState.Paused;
                 case InGameSubState.CheckingResult:
                     return nextState == InGameSubState.PlayerTurn ||
+                           nextState == InGameSubState.ResolvingBoard || // Auto-shuffle after no possible moves
                            nextState == InGameSubState.Victory ||
                            nextState == InGameSubState.Defeat ||
                            nextState == InGameSubState.Paused;

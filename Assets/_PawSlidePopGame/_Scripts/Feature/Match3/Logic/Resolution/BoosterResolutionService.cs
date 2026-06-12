@@ -379,23 +379,42 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
 
         private static void ClearTopLayerDirect(BoardModel board, CellModel cell, BoardFxContext fxContext)
         {
-            TileModel tile = cell?.Overlay ?? (TileModel)cell?.Tile;
-            if (board == null || cell == null || tile == null)
+            if (board == null || cell == null)
             {
                 return;
             }
 
-            if (tile.CurrentHP > 0 && tile.TileKind != TileKind.Normal)
+            if (cell.Overlay != null)
             {
-                int previousHp = tile.CurrentHP;
-                tile.TakeDamage(previousHp);
-                fxContext?.RecordDamage(tile, cell, previousHp, tile.CurrentHP, true);
+                TileModel overlayTile = cell.Overlay;
+                if (overlayTile.CurrentHP > 0 && overlayTile.TileKind != TileKind.Normal)
+                {
+                    int previousHp = overlayTile.CurrentHP;
+                    overlayTile.TakeDamage(previousHp);
+                    fxContext?.RecordDamage(overlayTile, cell, previousHp, overlayTile.CurrentHP, true);
+                }
+
+                fxContext?.RecordClear(overlayTile, cell, false);
+                cell.ClearOverlay();
+                board.AddScore(DirectClearScore);
+                fxContext?.RecordScore(overlayTile, cell, DirectClearScore, board.CurrentScore);
             }
 
-            fxContext?.RecordClear(tile, cell, false);
-            cell.ClearTile(cell.GetTileLayer(tile) ?? TileStackLayer.Base);
-            board.AddScore(DirectClearScore);
-            fxContext?.RecordScore(tile, cell, DirectClearScore, board.CurrentScore);
+            if (cell.Tile != null)
+            {
+                TileModel baseTile = cell.Tile;
+                if (baseTile.CurrentHP > 0 && baseTile.TileKind != TileKind.Normal)
+                {
+                    int previousHp = baseTile.CurrentHP;
+                    baseTile.TakeDamage(previousHp);
+                    fxContext?.RecordDamage(baseTile, cell, previousHp, baseTile.CurrentHP, true);
+                }
+
+                fxContext?.RecordClear(baseTile, cell, false);
+                cell.ClearTile();
+                board.AddScore(DirectClearScore);
+                fxContext?.RecordScore(baseTile, cell, DirectClearScore, board.CurrentScore);
+            }
         }
 
         private static bool CanHammerCell(CellModel cell)
@@ -429,8 +448,6 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             {
                 if (cell == null ||
                     !cell.IsPlayable ||
-                    cell.Underlay != null ||
-                    cell.Overlay != null ||
                     cell.Tile == null ||
                     cell.Tile.TileKind != TileKind.Normal)
                 {

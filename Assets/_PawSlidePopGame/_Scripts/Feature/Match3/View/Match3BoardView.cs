@@ -226,39 +226,58 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
             HashSet<int> highlightTileIds = new HashSet<int>();
 
-            bool isRowMoveable = IsLineMoveable(MoveAxis.Row, cell.Y);
-            bool isColMoveable = IsLineMoveable(MoveAxis.Column, cell.X);
-
-            if (isRowMoveable)
+            List<CellModel> rowCells = _board.GetPlayableCellsInRow(cell.Y);
+            for (int i = 0; i < rowCells.Count; i++)
             {
-                List<CellModel> rowCells = _board.GetPlayableCellsInRow(cell.Y);
-                for (int i = 0; i < rowCells.Count; i++)
+                TileModel tile = rowCells[i].Tile;
+                if (tile != null)
                 {
-                    TileModel tile = rowCells[i].TopTile;
-                    if (tile != null)
-                    {
-                        highlightTileIds.Add(tile.InstanceId);
-                    }
+                    highlightTileIds.Add(tile.InstanceId);
+                }
+                TileModel overlay = rowCells[i].Overlay;
+                if (overlay != null)
+                {
+                    highlightTileIds.Add(overlay.InstanceId);
                 }
             }
 
-            if (isColMoveable)
+            List<CellModel> colCells = _board.GetPlayableCellsInColumn(cell.X);
+            for (int i = 0; i < colCells.Count; i++)
             {
-                List<CellModel> colCells = _board.GetPlayableCellsInColumn(cell.X);
-                for (int i = 0; i < colCells.Count; i++)
+                TileModel tile = colCells[i].Tile;
+                if (tile != null)
                 {
-                    TileModel tile = colCells[i].TopTile;
-                    if (tile != null)
-                    {
-                        highlightTileIds.Add(tile.InstanceId);
-                    }
+                    highlightTileIds.Add(tile.InstanceId);
+                }
+                TileModel overlay = colCells[i].Overlay;
+                if (overlay != null)
+                {
+                    highlightTileIds.Add(overlay.InstanceId);
                 }
             }
 
-            int focusedTileId = cell.TopTile != null ? cell.TopTile.InstanceId : -1;
+            // Prefer highlighting the base tile as the focused tile if it exists, so only it scales up and gets active shadow
+            int focusedTileId = -1;
+            if (cell.Tile != null)
+            {
+                focusedTileId = cell.Tile.InstanceId;
+            }
+            else if (cell.Overlay != null)
+            {
+                focusedTileId = cell.Overlay.InstanceId;
+            }
+
             if (focusedTileId != -1)
             {
                 highlightTileIds.Add(focusedTileId);
+            }
+            if (cell.Overlay != null)
+            {
+                highlightTileIds.Add(cell.Overlay.InstanceId);
+            }
+            if (cell.Tile != null)
+            {
+                highlightTileIds.Add(cell.Tile.InstanceId);
             }
 
             foreach (KeyValuePair<int, Match3TileView> pair in _tileViews)
