@@ -326,5 +326,64 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
             ChocolateGrowthTurnsSinceLastBreak = 0;
             return true;
         }
+
+        private BoardModel(int width, int height)
+        {
+            Width = width;
+            Height = height;
+            _grid = new CellModel[Width, Height];
+        }
+
+        public BoardModel Clone(Match3TileDatabaseSO tileDatabase)
+        {
+            BoardModel clone = new BoardModel(Width, Height);
+            clone.CurrentScore = CurrentScore;
+            clone.RemainingMoves = RemainingMoves;
+            clone.ChocolateGrowthTurnsSinceLastBreak = ChocolateGrowthTurnsSinceLastBreak;
+            clone._tileInstanceCounter = _tileInstanceCounter;
+
+            for (int y = 0; y < Height; y++)
+            {
+                for (int x = 0; x < Width; x++)
+                {
+                    CellModel originalCell = _grid[x, y];
+                    CellModel clonedCell = new CellModel(x, y, originalCell.IsPlayable);
+                    clone._grid[x, y] = clonedCell;
+
+                    if (originalCell.IsPlayable)
+                    {
+                        if (originalCell.Underlay != null)
+                        {
+                            TileModel t = clone.CreateTileFromDefinitionId(originalCell.Underlay.TileId, tileDatabase);
+                            if (t != null)
+                            {
+                                t.SetHP(originalCell.Underlay.CurrentHP);
+                                clonedCell.SetUnderlay(t);
+                            }
+                        }
+                        if (originalCell.Tile != null)
+                        {
+                            TileModel t = clone.CreateTileFromDefinitionId(originalCell.Tile.TileId, tileDatabase);
+                            if (t != null)
+                            {
+                                t.SetHP(originalCell.Tile.CurrentHP);
+                                clonedCell.SetTile(t);
+                            }
+                        }
+                        if (originalCell.Overlay != null)
+                        {
+                            TileModel t = clone.CreateTileFromDefinitionId(originalCell.Overlay.TileId, tileDatabase);
+                            if (t != null)
+                            {
+                                t.SetHP(originalCell.Overlay.CurrentHP);
+                                clonedCell.SetOverlay(t);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return clone;
+        }
     }
 }

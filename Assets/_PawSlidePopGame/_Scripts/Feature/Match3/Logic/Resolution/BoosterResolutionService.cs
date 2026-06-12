@@ -262,13 +262,76 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                 originalTiles.Add(cells[i].Tile);
             }
 
-            List<TileContentModel> shuffledTiles = new List<TileContentModel>(originalTiles);
-            Shuffle(shuffledTiles, random);
-            if (!HasDifferentOrder(originalTiles, shuffledTiles))
+            List<int> shuffledIndices = new List<int>(cells.Count);
+            for (int i = 0; i < cells.Count; i++)
             {
-                TileContentModel first = shuffledTiles[0];
-                shuffledTiles.RemoveAt(0);
-                shuffledTiles.Add(first);
+                shuffledIndices.Add(i);
+            }
+
+            int maxAttempts = 20;
+            for (int attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                // Shuffle indices
+                for (int i = shuffledIndices.Count - 1; i > 0; i--)
+                {
+                    int swapIndex = random.Next(0, i + 1);
+                    (shuffledIndices[i], shuffledIndices[swapIndex]) = (shuffledIndices[swapIndex], shuffledIndices[i]);
+                }
+
+                // Ensure it has a different order if possible
+                bool isDifferent = false;
+                for (int i = 0; i < shuffledIndices.Count; i++)
+                {
+                    if (shuffledIndices[i] != i)
+                    {
+                        isDifferent = true;
+                        break;
+                    }
+                }
+                if (!isDifferent && shuffledIndices.Count >= 2)
+                {
+                    int first = shuffledIndices[0];
+                    shuffledIndices.RemoveAt(0);
+                    shuffledIndices.Add(first);
+                }
+
+                // Clone board to simulate
+                BoardModel tempBoard = board.Clone(tileDatabase);
+                List<CellModel> tempCells = CollectShuffleEligibleCells(tempBoard);
+                if (tempCells.Count != cells.Count)
+                {
+                    continue;
+                }
+
+                List<TileContentModel> tempOriginalTiles = new List<TileContentModel>(tempCells.Count);
+                for (int i = 0; i < tempCells.Count; i++)
+                {
+                    tempOriginalTiles.Add(tempCells[i].Tile);
+                }
+
+                // Apply shuffled cloned tiles
+                for (int i = 0; i < tempCells.Count; i++)
+                {
+                    tempCells[i].SetTile(tempOriginalTiles[shuffledIndices[i]]);
+                }
+
+                // Resolve temp board matches/refills
+                BoardResolutionResult tempResult = new BoardResolutionResult();
+                BoardPresentationTraceBuilder tempTraceBuilder = new BoardPresentationTraceBuilder();
+                BoardResolutionService.ResolveAfterBoosterMutation(tempBoard, levelData, tileDatabase, random, tempResult, tempTraceBuilder, ruleSet);
+
+                // Check if the resolved board has possible moves
+                var matchRule = ruleSet != null ? ruleSet.MatchRule : BoardRuleSet.Default.MatchRule;
+                if (BoardResolutionService.HasPossibleMoves(tempBoard, matchRule))
+                {
+                    break;
+                }
+            }
+
+            List<TileContentModel> shuffledTiles = new List<TileContentModel>(cells.Count);
+            for (int i = 0; i < cells.Count; i++)
+            {
+                shuffledTiles.Add(originalTiles[shuffledIndices[i]]);
             }
 
             executionResult.IsApplied = true;

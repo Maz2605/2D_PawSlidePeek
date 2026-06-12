@@ -46,6 +46,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities
             CurrentHP = Math.Max(0, CurrentHP - damage);
         }
 
+        public void SetHP(int hp)
+        {
+            CurrentHP = hp;
+        }
+
         public bool CanBeMoved()
         {
             if (TileLogic != null)
