@@ -1,82 +1,174 @@
 using System.Collections.Generic;
 using System.Globalization;
+using _PawSlidePopGame._Scripts.UI.Screens.SubScreens;
 using UnityEngine;
 
 namespace _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager
 {
     public class MapManager
     {
-        private static readonly int[] LanePattern = { 0, -1, 1, -2, 2 };
+        public sealed class MapSectionLayout
+        {
+            public MapSectionLayout(int sectionIndex, MapSectionView prefab, float anchoredY, float sectionHeight, int startEntryIndex, int entryCount)
+            {
+                SectionIndex = sectionIndex;
+                Prefab = prefab;
+                AnchoredY = anchoredY;
+                SectionHeight = sectionHeight;
+                StartEntryIndex = startEntryIndex;
+                EntryCount = entryCount;
+            }
 
-        public IReadOnlyList<MapLevelEntry> BuildEntries(
+            public int SectionIndex { get; }
+            public MapSectionView Prefab { get; }
+            public float AnchoredY { get; }
+            public float SectionHeight { get; }
+            public int StartEntryIndex { get; }
+            public int EntryCount { get; }
+            public float CenterY => AnchoredY + (SectionHeight * 0.5f);
+        }
+
+        public sealed class MapLayoutData
+        {
+            public static readonly MapLayoutData Empty = new MapLayoutData(
+                new List<MapLevelEntry>(),
+                new List<MapSectionLayout>(),
+                0f);
+
+            public MapLayoutData(
+                IReadOnlyList<MapLevelEntry> entries,
+                IReadOnlyList<MapSectionLayout> sections,
+                float contentHeight)
+            {
+                Entries = entries ?? new List<MapLevelEntry>();
+                Sections = sections ?? new List<MapSectionLayout>();
+                ContentHeight = Mathf.Max(0f, contentHeight);
+            }
+
+            public IReadOnlyList<MapLevelEntry> Entries { get; }
+            public IReadOnlyList<MapSectionLayout> Sections { get; }
+            public float ContentHeight { get; }
+        }
+
+        public MapLayoutData BuildLayout(
             IReadOnlyList<string> levelIds,
             MapWorldConfigSO config,
             int highestUnlockedLevelNumber = int.MaxValue,
             int currentLevelNumber = 1,
-            LevelProgressRepository progressRepository = null)
+            LevelProgressRepository progressRepository = null,
+            bool skipSectionZero = false)
         {
             List<MapLevelEntry> entries = new List<MapLevelEntry>();
+            List<MapSectionLayout> sections = new List<MapSectionLayout>();
             if (levelIds == null || levelIds.Count == 0)
             {
-                return entries;
+                return MapLayoutData.Empty;
             }
 
-            int maxVisibleLevels = config != null ? config.MaxVisibleLevels : levelIds.Count;
-            int count = Mathf.Min(levelIds.Count, maxVisibleLevels);
-            System.Random random = new System.Random(config != null ? config.Seed : 0);
-            float levelSpacing = config != null ? config.LevelSpacing : 170f;
-            float horizontalLimit = config != null ? config.HorizontalLimit : 260f;
-            float horizontalJitter = config != null ? config.HorizontalJitter : 70f;
-            float bottomPadding = config != null ? config.BottomPadding : 160f;
-            int levelsPerSection = config != null ? config.LevelsPerSection : 8;
-
-            int previousLane = 0;
-            for (int i = 0; i < count; i++)
+            int count = Mathf.Min(levelIds.Count, config != null ? config.MaxVisibleLevels : levelIds.Count);
+            if (config == null || !config.HasSectionPrefabs)
             {
-                string levelId = levelIds[i];
-                int displayNumber = TryParseLevelNumber(levelId, out int parsedNumber) ? parsedNumber : i + 1;
-                int lane = PickLane(random, previousLane);
-                previousLane = lane;
-
-                float laneX = horizontalLimit <= 0f ? 0f : Mathf.Lerp(-horizontalLimit, horizontalLimit, (lane + 2) / 4f);
-                float jitter = horizontalJitter <= 0f ? 0f : (float)((random.NextDouble() * 2d) - 1d) * horizontalJitter;
-                float x = Mathf.Clamp(laneX + jitter, -horizontalLimit, horizontalLimit);
-                float y = bottomPadding + (i * levelSpacing);
-                int sectionIndex = Mathf.Max(0, i / levelsPerSection);
-                LevelProgressEntryData progress = progressRepository?.GetProgress(levelId);
-                int bestStars = progress != null ? progress.bestStars : 0;
-                int bestScore = progress != null ? progress.bestScore : 0;
-                bool isHardLevel = config != null && config.IsHardLevel(displayNumber);
-                MapLevelState state = ResolveState(displayNumber, highestUnlockedLevelNumber, currentLevelNumber, bestStars, isHardLevel);
-
-                entries.Add(new MapLevelEntry(
-                    levelId,
-                    displayNumber,
-                    sectionIndex,
-                    new Vector2(x, y),
-                    state,
-                    bestStars,
-                    bestScore,
-                    isHardLevel));
+                return new MapLayoutData(entries, sections, 0f);
             }
 
-            return entries;
+            float currentSectionY = config.BottomPadding;
+            int levelIndex = 0;
+            int sectionIndex = 0;
+            int safetyGuard = Mathf.Max(16, count * 4);
+
+            while (levelIndex < count && safetyGuard-- > 0)
+            {
+                MapSectionView sectionPrefab = config.GetSectionPrefab(sectionIndex);
+                if (sectionPrefab == null)
+                {
+                    Debug.LogWarning($"[MapManager] Missing section prefab for scenic section index {sectionIndex}.");
+                    sectionIndex++;
+                    continue;
+                }
+
+                int capacity = sectionPrefab.Capacity;
+                if (capacity <= 0 && sectionIndex != 0)
+                {
+                    Debug.LogWarning($"[MapManager] Section prefab '{sectionPrefab.name}' has no node anchors.");
+                    sectionIndex++;
+                    continue;
+                }
+
+                int sectionEntryCount = (skipSectionZero && sectionIndex == 0) ? 0 : Mathf.Min(capacity, count - levelIndex);
+                float sectionHeight = sectionPrefab.SectionHeight;
+                int startEntryIndex = entries.Count;
+
+                for (int slotIndex = 0; slotIndex < sectionEntryCount; slotIndex++)
+                {
+                    string levelId = levelIds[levelIndex];
+                    int displayNumber = TryParseLevelNumber(levelId, out int parsedNumber) ? parsedNumber : levelIndex + 1;
+                    LevelProgressEntryData progress = progressRepository?.GetProgress(levelId);
+                    int bestStars = progress != null ? progress.bestStars : 0;
+                    int bestScore = progress != null ? progress.bestScore : 0;
+                    bool isHardLevel = config.IsHardLevel(displayNumber);
+                    MapLevelState state = ResolveState(displayNumber, highestUnlockedLevelNumber, currentLevelNumber, bestStars, isHardLevel);
+                    Vector2 localAnchorPosition = ResolveAnchorLocalPosition(sectionPrefab, slotIndex);
+
+                    entries.Add(new MapLevelEntry(
+                        levelId,
+                        displayNumber,
+                        sectionIndex,
+                        slotIndex,
+                        new Vector2(localAnchorPosition.x, currentSectionY + localAnchorPosition.y),
+                        state,
+                        bestStars,
+                        bestScore,
+                        isHardLevel));
+
+                    levelIndex++;
+                }
+
+                sections.Add(new MapSectionLayout(
+                    sectionIndex,
+                    sectionPrefab,
+                    currentSectionY,
+                    sectionHeight,
+                    startEntryIndex,
+                    sectionEntryCount));
+
+                currentSectionY += sectionHeight;
+                sectionIndex++;
+
+                if (levelIndex < count)
+                {
+                    currentSectionY += config.SectionSpacing;
+                }
+            }
+
+            if (sections.Count > 0)
+            {
+                MapSectionView overflowSectionPrefab = config.GetSectionPrefab(sectionIndex);
+                if (overflowSectionPrefab != null)
+                {
+                    float overflowAnchoredY = currentSectionY + config.SectionSpacing;
+                    float overflowHeight = overflowSectionPrefab.SectionHeight;
+                    sections.Add(new MapSectionLayout(
+                        sectionIndex,
+                        overflowSectionPrefab,
+                        overflowAnchoredY,
+                        overflowHeight,
+                        entries.Count,
+                        0));
+
+                    currentSectionY = overflowAnchoredY + overflowHeight;
+                }
+            }
+
+            float contentHeight = entries.Count > 0
+                ? currentSectionY
+                : 0f;
+
+            return new MapLayoutData(entries, sections, contentHeight);
         }
 
-        public float CalculateContentHeight(IReadOnlyList<MapLevelEntry> entries, MapWorldConfigSO config)
+        public float CalculateContentHeight(MapLayoutData layout, MapWorldConfigSO config)
         {
-            float sectionHeight = config != null ? config.SectionHeight : 1100f;
-            float topPadding = config != null ? config.TopPadding : 220f;
-            float bottomPadding = config != null ? config.BottomPadding : 160f;
-            if (entries == null || entries.Count == 0)
-            {
-                return sectionHeight;
-            }
-
-            MapLevelEntry lastEntry = entries[entries.Count - 1];
-            int sectionCount = Mathf.Max(1, lastEntry.SectionIndex + 1);
-            float nodeHeight = lastEntry.AnchoredPosition.y + topPadding;
-            return Mathf.Max(sectionHeight * sectionCount, nodeHeight + bottomPadding);
+            return layout != null ? Mathf.Max(0f, layout.ContentHeight) : 0f;
         }
 
         public static bool TryParseLevelNumber(string levelId, out int levelNumber)
@@ -96,19 +188,16 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager
                    levelNumber > 0;
         }
 
-        private static int PickLane(System.Random random, int previousLane)
+        private static Vector2 ResolveAnchorLocalPosition(
+            MapSectionView sectionPrefab,
+            int slotIndex)
         {
-            int lane = previousLane;
-            for (int attempt = 0; attempt < 6; attempt++)
+            if (sectionPrefab != null && slotIndex >= 0 && slotIndex < sectionPrefab.Capacity)
             {
-                lane = LanePattern[random.Next(0, LanePattern.Length)];
-                if (lane != previousLane)
-                {
-                    break;
-                }
+                return sectionPrefab.GetAnchorLocalPosition(slotIndex);
             }
 
-            return lane;
+            return Vector2.zero;
         }
 
         private static MapLevelState ResolveState(
@@ -121,6 +210,11 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager
             if (displayNumber > highestUnlockedLevelNumber)
             {
                 return MapLevelState.Locked;
+            }
+
+            if (displayNumber == currentLevelNumber)
+            {
+                return MapLevelState.Current;
             }
 
             if (bestStars >= 4)
@@ -136,11 +230,6 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager
             if (isHardLevel)
             {
                 return MapLevelState.Hard;
-            }
-
-            if (displayNumber == currentLevelNumber)
-            {
-                return MapLevelState.Current;
             }
 
             return MapLevelState.Unplayed;

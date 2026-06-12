@@ -7,6 +7,7 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager
         public readonly string LevelId;
         public readonly int DisplayLevelNumber;
         public readonly int SectionIndex;
+        public readonly int SlotIndexInSection;
         public readonly Vector2 AnchoredPosition;
         public readonly MapLevelState State;
         public readonly int BestStars;
@@ -17,6 +18,7 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager
             string levelId,
             int displayLevelNumber,
             int sectionIndex,
+            int slotIndexInSection,
             Vector2 anchoredPosition,
             MapLevelState state,
             int bestStars = 0,
@@ -26,6 +28,7 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager
             LevelId = levelId;
             DisplayLevelNumber = displayLevelNumber;
             SectionIndex = sectionIndex;
+            SlotIndexInSection = Mathf.Max(0, slotIndexInSection);
             AnchoredPosition = anchoredPosition;
             State = state;
             BestStars = Mathf.Max(0, bestStars);

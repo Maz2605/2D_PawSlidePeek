@@ -12,13 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1983a804fec400648a199fa4e67982ad, type: 3}
   m_Name: DefaultMapWorldConfig
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Gameplay.Meta.MapManager.MapWorldConfigSO
-  seed: 12817
-  maxVisibleLevels: 100
-  levelsPerSection: 8
-  sectionHeight: 1100
-  levelSpacing: 170
-  horizontalLimit: 260
-  horizontalJitter: 70
+  maxVisibleLevels: 30
+  markHardLevels: 1
+  hardLevelInterval: 10
+  sectionSpacing: 0
   bottomPadding: 160
   topPadding: 220
-  sections: []
+  sectionPrefabs:
+  - {fileID: 100002, guid: 746166b9ca1b9fe4b8a0f2735e193e54, type: 3}
+  - {fileID: 100002, guid: f92dff50b4f7cda4986ce55118721ea7, type: 3}
+  - {fileID: 100002, guid: 3d320aefa128fc4408620c81ecdca833, type: 3}
+  - {fileID: 100002, guid: 944efabd75a11224ca45178bc906211f, type: 3}

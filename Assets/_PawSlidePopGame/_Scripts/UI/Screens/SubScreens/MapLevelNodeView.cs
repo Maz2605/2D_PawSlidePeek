@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager;
 using _PawSlidePopGame._Scripts.UI.Components;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,47 +12,84 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
     [DisallowMultipleComponent]
     public sealed class MapLevelNodeView : MonoBehaviour
     {
+        private enum NodeVisualState
+        {
+            Locked,
+            Unlocked,
+            Available,
+            Current,
+            Completed,
+            Perfect,
+            HardUnlocked
+        }
+
         [Header("Core")]
         [SerializeField] private Button button;
         [SerializeField] private TextMeshProUGUI levelText;
         [SerializeField] private Image nodeBackground;
-        [SerializeField] private Image nodeFrame;
 
-        [Header("State Roots")]
-        [SerializeField] private GameObject lockedStateRoot;
-        [SerializeField] private GameObject currentStateRoot;
-        [SerializeField] private GameObject completedStateRoot;
-        [SerializeField] private GameObject perfectStateRoot;
-        [SerializeField] private GameObject hardStateRoot;
+        [Header("State Sprites")]
+        [SerializeField] private Sprite lockedSprite;
+        [SerializeField] private Sprite unlockedSprite;
+        [SerializeField] private Sprite availableSprite;
+        [SerializeField] private Sprite currentSprite;
+        [SerializeField] private Sprite completedSprite;
+        [SerializeField] private Sprite perfectSprite;
+        [SerializeField] private Sprite hardUnlockedSprite;
+
+        [Header("Locked Visuals")]
+        [SerializeField] private RectTransform bubbleRoot;
+        [SerializeField] private RectTransform lockIconRoot;
 
         [Header("Stars")]
         [SerializeField] private GameObject starsRoot;
         [SerializeField] private List<StarItemView> starViews = new List<StarItemView>();
         [SerializeField] private bool showLockedStarsForPlayedLevels;
 
-        [Header("Node Colors")]
-        [SerializeField] private Color lockedColor = new Color(0.55f, 0.58f, 0.62f, 1f);
-        [SerializeField] private Color unplayedColor = new Color(0.43f, 0.88f, 0.91f, 1f);
-        [SerializeField] private Color failedOrUnlockedColor = new Color(1f, 0.69f, 0.32f, 1f);
-        [SerializeField] private Color currentColor = new Color(0.36f, 0.78f, 1f, 1f);
-        [SerializeField] private Color completedColor = new Color(0.45f, 0.85f, 0.42f, 1f);
-        [SerializeField] private Color perfectColor = new Color(0.24f, 0.78f, 0.96f, 1f);
-        [SerializeField] private Color hardColor = new Color(0.92f, 0.38f, 0.48f, 1f);
-        [SerializeField] private Color frameColor = Color.white;
+        [Header("Animation")]
+        [SerializeField] private float bubblePulseScale = 1.06f;
+        [SerializeField] private float bubblePulseDuration = 1.15f;
+        [SerializeField] private float bubbleFloatDistance = 8f;
+        [SerializeField] private float bubbleFloatDuration = 1.4f;
+        [SerializeField] private float lockSwingAngle = 12f;
+        [SerializeField] private float lockSwingDuration = 0.9f;
+
+        private Sequence _bubbleSequence;
+        private Tween _lockSwingTween;
+        private bool _cachedBubblePose;
+        private bool _cachedLockPose;
+        private Vector3 _bubbleBaseScale;
+        private Vector2 _bubbleBaseAnchoredPosition;
+        private Quaternion _lockBaseRotation;
 
         public Button Button => button;
 
+        private void Awake()
+        {
+            CacheVisualPose();
+        }
+
+        private void OnDisable()
+        {
+            StopLockedVisuals(resetPose: true);
+        }
+
+        private void OnDestroy()
+        {
+            StopLockedVisuals(resetPose: false);
+        }
+
         public void Setup(MapLevelEntry entry, Action<string> onPressed)
         {
-            TryAutoBindReferences();
+            CacheVisualPose();
 
             if (levelText != null)
             {
                 levelText.text = entry.DisplayLevelNumber.ToString();
             }
 
-            SetState(entry);
-            SetStars(entry.BestStars);
+            ApplyState(entry);
+            ApplyStars(entry);
 
             if (button == null)
             {
@@ -64,35 +102,35 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
             button.onClick.AddListener(() => onPressed?.Invoke(capturedLevelId));
         }
 
-        private void SetState(MapLevelEntry entry)
+        private void ApplyState(MapLevelEntry entry)
         {
-            MapLevelState state = entry.State;
-            SetActive(lockedStateRoot, state == MapLevelState.Locked);
-            SetActive(currentStateRoot, state == MapLevelState.Current);
-            SetActive(completedStateRoot, state == MapLevelState.Completed);
-            SetActive(perfectStateRoot, state == MapLevelState.Perfect);
-            SetActive(hardStateRoot, state == MapLevelState.Hard || entry.IsHardLevel);
+            NodeVisualState visualState = ResolveVisualState(entry);
+            ApplyNodeSprite(ResolveSprite(visualState));
 
-            if (nodeBackground != null)
+            bool isLocked = visualState == NodeVisualState.Locked;
+            SetActive(bubbleRoot, isLocked);
+            SetActive(lockIconRoot, isLocked);
+
+            if (isLocked)
             {
-                nodeBackground.color = GetBackgroundColor(state);
+                PlayLockedVisuals();
+                return;
             }
 
-            if (nodeFrame != null)
-            {
-                nodeFrame.color = state == MapLevelState.Hard ? hardColor : frameColor;
-            }
+            StopLockedVisuals(resetPose: true);
         }
 
-        private void SetStars(int bestStars)
+        private void ApplyStars(MapLevelEntry entry)
         {
-            int clampedStars = Mathf.Max(0, bestStars);
+            int clampedStars = Mathf.Clamp(entry.BestStars, 0, starViews.Count);
+            bool shouldShowStars = entry.State != MapLevelState.Locked && clampedStars > 0;
+
             if (starsRoot != null)
             {
-                starsRoot.SetActive(clampedStars > 0);
+                starsRoot.SetActive(shouldShowStars);
             }
 
-            if (clampedStars <= 0)
+            if (!shouldShowStars)
             {
                 for (int i = 0; i < starViews.Count; i++)
                 {
@@ -123,62 +161,169 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
             }
         }
 
-        private Color GetBackgroundColor(MapLevelState state)
+        private NodeVisualState ResolveVisualState(MapLevelEntry entry)
         {
-            switch (state)
+            if (entry.State == MapLevelState.Locked)
             {
-                case MapLevelState.Locked:
-                    return lockedColor;
-                case MapLevelState.FailedOrUnlocked:
-                case MapLevelState.Available:
-                    return failedOrUnlockedColor;
-                case MapLevelState.Current:
-                    return currentColor;
-                case MapLevelState.Hard:
-                    return hardColor;
-                case MapLevelState.Completed:
-                    return completedColor;
-                case MapLevelState.Perfect:
-                    return perfectColor;
-                case MapLevelState.Unplayed:
+                return NodeVisualState.Locked;
+            }
+
+            if (entry.State == MapLevelState.Perfect)
+            {
+                return NodeVisualState.Perfect;
+            }
+
+            if (entry.State == MapLevelState.Completed)
+            {
+                return NodeVisualState.Completed;
+            }
+
+            if (entry.State == MapLevelState.Current)
+            {
+                return NodeVisualState.Current;
+            }
+
+            if (entry.State == MapLevelState.Hard || entry.IsHardLevel)
+            {
+                return NodeVisualState.HardUnlocked;
+            }
+
+            if (entry.State == MapLevelState.FailedOrUnlocked || entry.State == MapLevelState.Available)
+            {
+                return NodeVisualState.Available;
+            }
+
+            return NodeVisualState.Unlocked;
+        }
+
+        private Sprite ResolveSprite(NodeVisualState visualState)
+        {
+            switch (visualState)
+            {
+                case NodeVisualState.Locked:
+                    return FirstAssigned(lockedSprite, unlockedSprite);
+                case NodeVisualState.Available:
+                    return FirstAssigned(availableSprite, unlockedSprite);
+                case NodeVisualState.Current:
+                    return FirstAssigned(currentSprite, availableSprite, unlockedSprite);
+                case NodeVisualState.Completed:
+                    return FirstAssigned(completedSprite, availableSprite, unlockedSprite);
+                case NodeVisualState.Perfect:
+                    return FirstAssigned(perfectSprite, completedSprite, availableSprite, unlockedSprite);
+                case NodeVisualState.HardUnlocked:
+                    return FirstAssigned(hardUnlockedSprite, availableSprite, unlockedSprite);
+                case NodeVisualState.Unlocked:
                 default:
-                    return unplayedColor;
+                    return unlockedSprite;
             }
         }
 
-        private void OnValidate()
+        private void ApplyNodeSprite(Sprite sprite)
         {
-            TryAutoBindReferences();
+            if (nodeBackground == null || sprite == null)
+            {
+                return;
+            }
+
+            nodeBackground.sprite = sprite;
         }
 
-        private void TryAutoBindReferences()
+        private void PlayLockedVisuals()
         {
-            if (button == null)
+            StopLockedVisuals(resetPose: true);
+
+            if (bubbleRoot != null)
             {
-                button = GetComponent<Button>();
+                _bubbleSequence = DOTween.Sequence()
+                    .SetAutoKill(false)
+                    .SetLoops(-1, LoopType.Restart)
+                    .SetLink(gameObject);
+
+                _bubbleSequence.Join(
+                    bubbleRoot.DOScale(_bubbleBaseScale * bubblePulseScale, bubblePulseDuration)
+                        .SetEase(Ease.InOutSine)
+                        .SetLoops(2, LoopType.Yoyo));
+
+                _bubbleSequence.Join(
+                    bubbleRoot.DOAnchorPosY(_bubbleBaseAnchoredPosition.y + bubbleFloatDistance, bubbleFloatDuration)
+                        .SetEase(Ease.InOutSine)
+                        .SetLoops(2, LoopType.Yoyo));
+
+                _bubbleSequence.Play();
             }
 
-            if (levelText == null)
+            if (lockIconRoot != null)
             {
-                levelText = GetComponentInChildren<TextMeshProUGUI>(true);
-            }
-
-            if (nodeBackground == null)
-            {
-                nodeBackground = GetComponent<Image>();
-            }
-
-            if (starViews.Count == 0)
-            {
-                starViews.AddRange(GetComponentsInChildren<StarItemView>(true));
+                _lockSwingTween = lockIconRoot
+                    .DOLocalRotate(new Vector3(0f, 0f, lockSwingAngle), lockSwingDuration)
+                    .SetEase(Ease.InOutSine)
+                    .SetLoops(-1, LoopType.Yoyo)
+                    .SetLink(gameObject);
             }
         }
 
-        private static void SetActive(GameObject target, bool active)
+        private void StopLockedVisuals(bool resetPose)
+        {
+            _bubbleSequence?.Kill(false);
+            _bubbleSequence = null;
+
+            _lockSwingTween?.Kill(false);
+            _lockSwingTween = null;
+
+            if (resetPose)
+            {
+                ResetVisualPose();
+            }
+        }
+
+        private void CacheVisualPose()
+        {
+            if (!_cachedBubblePose && bubbleRoot != null)
+            {
+                _bubbleBaseScale = bubbleRoot.localScale;
+                _bubbleBaseAnchoredPosition = bubbleRoot.anchoredPosition;
+                _cachedBubblePose = true;
+            }
+
+            if (!_cachedLockPose && lockIconRoot != null)
+            {
+                _lockBaseRotation = lockIconRoot.localRotation;
+                _cachedLockPose = true;
+            }
+        }
+
+        private void ResetVisualPose()
+        {
+            if (_cachedBubblePose && bubbleRoot != null)
+            {
+                bubbleRoot.localScale = _bubbleBaseScale;
+                bubbleRoot.anchoredPosition = _bubbleBaseAnchoredPosition;
+            }
+
+            if (_cachedLockPose && lockIconRoot != null)
+            {
+                lockIconRoot.localRotation = _lockBaseRotation;
+            }
+        }
+
+        private static Sprite FirstAssigned(params Sprite[] sprites)
+        {
+            for (int i = 0; i < sprites.Length; i++)
+            {
+                if (sprites[i] != null)
+                {
+                    return sprites[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static void SetActive(Component target, bool active)
         {
             if (target != null)
             {
-                target.SetActive(active);
+                target.gameObject.SetActive(active);
             }
         }
     }

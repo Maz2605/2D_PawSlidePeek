@@ -48,5 +48,30 @@ namespace _PawSlidePopGame._Scripts.Feature.Meta.Tests.Editor
             Assert.That(progress.bestStars, Is.EqualTo(4));
             Assert.That(progress.bestScore, Is.EqualTo(1500));
         }
+
+        [Test]
+        public void RecordWinAndAdvance_UnlocksNextLevelAndMovesCurrentProgress()
+        {
+            _repository.EnsureInitializedProgress("Level_001");
+
+            _repository.RecordWinAndAdvance("Level_001", 3, 900);
+
+            Assert.That(_repository.GetHighestUnlockedLevelNumber(), Is.EqualTo(2));
+            Assert.That(_repository.GetCurrentLevelId(), Is.EqualTo("Level_002"));
+            Assert.That(_repository.IsLevelUnlocked("Level_002"), Is.True);
+            Assert.That(_repository.IsLevelUnlocked("Level_003"), Is.False);
+        }
+
+        [Test]
+        public void EnsureInitializedProgress_SaveAndReload_PreservesCurrentLevelAndUnlockBoundary()
+        {
+            _repository.EnsureInitializedProgress("Level_001");
+            _repository.RecordWinAndAdvance("Level_001", 2, 700);
+
+            LevelProgressRepository reloaded = new LevelProgressRepository(_saveKey);
+
+            Assert.That(reloaded.GetCurrentLevelId(), Is.EqualTo("Level_002"));
+            Assert.That(reloaded.GetHighestUnlockedLevelNumber(), Is.EqualTo(2));
+        }
     }
 }

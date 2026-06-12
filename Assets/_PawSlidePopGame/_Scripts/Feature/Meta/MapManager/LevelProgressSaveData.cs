@@ -24,10 +24,24 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager
     [Serializable]
     public sealed class LevelProgressSaveData
     {
+        public string currentLevelId = "Level_001";
+        public int highestUnlockedLevelNumber = 1;
         public List<LevelProgressEntryData> levels = new List<LevelProgressEntryData>();
 
         public void Sanitize()
         {
+            currentLevelId = string.IsNullOrWhiteSpace(currentLevelId)
+                ? "Level_001"
+                : LevelPathUtility.SanitizeLevelId(currentLevelId);
+
+            if (!MapManager.TryParseLevelNumber(currentLevelId, out int currentLevelNumber))
+            {
+                currentLevelId = "Level_001";
+                currentLevelNumber = 1;
+            }
+
+            highestUnlockedLevelNumber = Math.Max(1, Math.Max(highestUnlockedLevelNumber, currentLevelNumber));
+
             Dictionary<string, LevelProgressEntryData> merged = new Dictionary<string, LevelProgressEntryData>(StringComparer.OrdinalIgnoreCase);
             if (levels != null)
             {

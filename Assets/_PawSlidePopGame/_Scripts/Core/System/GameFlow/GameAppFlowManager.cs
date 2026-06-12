@@ -6,6 +6,7 @@ using _PawSlidePopGame._Scripts.Data.Events.Payloads;
 using _PawSlidePopGame._Scripts.Feature.Match3.Boosters;
 using _PawSlidePopGame._Scripts.Feature.Match3.Flow;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presenter;
+using _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager;
 using _PawSlidePopGame._Scripts.UI.Manager;
 using _PawSlidePopGame._Scripts.UI.Popups;
 using _PawSlidePopGame._Scripts.UI.Screens;
@@ -155,6 +156,13 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
             }
 
             string targetLevelId = string.IsNullOrWhiteSpace(levelId) ? tempLevelId : levelId;
+            LevelProgressRepository.Instance.EnsureInitializedProgress(tempLevelId);
+
+            if (!LevelProgressRepository.Instance.IsLevelUnlocked(targetLevelId))
+            {
+                UIManager.Instance.ShowPopup<LevelLockedPopup>(popup => popup.Setup(targetLevelId));
+                return false;
+            }
 
             _levelManager.SetRequestedLevelId(targetLevelId);
             if (!_levelManager.TryLoadCurrentLevel(out var levelData))

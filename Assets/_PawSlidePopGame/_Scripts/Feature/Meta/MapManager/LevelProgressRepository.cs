@@ -27,6 +27,72 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager
             _data = Load();
         }
 
+        public string GetCurrentLevelId(string fallbackLevelId = "Level_001")
+        {
+            LevelProgressSaveData data = Data;
+            string sanitizedFallback = string.IsNullOrWhiteSpace(fallbackLevelId)
+                ? "Level_001"
+                : LevelPathUtility.SanitizeLevelId(fallbackLevelId);
+
+            if (string.IsNullOrWhiteSpace(data.currentLevelId))
+            {
+                data.currentLevelId = sanitizedFallback;
+                Save();
+            }
+
+            return data.currentLevelId;
+        }
+
+        public int GetHighestUnlockedLevelNumber()
+        {
+            return Math.Max(1, Data.highestUnlockedLevelNumber);
+        }
+
+        public bool IsLevelUnlocked(string levelId)
+        {
+            string sanitizedLevelId = LevelPathUtility.SanitizeLevelId(levelId);
+            if (string.IsNullOrWhiteSpace(sanitizedLevelId))
+            {
+                return false;
+            }
+
+            return MapManager.TryParseLevelNumber(sanitizedLevelId, out int levelNumber) &&
+                   levelNumber <= GetHighestUnlockedLevelNumber();
+        }
+
+        public void EnsureInitializedProgress(string fallbackLevelId = "Level_001")
+        {
+            LevelProgressSaveData data = Data;
+            string sanitizedFallback = string.IsNullOrWhiteSpace(fallbackLevelId)
+                ? "Level_001"
+                : LevelPathUtility.SanitizeLevelId(fallbackLevelId);
+
+            bool changed = false;
+            if (string.IsNullOrWhiteSpace(data.currentLevelId))
+            {
+                data.currentLevelId = sanitizedFallback;
+                changed = true;
+            }
+
+            if (!MapManager.TryParseLevelNumber(data.currentLevelId, out int currentLevelNumber))
+            {
+                data.currentLevelId = sanitizedFallback;
+                currentLevelNumber = 1;
+                changed = true;
+            }
+
+            if (data.highestUnlockedLevelNumber < currentLevelNumber)
+            {
+                data.highestUnlockedLevelNumber = currentLevelNumber;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                Save();
+            }
+        }
+
         public LevelProgressEntryData GetProgress(string levelId)
         {
             string sanitizedLevelId = LevelPathUtility.SanitizeLevelId(levelId);
@@ -87,6 +153,51 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager
             return changed;
         }
 
+        public bool RecordWinAndAdvance(string levelId, int reachedStars, int score)
+        {
+            string sanitizedLevelId = LevelPathUtility.SanitizeLevelId(levelId);
+            if (string.IsNullOrWhiteSpace(sanitizedLevelId))
+            {
+                return false;
+            }
+
+            EnsureInitializedProgress();
+
+            bool changed = RecordLevelResult(sanitizedLevelId, reachedStars, score);
+            LevelProgressSaveData data = Data;
+
+            if (!string.Equals(data.currentLevelId, sanitizedLevelId, StringComparison.OrdinalIgnoreCase))
+            {
+                return changed;
+            }
+
+            if (!MapManager.TryParseLevelNumber(sanitizedLevelId, out int currentLevelNumber))
+            {
+                return changed;
+            }
+
+            int nextLevelNumber = currentLevelNumber + 1;
+            string nextLevelId = BuildLevelIdFromTemplate(sanitizedLevelId, nextLevelNumber);
+            if (data.highestUnlockedLevelNumber < nextLevelNumber)
+            {
+                data.highestUnlockedLevelNumber = nextLevelNumber;
+                changed = true;
+            }
+
+            if (!string.Equals(data.currentLevelId, nextLevelId, StringComparison.OrdinalIgnoreCase))
+            {
+                data.currentLevelId = nextLevelId;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                Save();
+            }
+
+            return changed;
+        }
+
         public void Save()
         {
             Data.Sanitize();
@@ -120,6 +231,24 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager
             LevelProgressSaveData loaded = SaveSystem.Load<LevelProgressSaveData>(_saveKey) ?? new LevelProgressSaveData();
             loaded.Sanitize();
             return loaded;
+        }
+
+        private static string BuildLevelIdFromTemplate(string sourceLevelId, int targetLevelNumber)
+        {
+            if (string.IsNullOrWhiteSpace(sourceLevelId) || targetLevelNumber <= 0)
+            {
+                return "Level_001";
+            }
+
+            int separatorIndex = sourceLevelId.LastIndexOf('_');
+            if (separatorIndex >= 0 && separatorIndex < sourceLevelId.Length - 1)
+            {
+                string prefix = sourceLevelId.Substring(0, separatorIndex + 1);
+                int digitCount = sourceLevelId.Length - separatorIndex - 1;
+                return $"{prefix}{targetLevelNumber.ToString($"D{Math.Max(1, digitCount)}")}";
+            }
+
+            return $"Level_{targetLevelNumber:D3}";
         }
     }
 }

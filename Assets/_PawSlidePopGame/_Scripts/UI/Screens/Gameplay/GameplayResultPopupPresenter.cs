@@ -61,7 +61,7 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.Gameplay
                 return;
             }
 
-            LevelProgressRepository.Instance.RecordLevelResult(levelId, snapshot.reachedStars, snapshot.currentScore);
+            LevelProgressRepository.Instance.RecordWinAndAdvance(levelId, snapshot.reachedStars, snapshot.currentScore);
         }
     }
 }
