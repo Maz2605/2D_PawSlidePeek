@@ -2,6 +2,8 @@ using System;
 using DG.Tweening;
 using TMPro;
 using _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager;
+using _PawSlidePopGame._Scripts.UI.Manager;
+using _PawSlidePopGame._Scripts.UI.Popups;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -85,6 +87,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         private bool _initialized;
         private bool _isAnimating;
         private bool? _lastInfiniteState;
+        private bool? _lastButtonInteractableState;
 
         private Vector2 _amountBaseAnchoredPosition;
         private Vector3 _amountBaseScale;
@@ -118,6 +121,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         {
             CacheBaseState(force: false);
             RestoreBaseState();
+            _lastButtonInteractableState = null;
 
             HeartManager manager = GetHeartManager();
             if (subscribeHeartManager && manager != null)
@@ -137,6 +141,12 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                 _heartManager.OnHeartsChanged -= HandleHeartsChanged;
             }
 
+            if (addButton != null)
+            {
+                addButton.onClick.RemoveListener(HandleAddHeartsClicked);
+            }
+
+            _lastButtonInteractableState = null;
             _heartManager = null;
             KillAllTweens();
             RestoreBaseState();
@@ -166,6 +176,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             }
 
             UpdateStatusText(manager, isInfinite);
+            UpdateButtonState(manager);
         }
 
         #endregion
@@ -280,6 +291,18 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                 int minutes = (int)(secondsRemaining / 60);
                 int seconds = (int)(secondsRemaining % 60);
                 statusText.text = $"{minutes:00}:{seconds:00}";
+            }
+        }
+
+        private void UpdateButtonState(HeartManager manager)
+        {
+            if (addButton == null || manager == null) return;
+
+            bool canAdd = !manager.IsInfiniteHeartsActive && manager.Hearts < 5;
+            if (_lastButtonInteractableState == null || _lastButtonInteractableState.Value != canAdd)
+            {
+                _lastButtonInteractableState = canAdd;
+                addButton.interactable = canAdd;
             }
         }
 
@@ -516,6 +539,23 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         {
             RegisterShakeHandler(heartIcon);
             RegisterShakeHandler(infiniteHeartIcon);
+
+            if (addButton != null)
+            {
+                addButton.onClick.RemoveListener(HandleAddHeartsClicked);
+                addButton.onClick.AddListener(HandleAddHeartsClicked);
+            }
+        }
+
+        private void HandleAddHeartsClicked()
+        {
+            HeartManager manager = GetHeartManager();
+            if (manager == null) return;
+
+            if (!manager.IsInfiniteHeartsActive && manager.Hearts < 5)
+            {
+                UIManager.Instance?.ShowPopup<RefillHeartPopup>();
+            }
         }
 
         private void RegisterShakeHandler(Image icon)

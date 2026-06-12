@@ -27,5 +27,15 @@ namespace _PawSlidePopGame._Scripts.Utils.DevTest
         {
             GameAppFlowManager.Instance?.EnterMainMenu();
         }
+
+        public void ShowLevelBlockedPopup()
+        {
+            UIManager.Instance.ShowPopup<LevelLockedPopup>();
+        }
+
+        public void ShowHeartPopup()
+        {
+            UIManager.Instance.ShowPopup<RefillHeartPopup>();
+        }
     }
 }
