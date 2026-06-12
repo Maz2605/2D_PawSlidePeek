@@ -26,6 +26,9 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         [SerializeField] private float bounceDuration = 0.3f;
 
         public int BoundTileId { get; private set; }
+        public Sprite IconSprite => iconImage != null ? iconImage.sprite : null;
+        public Vector3 IconWorldPosition => iconImage != null ? iconImage.transform.position : transform.position;
+        public Vector2 IconSize => iconImage != null ? iconImage.rectTransform.sizeDelta : new Vector2(60f, 60f);
 
         private int _currentDisplayValue = -1;
         private Tween _textScaleTween;

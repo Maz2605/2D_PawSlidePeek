@@ -122,6 +122,10 @@ MonoBehaviour:
   clearScale: 0.75
   damagePunchScale: 0.1
   landingPunchScale: 0.08
+  slideEase: 9
+  slideOvershoot: 1.2
+  slideStretchAmount: 0.08
+  slideBounceDuration: 0.15
   openSprite: {fileID: 21300000, guid: d4e78773ba7ad42d88669851c1b4802d, type: 3}
   closedSprite: {fileID: 21300000, guid: 12a6850c4be504b8bb97c3ceeceac2b6, type: 3}
   enableIdleBlink: 1

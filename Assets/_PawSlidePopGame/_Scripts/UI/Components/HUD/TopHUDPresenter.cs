@@ -14,6 +14,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         [SerializeField] private TargetListView targetListView;
         [SerializeField] private LevelProgressView levelProgressView;
         [SerializeField] private CanvasGroup canvasGroup;
+        [SerializeField] private RectTransform flyContainer;
 
         private GameplayHudSnapshot _currentSnapshot;
 
@@ -63,6 +64,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             EventManager<VisualGameEvent>.AddListener<TargetProgressChangedPayload>(VisualGameEvent.TopHudTargetProgressFx, HandleTargetProgressFx);
             EventManager<VisualGameEvent>.AddListener<StarReachedPayload>(VisualGameEvent.TopHudStarReachedFx, HandleStarReachedFx);
             EventManager<VisualGameEvent>.AddListener(VisualGameEvent.TopHudTargetsCompletedFx, HandleTargetsCompletedFx);
+            EventManager<VisualGameEvent>.AddListener<TargetCollectedFxPayload>(VisualGameEvent.TopHudTargetCollectedFx, HandleTargetCollectedFx);
         }
         private void HandleHudSnapshot(GameplayHudSnapshot snapshot)
         {
@@ -87,6 +89,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             EventManager<VisualGameEvent>.RemoveListener<TargetProgressChangedPayload>(VisualGameEvent.TopHudTargetProgressFx, HandleTargetProgressFx);
             EventManager<VisualGameEvent>.RemoveListener<StarReachedPayload>(VisualGameEvent.TopHudStarReachedFx, HandleStarReachedFx);
             EventManager<VisualGameEvent>.RemoveListener(VisualGameEvent.TopHudTargetsCompletedFx, HandleTargetsCompletedFx);
+            EventManager<VisualGameEvent>.RemoveListener<TargetCollectedFxPayload>(VisualGameEvent.TopHudTargetCollectedFx, HandleTargetCollectedFx);
         }
 
         public void ResetView()
@@ -117,7 +120,82 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         private void HandleTargetProgressFx(TargetProgressChangedPayload payload)
         {
             UpdateSnapshotTargetProgress(payload);
-            targetListView?.PlayProgressFx(payload);
+            // targetListView?.PlayProgressFx(payload); // Trì hoãn cho đến khi clone bay tới đích
+        }
+
+        private void HandleTargetCollectedFx(TargetCollectedFxPayload payload)
+        {
+            if (targetListView == null)
+            {
+                return;
+            }
+
+            TargetItemView targetItem = targetListView.GetTargetItemView(payload.TileId);
+            if (targetItem == null)
+            {
+                return;
+            }
+
+            Canvas canvas = GetComponentInParent<Canvas>();
+            if (canvas == null)
+            {
+                return;
+            }
+
+            RectTransform flyRoot = flyContainer != null ? flyContainer : (transform as RectTransform);
+
+            // Tạo clone động
+            GameObject cloneObj = new GameObject("TargetCollectedClone", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+            cloneObj.transform.SetParent(flyRoot, false);
+
+            UnityEngine.UI.Image cloneImage = cloneObj.GetComponent<UnityEngine.UI.Image>();
+            cloneImage.sprite = targetItem.IconSprite;
+            cloneImage.raycastTarget = false;
+
+            RectTransform cloneRect = cloneObj.GetComponent<RectTransform>();
+            cloneRect.sizeDelta = targetItem.IconSize;
+
+            // Chuyển vị trí world của tile bị phá sang vị trí local của flyRoot
+            Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(Camera.main, payload.WorldPosition);
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                flyRoot,
+                screenPoint,
+                canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera,
+                out Vector2 startLocalPos);
+
+            cloneRect.anchoredPosition = startLocalPos;
+            cloneRect.localScale = Vector3.zero;
+
+            // Chuyển vị trí icon mục tiêu sang vị trí local của flyRoot
+            Vector3 targetWorldPos = targetItem.IconWorldPosition;
+            Vector3 targetLocalPos = flyRoot.InverseTransformPoint(targetWorldPos);
+
+            // Chạy hiệu ứng bay
+            Sequence seq = DOTween.Sequence().SetLink(cloneObj);
+
+            // Hiệu ứng Pop nhẹ
+            seq.Append(cloneRect.DOScale(1.3f, 0.22f).SetEase(Ease.OutBack));
+            seq.Join(cloneRect.DOBlendableLocalMoveBy(new Vector3(UnityEngine.Random.Range(-30f, 30f), UnityEngine.Random.Range(40f, 70f), 0f), 0.25f).SetEase(Ease.OutQuad));
+
+            // Bay tới mục tiêu trên HUD
+            seq.AppendInterval(0.04f);
+            seq.Append(cloneRect.DOLocalMove(targetLocalPos, 0.48f).SetEase(Ease.InQuad));
+            seq.Join(cloneRect.DOScale(0.85f, 0.48f).SetEase(Ease.InQuad));
+
+            seq.OnComplete(() =>
+            {
+                // Cập nhật số lượng và nảy mục tiêu trên HUD khi clone chạm tới
+                if (targetItem != null)
+                {
+                    targetItem.PlayProgressFx(new TargetProgressChangedPayload(
+                        payload.TileId,
+                        payload.PreviousCount,
+                        payload.CurrentCount,
+                        payload.RequiredCount,
+                        payload.JustCompleted));
+                }
+                Destroy(cloneObj);
+            });
         }
 
         private void HandleStarReachedFx(StarReachedPayload payload)

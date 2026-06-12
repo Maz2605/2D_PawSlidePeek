@@ -499,6 +499,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -166
       objectReference: {fileID: 0}
+    - target: {fileID: 1761854494921454214, guid: d4d3ad37f734dcd4f950452aab3bde06, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 468.59998
+      objectReference: {fileID: 0}
     - target: {fileID: 1959862319515442636, guid: d4d3ad37f734dcd4f950452aab3bde06, type: 3}
       propertyPath: m_AnchorMax.y
       value: 1
@@ -521,7 +525,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2271483723925056283, guid: d4d3ad37f734dcd4f950452aab3bde06, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -72.82002
+      value: -72.82013
       objectReference: {fileID: 0}
     - target: {fileID: 2573384290027391003, guid: d4d3ad37f734dcd4f950452aab3bde06, type: 3}
       propertyPath: m_Pivot.x
@@ -615,6 +619,10 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3884757489409173915, guid: d4d3ad37f734dcd4f950452aab3bde06, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -242.1836
+      objectReference: {fileID: 0}
     - target: {fileID: 4423263467457918338, guid: d4d3ad37f734dcd4f950452aab3bde06, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -694,6 +702,10 @@ PrefabInstance:
     - target: {fileID: 7034695687127776986, guid: d4d3ad37f734dcd4f950452aab3bde06, type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7091340991522958538, guid: d4d3ad37f734dcd4f950452aab3bde06, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -242.18372
       objectReference: {fileID: 0}
     - target: {fileID: 7450639052658021268, guid: d4d3ad37f734dcd4f950452aab3bde06, type: 3}
       propertyPath: m_AnchorMax.y
@@ -1099,7 +1111,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 109460, guid: c7eb5117ebaf24ec49365fd6986194ad, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 22470294, guid: c7eb5117ebaf24ec49365fd6986194ad, type: 3}
       propertyPath: m_Pivot.x
@@ -1990,6 +2002,7 @@ MonoBehaviour:
   boardView: {fileID: 1712751364}
   inputController: {fileID: 1005209132}
   boosterController: {fileID: 1639912537}
+  idleHintDelay: 10
 --- !u!1 &918496400
 GameObject:
   m_ObjectHideFlags: 0
@@ -2155,7 +2168,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 3.5916667, y: 3.5916667, z: 1}
+  m_LocalScale: {x: 3.7626286, y: 3.7626286, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1940441513}

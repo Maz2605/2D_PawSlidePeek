@@ -29,12 +29,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         private MoveAxis? _lockedAxis;
         private bool _isInputLocked;
         private BoardInputMode _inputMode = BoardInputMode.Normal;
+        private Coroutine _longPressCoroutine;
 
         public event Action<BoardMoveRequest> OnMoveRequested;
         public event Action<CellModel> OnTileTapped;
         public event Action<CellModel> OnPreviewStarted;
         public event Action<BoardLinePreview> OnPreviewUpdated;
         public event Action OnPreviewCleared;
+        public event Action<CellModel> OnLongPressStarted;
 
         public void Bind(Match3BoardView boardView)
         {
@@ -113,6 +115,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             if (_inputMode == BoardInputMode.Normal)
             {
                 OnPreviewStarted?.Invoke(_pressedCell);
+                StartLongPressDetection();
             }
         }
 
@@ -128,6 +131,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             {
                 return;
             }
+
+            StopLongPressDetection();
 
             if (_inputMode != BoardInputMode.Normal)
             {
@@ -146,6 +151,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
         private void HandleTouchEnd(Vector2 screenPosition)
         {
+            StopLongPressDetection();
+
             if (_isInputLocked || !_isTrackingDrag || _pressedCell == null)
             {
                 ClearPreviewAndResetGesture();
@@ -181,6 +188,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
         private void ResetGesture()
         {
+            StopLongPressDetection();
             _pressedCell = null;
             _isTrackingDrag = false;
             _lockedAxis = null;
@@ -188,6 +196,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
         private void ClearPreviewAndResetGesture()
         {
+            StopLongPressDetection();
             OnPreviewCleared?.Invoke();
             ResetGesture();
         }
@@ -200,6 +209,33 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             }
 
             OnTileTapped?.Invoke(_pressedCell);
+        }
+
+        private void StartLongPressDetection()
+        {
+            StopLongPressDetection();
+            if (gameObject.activeInHierarchy)
+            {
+                _longPressCoroutine = StartCoroutine(LongPressDelayRoutine());
+            }
+        }
+
+        private void StopLongPressDetection()
+        {
+            if (_longPressCoroutine != null)
+            {
+                StopCoroutine(_longPressCoroutine);
+                _longPressCoroutine = null;
+            }
+        }
+
+        private System.Collections.IEnumerator LongPressDelayRoutine()
+        {
+            yield return new WaitForSeconds(0.4f); // 0.4s holding triggers highlight
+            if (_pressedCell != null && _isTrackingDrag && !_lockedAxis.HasValue)
+            {
+                OnLongPressStarted?.Invoke(_pressedCell);
+            }
         }
     }
 }

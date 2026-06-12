@@ -51,6 +51,18 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             }
         }
 
+        public TargetItemView GetTargetItemView(int tileId)
+        {
+            for (int i = 0; i < _spawnedItems.Count; i++)
+            {
+                if (_spawnedItems[i] != null && _spawnedItems[i].gameObject.activeSelf && _spawnedItems[i].BoundTileId == tileId)
+                {
+                    return _spawnedItems[i];
+                }
+            }
+            return null;
+        }
+
         public void PlayProgressFx(TargetProgressChangedPayload payload)
         {
             for (int i = 0; i < _spawnedItems.Count; i++)
