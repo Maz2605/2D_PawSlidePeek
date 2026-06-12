@@ -139,6 +139,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             if (_tileViews.TryGetValue(cell.TopTile.InstanceId, out Match3TileView tileView) && tileView != null)
             {
                 tileView.SetShadowState(TileShadowState.Active);
+                tileView.SetSelectedScale(true);
                 _previewedTileIds.Add(cell.TopTile.InstanceId);
             }
         }
@@ -173,12 +174,15 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                     ? TileShadowState.Active
                     : TileShadowState.Preview;
                 tileView.SetShadowState(state);
+                tileView.SetSelectedScale(state == TileShadowState.Active);
                 _previewedTileIds.Add(tile.InstanceId);
             }
         }
 
         public void ClearPreview()
         {
+            DOTween.Kill("HintSequence");
+
             if (_previewedTileIds.Count == 0)
             {
                 return;
@@ -188,11 +192,151 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             {
                 if (_tileViews.TryGetValue(tileInstanceId, out Match3TileView tileView) && tileView != null)
                 {
-                    tileView.SetShadowState(TileShadowState.Off);
+                    // Kill hint tweens, reset visual states, restore bright state
+                    DOTween.Kill(tileView.transform, false);
+                    tileView.ResetVisualState();
+                    tileView.ApplyDimmedState(false);
+
+                    if (_board != null && tileView.Tile != null)
+                    {
+                        foreach (CellModel cell in _board.GetAllCells())
+                        {
+                            if (cell != null && cell.IsPlayable && (cell.Tile == tileView.Tile || cell.Overlay == tileView.Tile))
+                            {
+                                TileStackLayer layer = cell.Tile == tileView.Tile ? TileStackLayer.Base : TileStackLayer.Overlay;
+                                tileView.SnapToLocalPosition(GetTileLocalPosition(cell.X, cell.Y, layer));
+                                break;
+                            }
+                        }
+                    }
                 }
             }
 
             _previewedTileIds.Clear();
+        }
+
+        public void ShowRowColumnHighlight(CellModel cell)
+        {
+            ClearPreview();
+
+            if (cell == null || _board == null)
+            {
+                return;
+            }
+
+            HashSet<int> highlightTileIds = new HashSet<int>();
+
+            bool isRowMoveable = IsLineMoveable(MoveAxis.Row, cell.Y);
+            bool isColMoveable = IsLineMoveable(MoveAxis.Column, cell.X);
+
+            if (isRowMoveable)
+            {
+                List<CellModel> rowCells = _board.GetPlayableCellsInRow(cell.Y);
+                for (int i = 0; i < rowCells.Count; i++)
+                {
+                    TileModel tile = rowCells[i].TopTile;
+                    if (tile != null)
+                    {
+                        highlightTileIds.Add(tile.InstanceId);
+                    }
+                }
+            }
+
+            if (isColMoveable)
+            {
+                List<CellModel> colCells = _board.GetPlayableCellsInColumn(cell.X);
+                for (int i = 0; i < colCells.Count; i++)
+                {
+                    TileModel tile = colCells[i].TopTile;
+                    if (tile != null)
+                    {
+                        highlightTileIds.Add(tile.InstanceId);
+                    }
+                }
+            }
+
+            int focusedTileId = cell.TopTile != null ? cell.TopTile.InstanceId : -1;
+            if (focusedTileId != -1)
+            {
+                highlightTileIds.Add(focusedTileId);
+            }
+
+            foreach (KeyValuePair<int, Match3TileView> pair in _tileViews)
+            {
+                Match3TileView tileView = pair.Value;
+                if (tileView == null)
+                {
+                    continue;
+                }
+
+                int tileId = pair.Key;
+                bool isHighlighted = highlightTileIds.Contains(tileId);
+
+                if (isHighlighted)
+                {
+                    bool isFocused = tileId == focusedTileId;
+                    tileView.SetShadowState(isFocused ? TileShadowState.Active : TileShadowState.Preview);
+                    tileView.SetSelectedScale(isFocused);
+                    tileView.ApplyDimmedState(false);
+                }
+                else
+                {
+                    tileView.SetShadowState(TileShadowState.Off);
+                    tileView.SetSelectedScale(false);
+                    tileView.ApplyDimmedState(true);
+                }
+
+                _previewedTileIds.Add(tileId);
+            }
+        }
+
+        private bool IsLineMoveable(MoveAxis axis, int lineIndex)
+        {
+            if (_board == null)
+            {
+                return false;
+            }
+
+            List<CellModel> affectedCells = _board.GetPlayableCellsForMove(axis, lineIndex);
+            if (affectedCells.Count <= 1)
+            {
+                return false;
+            }
+
+            bool hasAnyMovableState = false;
+            for (int i = 0; i < affectedCells.Count; i++)
+            {
+                CellModel cell = affectedCells[i];
+                if (cell == null)
+                {
+                    continue;
+                }
+
+                if (cell.LocksLine(axis))
+                {
+                    return false;
+                }
+
+                if (cell.Tile != null)
+                {
+                    hasAnyMovableState = true;
+                    if (!cell.Tile.CanBeMoved())
+                    {
+                        return false;
+                    }
+                }
+
+                if (cell.Overlay != null)
+                {
+                    hasAnyMovableState = true;
+                    if (!cell.Overlay.CanBeMoved())
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return hasAnyMovableState;
         }
 
         public void HighlightHint(BoardMoveRequest hint)
@@ -203,10 +347,93 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 return;
             }
 
+            HashSet<int> hintTileIds = new HashSet<int>();
+
             if (hint.LineIndex >= 0)
             {
                 List<CellModel> cells = _board.GetPlayableCellsForMove(hint.Axis, hint.LineIndex);
-                HighlightCellTiles(cells, TileShadowState.Preview);
+                for (int i = 0; i < cells.Count; i++)
+                {
+                    TileModel tile = cells[i].Tile; // Chỉ lấy Base Tile
+                    if (tile != null)
+                    {
+                        hintTileIds.Add(tile.InstanceId);
+                    }
+                }
+            }
+            else if (hint.HasSource)
+            {
+                CellModel cell = _board.GetCell(hint.SourceX, hint.SourceY);
+                if (cell?.Tile != null)
+                {
+                    hintTileIds.Add(cell.Tile.InstanceId);
+                }
+            }
+
+            // Dim all tiles not in the hint, and highlight/scale up the hint tiles!
+            foreach (KeyValuePair<int, Match3TileView> pair in _tileViews)
+            {
+                Match3TileView tileView = pair.Value;
+                if (tileView == null)
+                {
+                    continue;
+                }
+
+                int tileId = pair.Key;
+                bool isHint = hintTileIds.Contains(tileId);
+
+                if (isHint)
+                {
+                    tileView.SetShadowState(TileShadowState.Active);
+                    tileView.SetSelectedScale(true);
+                    tileView.ApplyDimmedState(false);
+                }
+                else
+                {
+                    tileView.SetShadowState(TileShadowState.Off);
+                    tileView.SetSelectedScale(false);
+                    tileView.ApplyDimmedState(true);
+                }
+
+                _previewedTileIds.Add(tileId);
+            }
+
+            // Play nudge/wobble animation loop for the hint
+            if (hint.LineIndex >= 0)
+            {
+                List<CellModel> cells = _board.GetPlayableCellsForMove(hint.Axis, hint.LineIndex);
+                float nudgeAmount = 0.3f; // Slightly larger for better prominence
+                float duration = 0.22f; // Snappier
+                Vector3 directionOffset = Vector3.zero;
+
+                if (hint.Axis == MoveAxis.Row)
+                {
+                    float dir = hint.Direction == LineSlideDirection.Right ? 1f : -1f;
+                    directionOffset = new Vector3(dir * cellStepX * nudgeAmount, 0f, 0f);
+                }
+                else
+                {
+                    float dir = hint.Direction == LineSlideDirection.Up ? 1f : -1f;
+                    directionOffset = new Vector3(0f, dir * cellStepY * nudgeAmount, 0f);
+                }
+
+                for (int i = 0; i < cells.Count; i++)
+                {
+                    TileModel tile = cells[i].Tile; // Chỉ lấy Base Tile
+                    if (tile != null && _tileViews.TryGetValue(tile.InstanceId, out Match3TileView tileView) && tileView != null)
+                    {
+                        Vector3 normalPos = GetTileLocalPosition(cells[i].X, cells[i].Y, TileStackLayer.Base); // Luôn ở lớp Base
+                        
+                        // Repeat nudge periodically: move to offset, move back, wait 1.5s
+                        Sequence seq = DOTween.Sequence()
+                            .Append(tileView.transform.DOLocalMove(normalPos + directionOffset, duration).SetEase(Ease.OutQuad))
+                            .Append(tileView.transform.DOLocalMove(normalPos, duration).SetEase(Ease.InQuad))
+                            .AppendInterval(1.5f)
+                            .SetLoops(-1)
+                            .SetId("HintSequence")
+                            .SetLink(tileView.gameObject);
+                    }
+                }
             }
             else if (hint.HasSource)
             {
@@ -215,8 +442,13 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                     _tileViews.TryGetValue(cell.Tile.InstanceId, out Match3TileView tileView) &&
                     tileView != null)
                 {
-                    tileView.SetShadowState(TileShadowState.Active);
-                    _previewedTileIds.Add(cell.Tile.InstanceId);
+                    // Repeat wobble periodically: punch scale, wait 1.5s
+                    Sequence seq = DOTween.Sequence()
+                        .Append(tileView.transform.DOPunchScale(Vector3.one * 0.20f, 0.45f, 10, 1f))
+                        .AppendInterval(1.5f)
+                        .SetLoops(-1)
+                        .SetId("HintSequence")
+                        .SetLink(tileView.gameObject);
                 }
             }
         }
@@ -237,6 +469,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 tileView != null)
             {
                 tileView.SetShadowState(TileShadowState.Active);
+                tileView.SetSelectedScale(true);
                 _previewedTileIds.Add(sourceCell.Tile.InstanceId);
             }
         }
@@ -747,12 +980,16 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 }
 
                 Vector3 finalTarget = GetTileLocalPosition(op.ToCell.X, op.ToCell.Y, op.Layer);
-                Vector3 tweenTarget = op.IsWrapAround ? GetWrapExitPosition(op.FromCell, axis, direction) : finalTarget;
-                routines.Add(tileView.PlayMoveAsync(tweenTarget, duration));
 
                 if (op.IsWrapAround)
                 {
+                    // Ẩn ngay lập tức, không tween ra ngoài board
+                    tileView.HideForWrapExit();
                     wrapSnaps.Add(new WrapSnapData(tileView, finalTarget));
+                }
+                else
+                {
+                    routines.Add(tileView.PlayMoveAsync(finalTarget, duration));
                 }
             }
 
@@ -766,10 +1003,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 }
             }
 
+            // Snap về biên đối diện rồi hiện lại ngay
             for (int i = 0; i < wrapSnaps.Count; i++)
             {
                 wrapSnaps[i].TileView.SnapToLocalPosition(wrapSnaps[i].TargetLocalPosition);
                 wrapSnaps[i].TileView.SetShadowState(TileShadowState.Off);
+                wrapSnaps[i].TileView.ShowAfterWrapEntry();
             }
 
             if (phaseGap > 0f)
@@ -777,6 +1016,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 yield return new WaitForSeconds(phaseGap);
             }
         }
+
 
         private IEnumerator PlayLandings(IReadOnlyList<Match3TileView> tileViews, IReadOnlyList<TileTravelOp> ops)
         {
@@ -922,6 +1162,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 }
 
                 tileView.SetShadowState(state);
+                tileView.SetSelectedScale(state == TileShadowState.Active);
                 _previewedTileIds.Add(tile.InstanceId);
             }
         }

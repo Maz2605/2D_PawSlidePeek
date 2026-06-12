@@ -24,9 +24,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         private Coroutine _movePlaybackRoutine;
         private bool _isAnimatingMove;
 
+        [SerializeField] private float idleHintDelay = 15f;
         private float _idleTimer = 0f;
         private bool _isTrackingIdle = false;
-        private const float IdleHintDelay = 15f;
         private bool _hintShown = false;
 
         private void Awake()
@@ -74,6 +74,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 inputController.OnPreviewStarted += HandlePreviewStarted;
                 inputController.OnPreviewUpdated += HandlePreviewUpdated;
                 inputController.OnPreviewCleared += HandlePreviewCleared;
+                inputController.OnLongPressStarted += HandleLongPressStarted;
             }
 
             if (boosterController != null)
@@ -129,6 +130,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 inputController.OnPreviewStarted -= HandlePreviewStarted;
                 inputController.OnPreviewUpdated -= HandlePreviewUpdated;
                 inputController.OnPreviewCleared -= HandlePreviewCleared;
+                inputController.OnLongPressStarted -= HandleLongPressStarted;
             }
 
             if (boosterController != null)
@@ -183,7 +185,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             if (_isTrackingIdle && !_hintShown)
             {
                 _idleTimer += Time.deltaTime;
-                if (_idleTimer >= IdleHintDelay)
+                if (_idleTimer >= idleHintDelay)
                 {
                     ShowIdleHint();
                 }
@@ -412,6 +414,17 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             }
 
             boardView?.ClearPreview();
+        }
+
+        private void HandleLongPressStarted(CellModel cell)
+        {
+            ResetIdleTimer();
+            if (_isAnimatingMove)
+            {
+                return;
+            }
+
+            boardView?.ShowRowColumnHighlight(cell);
         }
 
         private void HandleTileActivatePlaybackStarted(TileActivateOp activateOp)

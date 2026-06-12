@@ -1091,7 +1091,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                     continue;
                 }
 
-                for (int step = 1; step < cells.Count; step++)
+                int[] steps = { 1, -1 };
+                foreach (int step in steps)
                 {
                     board.RotateTiles(cells, step);
                     Match.BoardMatchAnalysis analysis = matchRule.Analyze(board);
@@ -1114,7 +1115,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                     continue;
                 }
 
-                for (int step = 1; step < cells.Count; step++)
+                int[] steps = { 1, -1 };
+                foreach (int step in steps)
                 {
                     board.RotateTiles(cells, step);
                     Match.BoardMatchAnalysis analysis = matchRule.Analyze(board);
@@ -1138,12 +1140,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                 return null;
             }
 
+            List<BoardMoveRequest> candidates = new List<BoardMoveRequest>();
+
             // 0. Check for any activatable boosters on the board
             foreach (CellModel cell in board.GetAllCells())
             {
                 if (cell != null && cell.IsPlayable && cell.CanTileActivate() && cell.Tile != null && cell.Tile.TileKind == TileKind.Booster)
                 {
-                    return new BoardMoveRequest(MoveAxis.Row, -1, LineSlideDirection.Left, cell.X, cell.Y);
+                    candidates.Add(new BoardMoveRequest(MoveAxis.Row, -1, LineSlideDirection.Left, cell.X, cell.Y));
                 }
             }
 
@@ -1156,7 +1160,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                     continue;
                 }
 
-                for (int step = 1; step < cells.Count; step++)
+                int[] steps = { 1, -1 };
+                foreach (int step in steps)
                 {
                     board.RotateTiles(cells, step);
                     Match.BoardMatchAnalysis analysis = matchRule.Analyze(board);
@@ -1165,8 +1170,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
 
                     if (hasMatches)
                     {
-                        LineSlideDirection direction = step > 0 ? LineSlideDirection.Right : LineSlideDirection.Left;
-                        return new BoardMoveRequest(MoveAxis.Row, y, direction);
+                        LineSlideDirection direction = (step == 1) ? LineSlideDirection.Right : LineSlideDirection.Left;
+                        BoardMoveRequest req = new BoardMoveRequest(MoveAxis.Row, y, direction);
+                        if (!candidates.Contains(req))
+                        {
+                            candidates.Add(req);
+                        }
                     }
                 }
             }
@@ -1180,7 +1189,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
                     continue;
                 }
 
-                for (int step = 1; step < cells.Count; step++)
+                int[] steps = { 1, -1 };
+                foreach (int step in steps)
                 {
                     board.RotateTiles(cells, step);
                     Match.BoardMatchAnalysis analysis = matchRule.Analyze(board);
@@ -1189,10 +1199,20 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
 
                     if (hasMatches)
                     {
-                        LineSlideDirection direction = step > 0 ? LineSlideDirection.Down : LineSlideDirection.Up;
-                        return new BoardMoveRequest(MoveAxis.Column, x, direction);
+                        LineSlideDirection direction = (step == 1) ? LineSlideDirection.Down : LineSlideDirection.Up;
+                        BoardMoveRequest req = new BoardMoveRequest(MoveAxis.Column, x, direction);
+                        if (!candidates.Contains(req))
+                        {
+                            candidates.Add(req);
+                        }
                     }
                 }
+            }
+
+            if (candidates.Count > 0)
+            {
+                int index = UnityEngine.Random.Range(0, candidates.Count);
+                return candidates[index];
             }
 
             return null;

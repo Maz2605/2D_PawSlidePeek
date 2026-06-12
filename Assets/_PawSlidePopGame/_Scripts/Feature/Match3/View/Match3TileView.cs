@@ -36,16 +36,24 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         [SerializeField] private float damagePunchScale = 0.1f;
         [SerializeField] private float landingPunchScale = 0.08f;
 
+        [Header("Movement FX")]
+        [SerializeField] private Ease slideEase = Ease.OutCubic;
+        [SerializeField] private float slideOvershoot = 1.2f;
+        [SerializeField] private float slideStretchAmount = 0.08f;
+        [SerializeField] private float slideBounceDuration = 0.15f;
+
         private TileModel _tile;
         private BoardContentDefinitionSO _definition;
         private bool _isIdleEnabled;
         private Coroutine _blinkRoutine;
         private Tween _pulseTween;
         private Vector3 _initialScale;
+        private Vector3 _initialShadowScale = Vector3.one;
         private Quaternion _initialLocalRotation;
         private Color _bodyBaseColor = Color.white;
         private Color _shadowBaseColor = Color.white;
         private TileShadowState _shadowState;
+        private bool _isScaledUp;
 
         public int TileInstanceId => _tile != null ? _tile.InstanceId : 0;
         public TileModel Tile => _tile;
@@ -82,6 +90,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             if (shadowRenderer != null)
             {
                 _shadowBaseColor = shadowRenderer.color;
+                _initialShadowScale = shadowRenderer.transform.localScale;
             }
         }
 
@@ -212,6 +221,83 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             }
         }
 
+        public virtual void SetSelectedScale(bool isSelected)
+        {
+            if (isSelected)
+            {
+                if (!_isScaledUp)
+                {
+                    _isScaledUp = true;
+                    // Stop idle animations without clearing _isIdleEnabled flag
+                    StopBlinkLoop();
+                    KillPulseTween();
+
+                    // Scale up tile slightly (1.12x of _initialScale)
+                    transform.DOScale(_initialScale * 1.12f, 0.15f)
+                        .SetEase(Ease.OutBack)
+                        .SetLink(gameObject);
+
+                    // Scale up shadow to the same level/factor as the tile (1.12x of its initial scale)
+                    if (shadowRenderer != null)
+                    {
+                        shadowRenderer.transform.DOScale(_initialShadowScale * 1.12f, 0.15f)
+                            .SetEase(Ease.OutBack)
+                            .SetLink(shadowRenderer.gameObject);
+                    }
+                }
+            }
+            else
+            {
+                if (_isScaledUp)
+                {
+                    _isScaledUp = false;
+                    // Scale tile back to normal
+                    transform.DOScale(_initialScale, 0.15f)
+                        .SetEase(Ease.OutQuad)
+                        .SetLink(gameObject)
+                        .OnComplete(() =>
+                        {
+                            // Resume idle if still enabled on this tile
+                            if (_isIdleEnabled && !_isScaledUp)
+                            {
+                                StartIdleLoop();
+                            }
+                        });
+
+                    // Scale shadow back to normal
+                    if (shadowRenderer != null)
+                    {
+                        shadowRenderer.transform.DOScale(_initialShadowScale, 0.15f)
+                            .SetEase(Ease.OutQuad)
+                            .SetLink(shadowRenderer.gameObject);
+                    }
+                }
+            }
+        }
+
+        public void ApplyDimmedState(bool isDimmed)
+        {
+            if (bodyRenderer == null)
+            {
+                return;
+            }
+
+            DOTween.Kill(bodyRenderer, false);
+            if (isDimmed)
+            {
+                Color dimmedColor = new Color(_bodyBaseColor.r * 0.45f, _bodyBaseColor.g * 0.45f, _bodyBaseColor.b * 0.45f, _bodyBaseColor.a);
+                bodyRenderer.DOColor(dimmedColor, 0.15f)
+                    .SetEase(Ease.OutQuad)
+                    .SetLink(gameObject);
+            }
+            else
+            {
+                bodyRenderer.DOColor(_bodyBaseColor, 0.15f)
+                    .SetEase(Ease.OutQuad)
+                    .SetLink(gameObject);
+            }
+        }
+
         public virtual IEnumerator PlayClearAsync()
         {
             StopIdle();
@@ -254,13 +340,43 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             SetShadowState(TileShadowState.Active);
             KillMotionTweens();
 
-            Tween moveTween = transform
-                .DOLocalMove(targetLocalPosition, Mathf.Max(0.05f, duration))
-                .SetEase(Ease.InOutQuad)
-                .SetLink(gameObject);
+            float safeDuration = Mathf.Max(0.05f, duration);
 
-            yield return moveTween.WaitForCompletion();
+            // Lướt mượt với easing snappy - không scale để tránh tile tràn ra ngoài board
+            yield return transform
+                .DOLocalMove(targetLocalPosition, safeDuration)
+                .SetEase(Ease.OutCubic)
+                .SetLink(gameObject)
+                .WaitForCompletion();
         }
+
+        /// <summary>
+        /// Ẩn tile ngay lập tức khi bắt đầu wrap-around (không tween ra ngoài board).
+        /// </summary>
+        public void HideForWrapExit()
+        {
+            StopIdle();
+            KillMotionTweens();
+            SetShadowState(TileShadowState.Off);
+
+            if (bodyRenderer != null)
+            {
+                bodyRenderer.enabled = false;
+            }
+        }
+
+        /// <summary>
+        /// Hiện tile ngay lập tức sau khi đã snap về vị trí đúng ở biên đối diện.
+        /// </summary>
+        public void ShowAfterWrapEntry()
+        {
+            RestoreBodyColor();
+            if (bodyRenderer != null)
+            {
+                bodyRenderer.enabled = true;
+            }
+        }
+
 
         public virtual IEnumerator PlaySpawnFallAsync(Vector3 startLocalPosition, Vector3 targetLocalPosition, float duration)
         {
@@ -384,13 +500,18 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             SyncShadowSpriteIfNeeded();
         }
 
-        protected void ResetVisualState()
+        public void ResetVisualState()
         {
+            _isScaledUp = false;
             RestoreBodyColor();
             RestoreShadowColor();
             ApplyOpenSprite();
             transform.localRotation = _initialLocalRotation;
             transform.localScale = _initialScale;
+            if (shadowRenderer != null)
+            {
+                shadowRenderer.transform.localScale = _initialShadowScale;
+            }
             SetShadowState(TileShadowState.Off);
         }
 
@@ -426,6 +547,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             if (shadowRenderer != null)
             {
                 DOTween.Kill(shadowRenderer, false);
+                DOTween.Kill(shadowRenderer.transform, false);
             }
 
             _pulseTween = null;
