@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e7fc3fe51ccaa6149a9eb2b457958d1e, type: 3}
   m_Name: RefillHeartConfig
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager.RefillHeartConfigSO
-  refillPriceCoins: 150
+  refillPriceCoins: 999

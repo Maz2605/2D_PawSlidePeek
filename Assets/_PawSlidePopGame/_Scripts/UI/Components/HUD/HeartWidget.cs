@@ -131,7 +131,14 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                 SetAmount(manager.Hearts, animate: false);
             }
 
+            if (addButton != null)
+            {
+                addButton.onClick.RemoveListener(HandleAddHeartsClicked);
+                addButton.onClick.AddListener(HandleAddHeartsClicked);
+            }
+
             StartIdleAnimation();
+            UpdateButtonState(manager);
         }
 
         private void OnDisable()
@@ -201,10 +208,12 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                 _targetAmount = amount;
                 RefreshText();
                 _initialized = true;
+                UpdateButtonState(GetHeartManager());
                 return;
             }
 
             PlayAmountChanged(_displayedAmount, amount);
+            UpdateButtonState(GetHeartManager());
         }
 
         public void SetInputEnabled(bool enabled)
@@ -228,6 +237,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             }
 
             PlayAmountChanged(previousAmount, currentAmount);
+            UpdateButtonState(GetHeartManager());
         }
 
         private HeartManager GetHeartManager()
