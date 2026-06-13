@@ -195,10 +195,160 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 yield return StartCoroutine(boardView.PlayIntroAnimation());
             }
 
+            yield return StartCoroutine(PlayPreLevelBoostersIntroAnimation());
+
             _isAnimatingIntro = false;
             if (GameFlowManager.Instance != null)
             {
                 ApplyInputState(GameFlowManager.Instance.CurrentInGameSubState);
+            }
+        }
+
+        private System.Collections.IEnumerator PlayPreLevelBoostersIntroAnimation()
+        {
+            if (gameManager == null || gameManager.PreLevelBoosters == null || gameManager.PreLevelBoosters.Count == 0)
+            {
+                yield break;
+            }
+
+            TopHUDPresenter topHud = FindFirstObjectByType<TopHUDPresenter>(FindObjectsInactive.Include);
+            if (topHud == null)
+            {
+                yield break;
+            }
+
+            RectTransform flyRoot = topHud.FlyContainer;
+            Canvas canvas = flyRoot != null ? flyRoot.GetComponentInParent<Canvas>() : null;
+            if (canvas == null)
+            {
+                yield break;
+            }
+
+            MovesCounterView movesCounter = FindFirstObjectByType<MovesCounterView>(FindObjectsInactive.Include);
+            Vector3 movesTargetPosWorld = movesCounter != null ? movesCounter.transform.position : Vector3.zero;
+            Vector3 movesTargetPosLocal = Vector3.zero;
+            if (movesCounter != null)
+            {
+                movesTargetPosLocal = flyRoot.InverseTransformPoint(movesTargetPosWorld);
+            }
+
+            HashSet<CellModel> occupiedCells = new HashSet<CellModel>();
+
+            for (int i = 0; i < gameManager.PreLevelBoosters.Count; i++)
+            {
+                BoosterDefinitionSO definition = gameManager.PreLevelBoosters[i];
+                if (definition == null) continue;
+
+                Vector3 targetLocalPos = Vector3.zero;
+                CellModel targetCell = null;
+
+                if (definition.PreLevelEffectType == PreLevelBoosterEffectType.ExtraMoves)
+                {
+                    if (movesCounter == null) continue;
+                    targetLocalPos = movesTargetPosLocal;
+                }
+                else if (definition.PreLevelEffectType == PreLevelBoosterEffectType.PlaceStartingTile)
+                {
+                    targetCell = gameManager.FindStartingTileCell(occupiedCells);
+                    if (targetCell == null) continue;
+                    occupiedCells.Add(targetCell);
+
+                    Vector3 cellWorldPos = boardView.GetCellWorldPosition(targetCell.X, targetCell.Y);
+                    Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(Camera.main, cellWorldPos);
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                        flyRoot,
+                        screenPoint,
+                        canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera,
+                        out Vector2 localPos);
+                    targetLocalPos = localPos;
+                }
+                else
+                {
+                    continue;
+                }
+
+                // Create the fly icon UI object
+                GameObject flyObj = new GameObject("PreLevelBoosterFly", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+                flyObj.transform.SetParent(flyRoot, false);
+
+                UnityEngine.UI.Image image = flyObj.GetComponent<UnityEngine.UI.Image>();
+                image.sprite = definition.Icon;
+                image.raycastTarget = false;
+
+                RectTransform rectTransform = flyObj.GetComponent<RectTransform>();
+                rectTransform.sizeDelta = new Vector2(120f, 120f);
+
+                // Spawn at screen center in UI local space
+                Vector2 screenCenterLocal;
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    flyRoot,
+                    new Vector2(Screen.width * 0.5f, Screen.height * 0.5f),
+                    canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera,
+                    out screenCenterLocal);
+                rectTransform.anchoredPosition = screenCenterLocal;
+                rectTransform.localScale = Vector3.zero;
+
+                // Play Audio and pop up at center
+                EventManager<FeedbackEvent>.Post(FeedbackEvent.BoosterSelect);
+
+                bool reached = false;
+                Sequence seq = DOTween.Sequence().SetLink(flyObj);
+                seq.Append(rectTransform.DOScale(1.5f, 0.35f).SetEase(Ease.OutBack))
+                   .AppendInterval(0.3f)
+                   .Append(rectTransform.DOLocalMove(targetLocalPos, 0.55f).SetEase(Ease.InBack))
+                   .Join(rectTransform.DOScale(0.7f, 0.55f).SetEase(Ease.InQuad))
+                   .OnComplete(() => reached = true);
+
+                while (!reached)
+                {
+                    yield return null;
+                }
+
+                if (definition.PreLevelEffectType == PreLevelBoosterEffectType.ExtraMoves)
+                {
+                    int previousMoves = gameManager.Board.RemainingMoves;
+                    gameManager.Board.AddMoves(definition.ExtraMovesAmount);
+                    
+                    EventManager<FeedbackEvent>.Post(FeedbackEvent.MoveSuccess);
+
+                    EventManager<LogicGameEvent>.Post(
+                        LogicGameEvent.GameplayMovesChanged,
+                        new RemainingMovesChangedPayload(previousMoves, gameManager.Board.RemainingMoves));
+                    GameFlowManager.Instance?.ForcePublishHudState();
+                }
+                else if (definition.PreLevelEffectType == PreLevelBoosterEffectType.PlaceStartingTile)
+                {
+                    gameManager.PlaceStartingTileAt(targetCell, definition.StartingTileId);
+                    boardView.SyncToBoardState();
+
+                    // Find corresponding LogicType for feedback
+                    TileLogicType tileLogicType = TileLogicType.BombBooster;
+                    if (gameManager.TileDatabase != null)
+                    {
+                        var contentDef = gameManager.TileDatabase.GetContentDefinition(definition.StartingTileId);
+                        if (contentDef is TileDefinitionSO tileDef)
+                        {
+                            tileLogicType = tileDef.LogicType;
+                        }
+                    }
+
+                    EventManager<FeedbackEvent>.Post(FeedbackEvent.SpecialTileCreated, new SpecialTileFeedbackPayload(tileLogicType));
+
+                    TileModel tile = targetCell.Tile;
+                    if (tile != null)
+                    {
+                        Match3TileView tileView = boardView.GetTileView(tile.InstanceId);
+                        if (tileView != null)
+                        {
+                            tileView.transform.DOKill(true);
+                            tileView.transform.localScale = Vector3.zero;
+                            tileView.transform.DOScale(Vector3.one, 0.45f).SetEase(Ease.OutBack);
+                        }
+                    }
+                }
+
+                Destroy(flyObj);
+                yield return new WaitForSeconds(0.2f);
             }
         }
 

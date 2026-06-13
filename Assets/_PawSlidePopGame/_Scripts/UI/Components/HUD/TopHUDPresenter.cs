@@ -17,6 +17,8 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField] private RectTransform flyContainer;
 
+        public RectTransform FlyContainer => flyContainer != null ? flyContainer : (transform as RectTransform);
+
         private GameplayHudSnapshot _currentSnapshot;
         private Vector3 _originalLocalPos;
         private bool _hasOriginalLocalPos;

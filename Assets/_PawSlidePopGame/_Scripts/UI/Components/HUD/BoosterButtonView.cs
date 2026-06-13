@@ -20,6 +20,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         [SerializeField] private GameObject countNotifyRoot;
         [SerializeField] private GameObject priceRoot;
         [SerializeField] private TMP_Text priceText;
+        [SerializeField] private GameObject adRoot;
         [SerializeField] private GameObject checkboxRoot;
         [SerializeField] private Toggle checkboxToggle;
 
@@ -125,6 +126,14 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
             bool showCount = count > 0 || (_definition != null && _definition.IsUnlimitedForDev);
             bool showPrice = isUnlocked && !showCount;
+            bool showAd = false;
+
+            bool isPreLevel = _definition != null && _definition.UsagePhase == BoosterUsagePhase.PreLevel;
+            if (adRoot != null && showPrice && isPreLevel)
+            {
+                showPrice = false;
+                showAd = true;
+            }
 
             if (countNotifyRoot != null)
             {
@@ -144,6 +153,11 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             if (priceText != null && _definition != null)
             {
                 priceText.SetText(_definition.CoinPrice.ToString());
+            }
+
+            if (adRoot != null)
+            {
+                adRoot.SetActive(showAd);
             }
         }
 

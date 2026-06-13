@@ -35,6 +35,11 @@ namespace _PawSlidePopGame._Scripts.Services.Ads
 
         private void HandleRewardedAdCompleted(RewardedAdCompletedPayload payload)
         {
+            if (payload.placement == RewardedAdPlacement.FreeBooster)
+            {
+                return;
+            }
+
             if (placementCatalog == null)
             {
                 Debug.LogWarning("[RewardedAdRewardService] Missing placement catalog.", this);

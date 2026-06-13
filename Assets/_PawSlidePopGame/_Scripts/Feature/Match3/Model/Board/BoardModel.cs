@@ -158,14 +158,17 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
                 return;
             }
             TileModel[] baseSnapshot = new TileModel[cells.Count];
+            TileModel[] overlaySnapshot = new TileModel[cells.Count];
             for (int i = 0; i < cells.Count; i++)
             {
                 baseSnapshot[i] = cells[i].Tile;
+                overlaySnapshot[i] = cells[i].Overlay;
             }
             for (int i = 0; i < cells.Count; i++)
             {
                 int sourceIndex = (i - normalizedStep + cells.Count) % cells.Count;
                 cells[i].SetTile(baseSnapshot[sourceIndex]);
+                cells[i].SetOverlay(overlaySnapshot[sourceIndex]);
             }
         }
 

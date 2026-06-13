@@ -39,6 +39,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         public bool IsInitialized => _isInitialized;
         public System.Random Random => _random;
         public BoardRuleSet RuleSet => _ruleSet;
+        public IReadOnlyList<BoosterDefinitionSO> PreLevelBoosters => _preLevelBoosters;
 
         public event Action<BoardModel> OnBoardInitialized;
         public event Action<BoardMoveExecutionResult> OnMoveExecuted;
@@ -105,8 +106,6 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                     safetyCount--;
                 }
             }
-
-            ApplyPreLevelBoosters();
 
             _lastMoveResult = new BoardResolutionResult();
             _lastExecutionResult = new BoardMoveExecutionResult
@@ -184,6 +183,37 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             }
 
             return _lastExecutionResult;
+        }
+
+        public CellModel FindStartingTileCell(HashSet<CellModel> occupiedCells)
+        {
+            if (_board == null)
+            {
+                return null;
+            }
+
+            List<CellModel> candidates = CollectStartingTileCandidates(occupiedCells, requireNormalTile: true);
+            if (candidates.Count == 0)
+            {
+                candidates = CollectStartingTileCandidates(occupiedCells, requireNormalTile: false);
+            }
+
+            if (candidates.Count == 0)
+            {
+                return null;
+            }
+
+            int index = _random != null ? _random.Next(0, candidates.Count) : UnityEngine.Random.Range(0, candidates.Count);
+            return candidates[index];
+        }
+
+        public void PlaceStartingTileAt(CellModel cell, int tileId)
+        {
+            if (cell == null || tileId <= 0 || _board == null || tileDatabase == null)
+            {
+                return;
+            }
+            _board.SetTileFromDefinitionId(cell, tileId, tileDatabase);
         }
 
         private void ApplyPreLevelBoosters()

@@ -9,6 +9,10 @@ using _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager;
 using _PawSlidePopGame._Scripts.UI.Base;
 using _PawSlidePopGame._Scripts.UI.Components.HUD;
 using _PawSlidePopGame._Scripts.UI.Manager;
+using _PawSlidePopGame._Scripts.Data.Events;
+using _PawSlidePopGame._Scripts.Data.Events.Payloads;
+using _PawSlidePopGame._Scripts.Services.Ads;
+using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -60,6 +64,8 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
 
         private readonly HashSet<string> _selectedBoosterIds = new HashSet<string>();
         private BoosterButtonView[] _boosterViews;
+        private BoosterDefinitionSO _pendingAdBooster;
+        private bool _isAdShowing;
 
         // Tweens cache for casual animations
         private Tween _playBtnPulseTween;
@@ -99,6 +105,29 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
 
             // Fill target items
             PopulateTargets();
+        }
+
+        private void OnEnable()
+        {
+            EventManager<AdsGameEvent>.AddListener<RewardedAdCompletedPayload>(
+                AdsGameEvent.RewardedAdCompleted,
+                HandleRewardedAdCompleted);
+            EventManager<AdsGameEvent>.AddListener<RewardedAdFailedPayload>(
+                AdsGameEvent.RewardedAdFailed,
+                HandleRewardedAdFailed);
+        }
+
+        private void OnDisable()
+        {
+            EventManager<AdsGameEvent>.RemoveListener<RewardedAdCompletedPayload>(
+                AdsGameEvent.RewardedAdCompleted,
+                HandleRewardedAdCompleted);
+            EventManager<AdsGameEvent>.RemoveListener<RewardedAdFailedPayload>(
+                AdsGameEvent.RewardedAdFailed,
+                HandleRewardedAdFailed);
+
+            _pendingAdBooster = null;
+            _isAdShowing = false;
         }
 
         protected override void OnBeforeShow()
@@ -517,6 +546,7 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
         private void HandlePlayPressed()
         {
             List<BoosterDefinitionSO> selectedBoosters = GetSelectedPreLevelBoosters();
+
             if (!CanConsumeSelectedBoosters(selectedBoosters))
             {
                 return;
@@ -558,6 +588,22 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
                 return;
             }
 
+            int count = BoosterInventory.Instance != null ? BoosterInventory.Instance.GetCount(definition) : 0;
+            bool hasBooster = count > 0 || definition.IsUnlimitedForDev;
+
+            if (!hasBooster)
+            {
+                if (_isAdShowing) return;
+
+                _pendingAdBooster = definition;
+                _isAdShowing = true;
+
+                EventManager<AdsGameEvent>.Post(
+                    AdsGameEvent.RewardedAdRequested,
+                    new RewardedAdRequestPayload(RewardedAdPlacement.FreeBooster, definition.BoosterId));
+                return;
+            }
+
             if (_selectedBoosterIds.Contains(definition.BoosterId))
             {
                 _selectedBoosterIds.Remove(definition.BoosterId);
@@ -585,11 +631,12 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
                 if (view != null && view.Definition != null)
                 {
                     bool isUnlocked = view.Definition.IsUnlocked && view.Definition.UsagePhase == BoosterUsagePhase.PreLevel;
-                    bool showCheckbox = isUnlocked;
+                    int count = BoosterInventory.Instance != null ? BoosterInventory.Instance.GetCount(view.Definition) : 0;
+                    bool showCheckbox = isUnlocked && (count > 0 || view.Definition.IsUnlimitedForDev);
                     bool isSelected = _selectedBoosterIds.Contains(view.Definition.BoosterId);
                     view.SetCheckboxState(showCheckbox, isSelected, false);
 
-                    if (activeCount < 3)
+                    if (activeCount < 4)
                     {
                         view.gameObject.SetActive(true);
                         activeCount++;
@@ -619,6 +666,7 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
             {
                 BoosterButtonView view = _boosterViews[i];
                 BoosterDefinitionSO definition = view != null ? view.Definition : null;
+
                 if (definition == null ||
                     definition.UsagePhase != BoosterUsagePhase.PreLevel ||
                     !_selectedBoosterIds.Contains(definition.BoosterId))
@@ -790,6 +838,42 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
                         .SetEase(Ease.OutElastic)
                         .SetUpdate(true);
                 });
+        }
+
+        private void HandleRewardedAdCompleted(RewardedAdCompletedPayload payload)
+        {
+            if (payload.placement != RewardedAdPlacement.FreeBooster) return;
+
+            if (_pendingAdBooster == null || payload.context != _pendingAdBooster.BoosterId) return;
+
+            if (BoosterInventory.Instance != null)
+            {
+                BoosterInventory.Instance.AddBooster(_pendingAdBooster, 1, "rewarded_ad_pre_level");
+            }
+
+            _selectedBoosterIds.Add(_pendingAdBooster.BoosterId);
+            UIManager.Instance?.ShowToast($"Earned 1 {_pendingAdBooster.DisplayName}!");
+
+            _isAdShowing = false;
+            _pendingAdBooster = null;
+
+            RefreshBoosterCheckboxes();
+            if (boosterWidget != null)
+            {
+                boosterWidget.RefreshAll();
+            }
+        }
+
+        private void HandleRewardedAdFailed(RewardedAdFailedPayload payload)
+        {
+            if (payload.placement != RewardedAdPlacement.FreeBooster) return;
+
+            if (_pendingAdBooster == null || payload.context != _pendingAdBooster.BoosterId) return;
+
+            UIManager.Instance?.ShowToast("Failed to watch ad. Please try again.");
+
+            _isAdShowing = false;
+            _pendingAdBooster = null;
         }
 
         private void OnDestroy()

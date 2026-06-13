@@ -126,6 +126,15 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             return cell != null && cell.IsPlayable ? cell : null;
         }
 
+        public Match3TileView GetTileView(int tileInstanceId)
+        {
+            if (_tileViews.TryGetValue(tileInstanceId, out Match3TileView tileView))
+            {
+                return tileView;
+            }
+            return null;
+        }
+
         public void SetIdleEnabled(bool isEnabled)
         {
             _isIdleEnabled = isEnabled;
