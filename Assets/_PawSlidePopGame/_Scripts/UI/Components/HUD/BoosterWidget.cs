@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using _PawSlidePopGame._Scripts.Feature.Match3.Boosters;
 using _PawSlidePopGame._Scripts.Gameplay.Meta.Inventory;
 using UnityEngine;
+using UnityEngine.UI;
+using DG.Tweening;
 
 namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 {
@@ -59,6 +61,12 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         public void Rebuild()
         {
+            var boosterLayout = GetComponentInChildren<HorizontalOrVerticalLayoutGroup>(true);
+            if (boosterLayout != null)
+            {
+                boosterLayout.enabled = true;
+            }
+
             ClearManagedState();
 
             if (contentRoot == null)
@@ -280,6 +288,68 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             interactionMode = mode;
             Subscribe();
             RefreshAll();
+        }
+
+        public void PlayIntroAnimation()
+        {
+            Rebuild();
+
+            var boosterLayout = GetComponentInChildren<HorizontalOrVerticalLayoutGroup>(true);
+            if (boosterLayout != null)
+            {
+                boosterLayout.enabled = true;
+                LayoutRebuilder.ForceRebuildLayoutImmediate(boosterLayout.transform as RectTransform);
+            }
+
+            float delayStep = 0.12f;
+            float duration = 0.5f;
+
+            List<Vector2> targetPositions = new List<Vector2>(_managedViews.Count);
+            for (int i = 0; i < _managedViews.Count; i++)
+            {
+                BoosterButtonView view = _managedViews[i];
+                if (view != null)
+                {
+                    RectTransform rt = view.transform as RectTransform;
+                    targetPositions.Add(rt != null ? rt.anchoredPosition : Vector2.zero);
+                }
+                else
+                {
+                    targetPositions.Add(Vector2.zero);
+                }
+            }
+
+            if (boosterLayout != null)
+            {
+                boosterLayout.enabled = false;
+            }
+
+            for (int i = 0; i < _managedViews.Count; i++)
+            {
+                BoosterButtonView view = _managedViews[i];
+                if (view == null)
+                {
+                    continue;
+                }
+
+                RectTransform rt = view.transform as RectTransform;
+                if (rt == null)
+                {
+                    continue;
+                }
+
+                rt.DOKill();
+                view.transform.localScale = Vector3.one;
+
+                Vector2 targetPos = targetPositions[i];
+                rt.anchoredPosition = targetPos - new Vector2(0f, 150f);
+
+                float delay = i * delayStep;
+                rt.DOAnchorPos(targetPos, duration)
+                    .SetEase(Ease.OutBack)
+                    .SetDelay(delay)
+                    .SetLink(view.gameObject);
+            }
         }
 
         private void ResolveBoosterController()

@@ -23,6 +23,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
         private Coroutine _movePlaybackRoutine;
         private bool _isAnimatingMove;
+        private bool _isAnimatingIntro;
+        private bool _isBoardBound;
 
         [SerializeField] private float idleHintDelay = 15f;
         private float _idleTimer = 0f;
@@ -151,21 +153,42 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
         private void HandleBoardInitialized(BoardModel board)
         {
-            if (boardView == null || gameManager == null)
+            if (boardView == null || gameManager == null || _isBoardBound)
             {
                 return;
             }
 
+            _isBoardBound = true;
             boardView.Bind(board, gameManager.LevelData, gameManager.TileDatabase);
 
             if (inputController != null)
             {
                 inputController.Bind(boardView);
             }
+
+            StartCoroutine(PlayIntroAnimationRoutine());
+        }
+
+        private System.Collections.IEnumerator PlayIntroAnimationRoutine()
+        {
+            _isAnimatingIntro = true;
+            ApplyInputState(GameFlowManager.Instance != null ? GameFlowManager.Instance.CurrentInGameSubState : InGameSubState.PreparingBoard);
+
+            if (boardView != null)
+            {
+                yield return StartCoroutine(boardView.PlayIntroAnimation());
+            }
+
+            _isAnimatingIntro = false;
+            if (GameFlowManager.Instance != null)
+            {
+                ApplyInputState(GameFlowManager.Instance.CurrentInGameSubState);
+            }
         }
 
         public void ResetPresentation()
         {
+            _isBoardBound = false;
             if (_movePlaybackRoutine != null)
             {
                 StopCoroutine(_movePlaybackRoutine);
@@ -466,8 +489,18 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             ApplyInputState(payload.Current);
         }
 
+
+
         private void ApplyInputState(InGameSubState subState)
         {
+            if (_isAnimatingIntro)
+            {
+                inputController?.SetInputMode(Match3InputController.BoardInputMode.Disabled);
+                boardView?.SetIdleEnabled(false);
+                boardView?.ClearPreview();
+                return;
+            }
+
             Match3InputController.BoardInputMode inputMode = Match3InputController.BoardInputMode.Disabled;
             bool idleEnabled = false;
 

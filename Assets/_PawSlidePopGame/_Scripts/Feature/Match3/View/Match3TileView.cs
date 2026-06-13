@@ -116,7 +116,6 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
         public void OnSpawn()
         {
-            CacheInitialTransformState();
             ResetVisualState();
         }
 
@@ -482,6 +481,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         {
             KillMotionTweens();
         }
+
+
 
         protected void ApplyOpenSprite()
         {

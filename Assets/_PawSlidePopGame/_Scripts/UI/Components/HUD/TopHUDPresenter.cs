@@ -17,6 +17,8 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         [SerializeField] private RectTransform flyContainer;
 
         private GameplayHudSnapshot _currentSnapshot;
+        private Vector3 _originalLocalPos;
+        private bool _hasOriginalLocalPos;
 
         private void Awake()
         {
@@ -29,6 +31,16 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                 }
             }
 
+            CacheOriginalPosition();
+        }
+
+        private void CacheOriginalPosition()
+        {
+            if (!_hasOriginalLocalPos)
+            {
+                _originalLocalPos = transform.localPosition;
+                _hasOriginalLocalPos = true;
+            }
         }
 
         private void OnValidate()
@@ -56,7 +68,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         private void OnEnable()
         {
-            EventManager<LogicGameEvent>.AddListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudInitialized, HandleHudSnapshot);
+            EventManager<LogicGameEvent>.AddListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudInitialized, HandleHudInitialized);
             EventManager<LogicGameEvent>.AddListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudStateChanged, HandleHudSnapshot);
             EventManager<LogicGameEvent>.AddListener<RemainingMovesChangedPayload>(LogicGameEvent.GameplayMovesChanged, HandleMovesChanged);
             EventManager<LogicGameEvent>.AddListener<ScoreChangedPayload>(LogicGameEvent.GameplayScoreChanged, HandleScoreChanged);
@@ -66,6 +78,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             EventManager<VisualGameEvent>.AddListener(VisualGameEvent.TopHudTargetsCompletedFx, HandleTargetsCompletedFx);
             EventManager<VisualGameEvent>.AddListener<TargetCollectedFxPayload>(VisualGameEvent.TopHudTargetCollectedFx, HandleTargetCollectedFx);
         }
+
         private void HandleHudSnapshot(GameplayHudSnapshot snapshot)
         {
             if (snapshot == null)
@@ -81,7 +94,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         private void OnDisable()
         {
-            EventManager<LogicGameEvent>.RemoveListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudInitialized, HandleHudSnapshot);
+            EventManager<LogicGameEvent>.RemoveListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudInitialized, HandleHudInitialized);
             EventManager<LogicGameEvent>.RemoveListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudStateChanged, HandleHudSnapshot);
             EventManager<LogicGameEvent>.RemoveListener<RemainingMovesChangedPayload>(LogicGameEvent.GameplayMovesChanged, HandleMovesChanged);
             EventManager<LogicGameEvent>.RemoveListener<ScoreChangedPayload>(LogicGameEvent.GameplayScoreChanged, HandleScoreChanged);
@@ -96,6 +109,12 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         {
             _currentSnapshot = null;
 
+            if (_hasOriginalLocalPos)
+            {
+                transform.DOKill();
+                transform.localPosition = _originalLocalPos;
+            }
+
             if (canvasGroup != null)
             {
                 canvasGroup.DOKill();
@@ -105,6 +124,22 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             movesCounterView?.ResetView();
             targetListView?.ResetView();
             levelProgressView?.ResetView();
+        }
+
+        private void HandleHudInitialized(GameplayHudSnapshot snapshot)
+        {
+            HandleHudSnapshot(snapshot);
+            PlayIntroAnimation();
+        }
+
+        public void PlayIntroAnimation()
+        {
+            CacheOriginalPosition();
+            transform.DOKill();
+            transform.localPosition = _originalLocalPos + new Vector3(0f, 400f, 0f);
+            transform.DOLocalMove(_originalLocalPos, 0.8f)
+                .SetEase(Ease.OutBack)
+                .SetLink(gameObject);
         }
 
         

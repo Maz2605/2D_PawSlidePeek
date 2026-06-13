@@ -4,6 +4,7 @@ using _PawSlidePopGame._Scripts.Data.Events.Payloads;
 using _PawSlidePopGame._Scripts.Feature.Match3.Flow;
 using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
 using UnityEngine;
+using DG.Tweening;
 
 namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 {
@@ -12,9 +13,22 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         [SerializeField] private ChargedAbilityView chargedAbilityView;
         private bool _inputEnabled = true;
 
+        private Vector3 _originalLocalPos;
+        private bool _hasOriginalLocalPos;
+
         private void Awake()
         {
             EnsureView();
+            CacheOriginalPosition();
+        }
+
+        private void CacheOriginalPosition()
+        {
+            if (!_hasOriginalLocalPos)
+            {
+                _originalLocalPos = transform.localPosition;
+                _hasOriginalLocalPos = true;
+            }
         }
 
         private void OnValidate()
@@ -27,7 +41,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         private void OnEnable()
         {
-            EventManager<LogicGameEvent>.AddListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudInitialized, HandleHudSnapshot);
+            EventManager<LogicGameEvent>.AddListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudInitialized, HandleHudInitialized);
             EventManager<LogicGameEvent>.AddListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudStateChanged, HandleHudSnapshot);
             EventManager<LogicGameEvent>.AddListener<InGameSubStateChangedPayload>(
                 LogicGameEvent.InGameSubStateChanged,
@@ -45,7 +59,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         private void OnDisable()
         {
-            EventManager<LogicGameEvent>.RemoveListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudInitialized, HandleHudSnapshot);
+            EventManager<LogicGameEvent>.RemoveListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudInitialized, HandleHudInitialized);
             EventManager<LogicGameEvent>.RemoveListener<GameplayHudSnapshot>(LogicGameEvent.GameplayHudStateChanged, HandleHudSnapshot);
             EventManager<LogicGameEvent>.RemoveListener<InGameSubStateChangedPayload>(
                 LogicGameEvent.InGameSubStateChanged,
@@ -61,6 +75,13 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         public void ResetView()
         {
             _inputEnabled = true;
+
+            if (_hasOriginalLocalPos)
+            {
+                transform.DOKill();
+                transform.localPosition = _originalLocalPos;
+            }
+
             chargedAbilityView?.ResetView();
         }
 
@@ -89,6 +110,28 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         {
             _inputEnabled = enabled;
             chargedAbilityView?.SetInputEnabled(enabled);
+        }
+
+        private void HandleHudInitialized(GameplayHudSnapshot snapshot)
+        {
+            HandleHudSnapshot(snapshot);
+            PlayIntroAnimation();
+        }
+
+        public void PlayIntroAnimation()
+        {
+            CacheOriginalPosition();
+            transform.DOKill();
+            transform.localPosition = _originalLocalPos - new Vector3(0f, 400f, 0f);
+            transform.DOLocalMove(_originalLocalPos, 0.8f)
+                .SetEase(Ease.OutBack)
+                .SetLink(gameObject);
+
+            BoosterWidget boosterWidget = GetComponentInChildren<BoosterWidget>(true);
+            if (boosterWidget != null)
+            {
+                boosterWidget.PlayIntroAnimation();
+            }
         }
 
         private void EnsureView()

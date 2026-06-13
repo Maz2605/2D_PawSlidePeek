@@ -34,6 +34,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         [SerializeField] private float phaseGap = 0.04f;
         [SerializeField] private int spawnableTilePrewarmReserve = 2;
 
+        [Header("Intro/Outro Timing")]
+        [SerializeField] private float introDuration = 0.9f;
+
         private readonly Dictionary<CellModel, Match3CellView> _cellViews = new Dictionary<CellModel, Match3CellView>();
         private readonly Dictionary<int, Match3TileView> _tileViews = new Dictionary<int, Match3TileView>();
         private readonly HashSet<int> _previewedTileIds = new HashSet<int>();
@@ -594,6 +597,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             }
 
             SyncToBoardState();
+            PrepareNormalTilesForIntro();
         }
 
         private void ClearCells()
@@ -1375,6 +1379,85 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                    scoreGainOp.TileInstanceId == specialCreateOp.SourceTileInstanceId &&
                    scoreGainOp.Cell.Equals(specialCreateOp.Cell);
         }
+
+        public void PrepareNormalTilesForIntro()
+        {
+            if (_board == null)
+            {
+                return;
+            }
+
+            foreach (CellModel cell in _board.GetAllCells())
+            {
+                if (cell == null || !cell.IsPlayable || cell.Tile == null || cell.Tile.TileKind != TileKind.Normal)
+                {
+                    continue;
+                }
+
+                if (_tileViews.TryGetValue(cell.Tile.InstanceId, out Match3TileView tileView) && tileView != null)
+                {
+                    Vector3 startPos = GetTileLocalPosition(cell.X, -3, TileStackLayer.Base);
+                    tileView.SnapToLocalPosition(startPos);
+                    tileView.transform.localScale = Vector3.zero;
+                    tileView.SetShadowState(TileShadowState.Off);
+                }
+            }
+        }
+
+        public IEnumerator PlayIntroAnimation()
+        {
+            if (_board == null)
+            {
+                yield break;
+            }
+
+            List<IEnumerator> routines = new List<IEnumerator>();
+            float maxStagger = introDuration * 0.4f;
+            float rowDelay = _board.Height > 1 ? maxStagger / (_board.Height - 1) : 0f;
+            float singleTileDuration = introDuration * 0.6f;
+
+            foreach (CellModel cell in _board.GetAllCells())
+            {
+                if (cell == null || !cell.IsPlayable || cell.Tile == null || cell.Tile.TileKind != TileKind.Normal)
+                {
+                    continue;
+                }
+
+                if (_tileViews.TryGetValue(cell.Tile.InstanceId, out Match3TileView tileView) && tileView != null)
+                {
+                    Vector3 targetPos = GetTileLocalPosition(cell, TileStackLayer.Base);
+                    Vector3 startPos = GetTileLocalPosition(cell.X, -3, TileStackLayer.Base);
+
+                    float delay = (_board.Height - 1 - cell.Y) * rowDelay;
+
+                    routines.Add(PlayIntroTileFall(tileView, startPos, targetPos, delay, singleTileDuration));
+                }
+            }
+
+            yield return StartCoroutine(RunParallel(routines));
+            SyncToBoardState();
+        }
+
+        private IEnumerator PlayIntroTileFall(Match3TileView tileView, Vector3 startPos, Vector3 targetPos, float delay, float duration)
+        {
+            tileView.SnapToLocalPosition(startPos);
+            tileView.transform.localScale = Vector3.zero;
+            tileView.SetShadowState(TileShadowState.Off);
+            tileView.SetIdleEnabled(false);
+
+            if (delay > 0f)
+            {
+                yield return new WaitForSeconds(delay);
+            }
+
+            yield return StartCoroutine(tileView.PlaySpawnFallAsync(startPos, targetPos, duration * 0.7f));
+            yield return StartCoroutine(tileView.PlayLandAsync(0.6f));
+
+            tileView.ResetVisualState();
+            tileView.SetIdleEnabled(_isIdleEnabled);
+        }
+
+
 
         private void OnValidate()
         {
