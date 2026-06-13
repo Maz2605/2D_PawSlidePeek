@@ -36,6 +36,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
         [Header("Intro/Outro Timing")]
         [SerializeField] private float introDuration = 0.9f;
+        [SerializeField] private float loseOutroDuration = 0.8f;
+        [SerializeField] private float loseOutroDelayBeforePopup = 1.8f;
+
+        public float LoseOutroDelayBeforePopup => loseOutroDelayBeforePopup;
 
         private readonly Dictionary<CellModel, Match3CellView> _cellViews = new Dictionary<CellModel, Match3CellView>();
         private readonly Dictionary<int, Match3TileView> _tileViews = new Dictionary<int, Match3TileView>();
@@ -1457,7 +1461,66 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             tileView.SetIdleEnabled(_isIdleEnabled);
         }
 
+        public IEnumerator PlayLoseOutro()
+        {
+            if (_board == null)
+            {
+                yield break;
+            }
 
+            List<IEnumerator> routines = new List<IEnumerator>();
+            float centerX = _board.Width / 2f;
+            float centerY = _board.Height / 2f;
+
+            foreach (CellModel cell in _board.GetAllCells())
+            {
+                if (cell == null || !cell.IsPlayable)
+                {
+                    continue;
+                }
+
+                float distance = Mathf.Sqrt((cell.X - centerX) * (cell.X - centerX) + (cell.Y - centerY) * (cell.Y - centerY));
+                float delay = distance * 0.08f;
+
+                if (cell.Tile != null && _tileViews.TryGetValue(cell.Tile.InstanceId, out Match3TileView tileView) && tileView != null)
+                {
+                    routines.Add(PlaySadTileOutro(tileView, delay, loseOutroDuration));
+                }
+
+                if (cell.Overlay != null && _tileViews.TryGetValue(cell.Overlay.InstanceId, out Match3TileView overlayView) && overlayView != null)
+                {
+                    routines.Add(PlaySadTileOutro(overlayView, delay, loseOutroDuration));
+                }
+            }
+
+            yield return StartCoroutine(RunParallel(routines));
+            ClearTileViews();
+        }
+
+        private IEnumerator PlaySadTileOutro(Match3TileView tileView, float delay, float duration)
+        {
+            if (delay > 0f)
+            {
+                yield return new WaitForSeconds(delay);
+            }
+
+            tileView.SetShadowState(TileShadowState.Off);
+            tileView.SetIdleEnabled(false);
+            tileView.ForceEyesClosed(true);
+
+            float shiverDuration = duration * 0.5f;
+            float fadeDuration = duration * 0.5f;
+
+            tileView.transform.DOShakePosition(shiverDuration, 0.12f, 20, 90f, false, true);
+            tileView.ApplyDimmedState(true);
+
+            yield return new WaitForSeconds(shiverDuration);
+
+            Sequence seq = DOTween.Sequence().SetLink(tileView.gameObject);
+            seq.Join(tileView.transform.DOScale(Vector3.zero, fadeDuration).SetEase(Ease.InBack));
+
+            yield return seq.WaitForCompletion();
+        }
 
         private void OnValidate()
         {

@@ -482,7 +482,24 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             KillMotionTweens();
         }
 
+        public void ForceEyesClosed(bool closed)
+        {
+            if (bodyRenderer == null)
+            {
+                return;
+            }
 
+            if (closed && ClosedSprite != null)
+            {
+                StopBlinkLoop();
+                bodyRenderer.sprite = ClosedSprite;
+                SyncShadowSpriteIfNeeded();
+            }
+            else
+            {
+                ApplyOpenSprite();
+            }
+        }
 
         protected void ApplyOpenSprite()
         {

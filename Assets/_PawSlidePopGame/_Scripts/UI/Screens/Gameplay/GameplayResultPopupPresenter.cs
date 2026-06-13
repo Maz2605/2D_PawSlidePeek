@@ -3,6 +3,7 @@ using _PawSlidePopGame._Scripts.Core.Vibration;
 using _PawSlidePopGame._Scripts.Data.Events;
 using _PawSlidePopGame._Scripts.Data.Events.Payloads;
 using _PawSlidePopGame._Scripts.Feature.Match3.Flow;
+using _PawSlidePopGame._Scripts.Feature.Match3.View;
 using _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager;
 using _PawSlidePopGame._Scripts.UI.Manager;
 using _PawSlidePopGame._Scripts.UI.Popups;
@@ -48,8 +49,25 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.Gameplay
                 return;
             }
 
+            float delay = 1.8f;
+            var boardView = FindFirstObjectByType<Match3BoardView>(FindObjectsInactive.Include);
+            if (boardView != null)
+            {
+                delay = boardView.LoseOutroDelayBeforePopup;
+            }
+
+            StartCoroutine(ShowLosePopupDelayed(resolvedSnapshot, delay));
+        }
+
+        private System.Collections.IEnumerator ShowLosePopupDelayed(GameplayHudSnapshot snapshot, float delay)
+        {
+            if (delay > 0f)
+            {
+                yield return new WaitForSeconds(delay);
+            }
+
             UIManager.Instance?.ShowPopup<LosePopup>(
-                popup => popup.SetSnapshot(resolvedSnapshot));
+                popup => popup.SetSnapshot(snapshot));
         }
 
         private static void RecordLevelProgress(GameplayHudSnapshot snapshot)

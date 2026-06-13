@@ -487,9 +487,27 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         private void HandleSubStateChanged(InGameSubStateChangedPayload payload)
         {
             ApplyInputState(payload.Current);
+
+            if (payload.Current == InGameSubState.Defeat)
+            {
+                StartCoroutine(PlayDefeatOutroRoutine());
+            }
         }
 
+        private System.Collections.IEnumerator PlayDefeatOutroRoutine()
+        {
+            _isAnimatingMove = true;
+            inputController?.SetInputLocked(true);
+            boardView?.SetIdleEnabled(false);
+            boardView?.ClearPreview();
 
+            if (boardView != null)
+            {
+                yield return StartCoroutine(boardView.PlayLoseOutro());
+            }
+
+            _isAnimatingMove = false;
+        }
 
         private void ApplyInputState(InGameSubState subState)
         {
