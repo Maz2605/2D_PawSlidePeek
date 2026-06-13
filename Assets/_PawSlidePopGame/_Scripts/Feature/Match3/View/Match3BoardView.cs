@@ -50,6 +50,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         private Match3LevelData _levelData;
         private Match3TileDatabaseSO _tileDatabase;
         private bool _isIdleEnabled = true;
+        private _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Model.LevelEditorCellArtCatalogSO _cellArtCatalog;
 
         public event Action<TileActivateOp> OnTileActivatePlaybackStarted;
         public event Action<TileClearOp, Vector3> OnTileClearPlaybackStarted;
@@ -61,6 +62,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             _board = board;
             _levelData = levelData;
             _tileDatabase = tileDatabase;
+            if (_cellArtCatalog == null)
+            {
+                _cellArtCatalog = Resources.Load<_PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Model.LevelEditorCellArtCatalogSO>("LevelEditor/LevelEditorCellArtCatalog");
+            }
             Rebuild();
         }
 
@@ -716,18 +721,52 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             Transform parent = cellRoot != null ? cellRoot : transform;
             Vector3 localPosition = GetLocalPosition(cell.X, cell.Y);
 
+            Match3CellView cellView;
             if (Application.isPlaying)
             {
-                return _cellViewFactory.CreateVisual(
+                cellView = _cellViewFactory.CreateVisual(
                     new CellViewSpawnData(cellPrefab, cell, localPosition, $"Cell_{cell.X}_{cell.Y}"),
                     parent);
             }
+            else
+            {
+                cellView = Instantiate(cellPrefab, parent);
+                cellView.name = $"Cell_{cell.X}_{cell.Y}";
+                cellView.transform.localPosition = localPosition;
+                cellView.Initialize(cell);
+            }
 
-            Match3CellView cellView = Instantiate(cellPrefab, parent);
-            cellView.name = $"Cell_{cell.X}_{cell.Y}";
-            cellView.transform.localPosition = localPosition;
-            cellView.Initialize(cell);
+            if (cellView != null)
+            {
+                int cellArtId = 0;
+                if (_levelData != null && _levelData.cellArtLayout != null)
+                {
+                    int index = (cell.Y * _levelData.width) + cell.X;
+                    if (index >= 0 && index < _levelData.cellArtLayout.Length)
+                    {
+                        cellArtId = _levelData.cellArtLayout[index];
+                    }
+                }
+
+                Sprite cellArtSprite = ResolveCellArt(cellArtId);
+                if (cellView.FallbackRenderer != null && cellArtSprite != null)
+                {
+                    cellView.FallbackRenderer.sprite = cellArtSprite;
+                }
+            }
+
             return cellView;
+        }
+
+        private Sprite ResolveCellArt(int cellArtId)
+        {
+            if (_cellArtCatalog == null || cellArtId <= 0)
+            {
+                return null;
+            }
+
+            var entry = _cellArtCatalog.GetEntry(cellArtId);
+            return entry != null ? entry.Sprite : null;
         }
 
         private void PrewarmBoardPools()

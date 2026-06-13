@@ -655,10 +655,13 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
 
                 for (int clearIndex = 0; clearIndex < clearOps.Count; clearIndex++)
                 {
-                    TileDefinitionSO definition = tileDatabase.GetTileDefinition(clearOps[clearIndex].TileId);
-                    if (definition != null && definition.LogicType == TileLogicType.ChocolateOverlay)
+                    BoardContentDefinitionSO definition = tileDatabase.GetContentDefinition(clearOps[clearIndex].TileId);
+                    if (definition != null)
                     {
-                        return true;
+                        if (definition is ChocolateOverlayDefinitionSO || (definition is TileDefinitionSO tileDef && tileDef.LogicType == TileLogicType.ChocolateOverlay))
+                        {
+                            return true;
+                        }
                     }
                 }
             }

@@ -5,6 +5,7 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Model
         ItemNormal = 0,
         ItemSpecial = 1,
         Overlay = 2,
-        Underlay = 3
+        Underlay = 3,
+        CellArt = 4
     }
 }

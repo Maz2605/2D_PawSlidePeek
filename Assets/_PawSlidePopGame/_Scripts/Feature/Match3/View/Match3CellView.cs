@@ -10,6 +10,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         [SerializeField] private Transform overlayTileAnchor;
         [SerializeField] private SpriteRenderer fallbackRenderer;
 
+        private Sprite _initialSprite;
         private Quaternion _initialLocalRotation;
         private Vector3 _initialLocalScale;
 
@@ -62,6 +63,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             _initialLocalRotation = transform.localRotation;
             _initialLocalScale = transform.localScale;
 
+            if (fallbackRenderer != null && _initialSprite == null)
+            {
+                _initialSprite = fallbackRenderer.sprite;
+            }
+
             if (tileAnchor == null)
             {
                 tileAnchor = transform;
@@ -78,6 +84,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             transform.localPosition = Vector3.zero;
             transform.localRotation = _initialLocalRotation;
             transform.localScale = _initialLocalScale;
+            if (fallbackRenderer != null)
+            {
+                fallbackRenderer.sprite = _initialSprite;
+            }
         }
     }
 }

@@ -116,39 +116,51 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
         {
             _activeSectionType = sectionType;
 
-            int topSiblingIndex = 0;
+            // First, collapse all other sections
             for (int i = 0; i < sectionBindings.Length; i++)
             {
                 PopupSectionBinding binding = sectionBindings[i];
-                if (binding?.controller == null || !_originalSiblingIndices.ContainsKey(binding.sectionType))
+                if (binding?.controller == null)
                 {
                     continue;
                 }
 
-                int siblingIndex = binding.controller.GetSiblingIndex();
-                if (siblingIndex > topSiblingIndex)
+                if (binding.sectionType != sectionType)
                 {
-                    topSiblingIndex = siblingIndex;
+                    binding.controller.PlayCollapse();
                 }
             }
 
+            // Assign lower sibling indices to non-active sections to clear the way
+            int index = 0;
             for (int i = 0; i < sectionBindings.Length; i++)
             {
                 PopupSectionBinding binding = sectionBindings[i];
-                if (binding?.controller == null || !_originalSiblingIndices.TryGetValue(binding.sectionType, out int originalSiblingIndex))
+                if (binding?.controller == null)
+                {
+                    continue;
+                }
+
+                if (binding.sectionType != sectionType)
+                {
+                    binding.controller.SetSiblingIndex(index++);
+                }
+            }
+
+            // Put the active section on top (highest sibling index) and expand it
+            for (int i = 0; i < sectionBindings.Length; i++)
+            {
+                PopupSectionBinding binding = sectionBindings[i];
+                if (binding?.controller == null)
                 {
                     continue;
                 }
 
                 if (binding.sectionType == sectionType)
                 {
-                    binding.controller.SetSiblingIndex(topSiblingIndex);
+                    binding.controller.SetSiblingIndex(99);
                     binding.controller.PlayExpand();
-                    continue;
                 }
-
-                binding.controller.SetSiblingIndex(originalSiblingIndex);
-                binding.controller.PlayCollapse();
             }
         }
 

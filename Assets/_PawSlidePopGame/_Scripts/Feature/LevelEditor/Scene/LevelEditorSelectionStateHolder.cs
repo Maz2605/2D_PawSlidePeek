@@ -9,6 +9,7 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Scene
         [SerializeField] private int selectedUnderlayId;
         [SerializeField] private int selectedTileId = 101;
         [SerializeField] private int selectedOverlayId = 301;
+        [SerializeField] private int selectedCellArtId = 1;
         [SerializeField] private LevelEditorPaletteSectionType activeSectionType = LevelEditorPaletteSectionType.ItemNormal;
         [SerializeField] private bool hasSelectedCell;
         [SerializeField] private int selectedX;
@@ -35,9 +36,15 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Scene
         public bool HasSelectedCell => hasSelectedCell;
         public int SelectedX => selectedX;
         public int SelectedY => selectedY;
+        public int SelectedCellArtId
+        {
+            get => selectedCellArtId;
+            set => selectedCellArtId = Mathf.Max(0, value);
+        }
         public LevelEditorCoordinate SelectedCoordinate => new LevelEditorCoordinate(selectedX, selectedY);
         public LevelEditorPaletteSectionType ActiveSectionType => activeSectionType;
         public BoardLayer ActiveBoardLayer => ResolveBoardLayer(activeSectionType);
+        public bool IsCellArtSectionActive => activeSectionType == LevelEditorPaletteSectionType.CellArt;
 
         public void SetSelectedCoordinate(int x, int y)
         {
@@ -58,11 +65,12 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Scene
             selectedUnderlayId = 0;
             selectedTileId = 0;
             selectedOverlayId = 0;
+            selectedCellArtId = 0;
         }
 
         public bool HasAnySelectedLayer()
         {
-            return selectedUnderlayId > 0 || selectedTileId > 0 || selectedOverlayId > 0;
+            return selectedUnderlayId > 0 || selectedTileId > 0 || selectedOverlayId > 0 || selectedCellArtId > 0;
         }
 
         public void SetSelectedLayer(BoardLayer layer, int contentId)
@@ -88,6 +96,11 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Scene
 
         public int GetSelectedContentIdForActiveLayer()
         {
+            if (IsCellArtSectionActive)
+            {
+                return selectedCellArtId;
+            }
+
             switch (ActiveBoardLayer)
             {
                 case BoardLayer.Underlay:
@@ -108,6 +121,7 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Scene
                 case LevelEditorPaletteSectionType.Overlay:
                     return BoardLayer.Overlay;
                 case LevelEditorPaletteSectionType.Underlay:
+                case LevelEditorPaletteSectionType.CellArt:
                     return BoardLayer.Underlay;
                 case LevelEditorPaletteSectionType.ItemNormal:
                 case LevelEditorPaletteSectionType.ItemSpecial:

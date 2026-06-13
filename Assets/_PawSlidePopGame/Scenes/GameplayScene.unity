@@ -2247,7 +2247,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eada39d446d444e0945e88a0b1e41a27, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Utils.UI.StandaloneBackgroundFitter
-  portraitSprite: {fileID: 21300000, guid: f393883ec2bc749038b64ab38da12ded, type: 3}
+  portraitSprite: {fileID: 21300000, guid: 69bfdffa0f8184fb09438e99875f71e8, type: 3}
   landscapeSprite: {fileID: 21300000, guid: 7b83a66c6167441b3a1b7124915c50d6, type: 3}
 --- !u!1 &966292136
 GameObject:

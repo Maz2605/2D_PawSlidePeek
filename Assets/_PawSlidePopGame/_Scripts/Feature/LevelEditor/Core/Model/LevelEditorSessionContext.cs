@@ -11,6 +11,7 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Model
         public int displayLevelNumber = 1;
         public int movesLimit = 26;
         public LevelEditorBoardState board = new LevelEditorBoardState();
+        public int[] cellArtLayout = Array.Empty<int>();
         public List<int> spawnableTileIds = new List<int>();
         public bool isDirty;
         public string statusMessage = string.Empty;
@@ -26,6 +27,7 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Model
                 displayLevelNumber = displayLevelNumber,
                 movesLimit = movesLimit,
                 board = board != null ? board.Clone() : new LevelEditorBoardState(),
+                cellArtLayout = cellArtLayout != null ? (int[])cellArtLayout.Clone() : Array.Empty<int>(),
                 spawnableTileIds = new List<int>(spawnableTileIds),
                 isDirty = isDirty,
                 statusMessage = statusMessage,

@@ -43,6 +43,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
         public int[] underlayLayout;
         public int[] tileLayout;
         public int[] overlayLayout;
+        public int[] cellArtLayout;
         public bool[] playableMask;
         public List<int> spawnableTileIds = new List<int>();
         public List<LevelTargetData> targets = new List<LevelTargetData>();
@@ -68,6 +69,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
         public bool HasValidOverlayLayout()
         {
             return overlayLayout != null && overlayLayout.Length == CellCount;
+        }
+
+        public bool HasValidCellArtLayout()
+        {
+            return cellArtLayout != null && cellArtLayout.Length == CellCount;
         }
 
         public bool HasPlayableMask()

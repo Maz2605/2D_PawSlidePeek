@@ -221,6 +221,23 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Tests.Editor
         }
 
         [Test]
+        public void PaintCell_OnlyWritesCellArt_WhenCellArtSectionActive()
+        {
+            _service.NewLevel("Level_Editor_Test", 12, 3, 3, 18);
+            _service.SetSelectedSectionLayer(LevelEditorPaletteSectionType.ItemNormal, 101);
+            _service.PaintCell(1, 1);
+
+            _service.SetSelectedSectionLayer(LevelEditorPaletteSectionType.CellArt, 3);
+            _service.PaintCell(1, 1);
+
+            var cell = _service.Session.board.GetCell(1, 1);
+            Assert.That(cell.TileId, Is.EqualTo(101));
+            Assert.That(cell.OverlayId, Is.EqualTo(0));
+            Assert.That(cell.UnderlayId, Is.EqualTo(0));
+            Assert.That(_service.GetCellArtId(1, 1), Is.EqualTo(3));
+        }
+
+        [Test]
         public void EraseCell_OnlyClearsActiveLayer_WithRightClickEquivalent()
         {
             _service.NewLevel("Level_Editor_Test", 12, 3, 3, 18);
@@ -239,7 +256,7 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Tests.Editor
         }
 
         [Test]
-        public void EraseCell_DisablesPlayableOnlyWhenCellBecomesEmpty()
+        public void EraseCell_KeepsPlayableWhenCellBecomesEmpty()
         {
             _service.NewLevel("Level_Editor_Test", 12, 3, 3, 18);
             _service.SetSelectedSectionLayer(LevelEditorPaletteSectionType.ItemNormal, 101);
@@ -257,7 +274,42 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Tests.Editor
             Assert.That(cell.TileId, Is.EqualTo(0));
             Assert.That(cell.OverlayId, Is.EqualTo(0));
             Assert.That(cell.UnderlayId, Is.EqualTo(0));
-            Assert.That(cell.Playable, Is.False);
+            Assert.That(cell.Playable, Is.True);
+        }
+
+        [Test]
+        public void ResizeBoard_PreservesCellArtWithinOverlap()
+        {
+            _service.NewLevel("Level_Editor_Test", 12, 4, 4, 18);
+            _service.SetSelectedSectionLayer(LevelEditorPaletteSectionType.CellArt, 2);
+            _service.PaintCell(1, 1);
+            _service.PaintCell(3, 3);
+
+            _service.ResizeBoard(2, 2);
+
+            Assert.That(_service.GetCellArtId(1, 1), Is.EqualTo(2));
+            Assert.That(_service.Session.board.width, Is.EqualTo(2));
+            Assert.That(_service.Session.board.height, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void SaveLevel_PersistsCellArtIntoGameplayDocument()
+        {
+            _service.NewLevel("Level_Editor_Test", 12, 2, 2, 18);
+            _service.SetSelectedSectionLayer(LevelEditorPaletteSectionType.ItemNormal, 101);
+            _service.PaintCell(0, 0);
+            _service.AddGoalWithTile(105, 1);
+            _service.SetSelectedSectionLayer(LevelEditorPaletteSectionType.CellArt, 1);
+            _service.PaintCell(0, 0);
+
+            var saveResult = _service.SaveLevel();
+            Assert.That(saveResult.success, Is.True, saveResult.message);
+            Assert.That(saveResult.document.levelData.tileLayout[0], Is.EqualTo(101));
+            Assert.That(saveResult.document.levelData.cellArtLayout[0], Is.EqualTo(1));
+
+            var loadResult = _service.LoadLevel("Level_Editor_Test");
+            Assert.That(loadResult.success, Is.True, loadResult.message);
+            Assert.That(_service.GetCellArtId(0, 0), Is.EqualTo(1));
         }
 
     }

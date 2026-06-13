@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using _PawSlidePopGame._Scripts.Data.LevelProvider;
 using _PawSlidePopGame._Scripts.Feature.LevelEditor.UI;
+using _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Model;
 
 namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI.Panels
 {
@@ -19,6 +20,7 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI.Panels
         [SerializeField] private LevelEditorLevelSelectorWidget levelSelectorWidget;
         [SerializeField] private LevelEditorValidationStatusWidget validationStatusWidget;
         [SerializeField] private LevelEditorTargetWidget targetWidget;
+        [SerializeField] private TMP_Dropdown viewModeDropdown;
 
         private LevelEditorUIController _service;
         private string _lastSyncedSessionLevelId;
@@ -35,6 +37,22 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI.Panels
             levelSelectorWidget?.Bind();
             _lastSyncedSessionLevelId = _service?.Session?.levelId;
             targetWidget?.Bind(service);
+
+            if (viewModeDropdown != null)
+            {
+                viewModeDropdown.onValueChanged.RemoveListener(HandleViewModeChanged);
+                viewModeDropdown.ClearOptions();
+                var options = new System.Collections.Generic.List<TMP_Dropdown.OptionData>
+                {
+                    new TMP_Dropdown.OptionData("Show All"),
+                    new TMP_Dropdown.OptionData("Normal"),
+                    new TMP_Dropdown.OptionData("Overlay"),
+                    new TMP_Dropdown.OptionData("Underlay")
+                };
+                viewModeDropdown.options = options;
+                viewModeDropdown.value = (int)_service.ViewMode;
+                viewModeDropdown.onValueChanged.AddListener(HandleViewModeChanged);
+            }
         }
 
         public void Refresh()
@@ -59,9 +77,22 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI.Panels
                 heightInput.SetTextWithoutNotify(_service.Session.board.height.ToString());
             }
 
+            if (viewModeDropdown != null && _service != null)
+            {
+                viewModeDropdown.SetValueWithoutNotify((int)_service.ViewMode);
+            }
+
             SyncLevelSelectorIfSessionChanged();
             validationStatusWidget?.Refresh(_service.Session.lastValidationResult);
             targetWidget?.Refresh();
+        }
+
+        private void HandleViewModeChanged(int val)
+        {
+            if (_service != null)
+            {
+                _service.ViewMode = (LevelEditorViewMode)val;
+            }
         }
 
         private void ApplyBoardSizeFromInputs()

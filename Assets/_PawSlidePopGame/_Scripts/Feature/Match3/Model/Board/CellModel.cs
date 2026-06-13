@@ -94,7 +94,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Board
 
         public bool CanAcceptOverlay()
         {
-            return Tile != null && Overlay == null;
+            return Overlay == null;
         }
 
         public bool HasBlockingOverlay()

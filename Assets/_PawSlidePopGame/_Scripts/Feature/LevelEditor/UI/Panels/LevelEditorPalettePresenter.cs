@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine.InputSystem;
 using _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Model;
 using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
@@ -10,6 +11,7 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI.Panels
 {
     public sealed class LevelEditorPalettePresenter : MonoBehaviour
     {
+        [SerializeField] private LevelEditorPaletteSectionController cellArtSection;
         [SerializeField] private LevelEditorPaletteSectionController itemNormalSection;
         [SerializeField] private LevelEditorPaletteSectionController itemSpecialSection;
         [SerializeField] private LevelEditorPaletteSectionController overlaySection;
@@ -24,6 +26,7 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI.Panels
         public void Bind(LevelEditorUIController service)
         {
             _service = service;
+            EnsureCellArtSection();
             CacheSections();
             ConfigureSections();
             _service?.SetActiveSection(_activeSection);
@@ -36,6 +39,11 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI.Panels
             {
                 return;
             }
+
+            cellArtSection?.SetEntries(
+                _service.GetCellArtEntries(),
+                _service.Selection != null ? _service.Selection.SelectedCellArtId : 0,
+                id => _service.SetSelectedSectionLayer(LevelEditorPaletteSectionType.CellArt, id));
 
             itemNormalSection?.SetEntries(
                 _service.GetPaletteEntries(LevelEditorPaletteSectionType.ItemNormal),
@@ -92,10 +100,17 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI.Panels
             {
                 ToggleSection(LevelEditorPaletteSectionType.Underlay);
             }
+            else if (keyboard.digit5Key.wasPressedThisFrame)
+            {
+                ToggleSection(LevelEditorPaletteSectionType.CellArt);
+            }
         }
 
         private void ConfigureSections()
         {
+            cellArtSection?.ConfigureTitleAndShortcut("Cell Art", "5");
+            cellArtSection?.BindToggle(() => ToggleSection(LevelEditorPaletteSectionType.CellArt));
+
             itemNormalSection?.ConfigureTitleAndShortcut("Normal Tiles", "1");
             itemNormalSection?.BindToggle(() => ToggleSection(LevelEditorPaletteSectionType.ItemNormal));
 
@@ -132,6 +147,7 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI.Panels
         private void ApplySectionVisibility(bool instant)
         {
             ApplySectionSorting();
+            UpdateSectionVisibility(cellArtSection, LevelEditorPaletteSectionType.CellArt, instant);
             UpdateSectionVisibility(itemNormalSection, LevelEditorPaletteSectionType.ItemNormal, instant);
             UpdateSectionVisibility(itemSpecialSection, LevelEditorPaletteSectionType.ItemSpecial, instant);
             UpdateSectionVisibility(overlaySection, LevelEditorPaletteSectionType.Overlay, instant);
@@ -172,13 +188,16 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI.Panels
 
         private void CacheSections()
         {
-            _sections = new[]
+            List<LevelEditorPaletteSectionController> sections = new List<LevelEditorPaletteSectionController>
             {
+                cellArtSection,
                 itemNormalSection,
                 itemSpecialSection,
                 overlaySection,
                 underlaySection
             };
+
+            _sections = sections.ToArray();
 
             _initialSiblingIndices = new int[_sections.Length];
             for (int i = 0; i < _sections.Length; i++)
@@ -262,9 +281,23 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI.Panels
                     return overlaySection;
                 case LevelEditorPaletteSectionType.Underlay:
                     return underlaySection;
+                case LevelEditorPaletteSectionType.CellArt:
+                    return cellArtSection;
                 default:
                     return null;
             }
+        }
+
+        private void EnsureCellArtSection()
+        {
+            if (cellArtSection != null || underlaySection == null)
+            {
+                return;
+            }
+
+            cellArtSection = Instantiate(underlaySection, underlaySection.transform.parent);
+            cellArtSection.name = "CellArtSectionRuntime";
+            cellArtSection.transform.SetAsLastSibling();
         }
 
         private static bool IsTypingIntoInputField()

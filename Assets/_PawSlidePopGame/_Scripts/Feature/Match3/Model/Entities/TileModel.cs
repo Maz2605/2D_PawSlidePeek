@@ -19,7 +19,29 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities
         public int TileId => Definition.TileId;
         public virtual BoardLayer Layer => Definition.ContentLayer;
         public TileKind TileKind => Definition is TileDefinitionSO tileDefinition ? tileDefinition.TileKind : TileKind.Normal;
-        public TileLogicType LogicType => Definition is TileDefinitionSO tileDefinition ? tileDefinition.LogicType : TileLogicType.None;
+        public TileLogicType LogicType
+        {
+            get
+            {
+                if (Definition is TileDefinitionSO tileDefinition)
+                {
+                    return tileDefinition.LogicType;
+                }
+                if (Definition is OverlayDefinitionSO overlayDefinition)
+                {
+                    switch (overlayDefinition.LogicType)
+                    {
+                        case OverlayLogicType.Ice:
+                            return TileLogicType.IceOverlay;
+                        case OverlayLogicType.Bubble:
+                            return TileLogicType.BubbleOverlay;
+                        case OverlayLogicType.Chocolate:
+                            return TileLogicType.ChocolateOverlay;
+                    }
+                }
+                return TileLogicType.None;
+            }
+        }
         public bool IsDead => CurrentHP <= 0;
 
         protected ITileLogic TileLogic => Logic as ITileLogic;

@@ -61,5 +61,54 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Tests.Editor
                 CollectionAssert.Contains(new[] { 101, 102 }, cell.Tile.TileId);
             }
         }
+
+        [Test]
+        public void BoardPopulate_RetainsOverlay_OnPlayableEmptyCells()
+        {
+            Match3TileDatabaseSO database = AssetDatabase.LoadAssetAtPath<Match3TileDatabaseSO>("Assets/_PawSlidePopGame/_Data/Tiles/Database.asset");
+            Match3LevelData levelData = new Match3LevelData
+            {
+                levelID = "Level_Overlay_EmptyCell_Test",
+                width = 3,
+                height = 3,
+                movesLimit = 20,
+                tileLayout = new[]
+                {
+                    101, 0, 0,
+                    0, 0, 0,
+                    0, 0, 0
+                },
+                underlayLayout = new int[9],
+                overlayLayout = new[]
+                {
+                    0, 301, 0,
+                    0, 0, 0,
+                    0, 0, 0
+                },
+                playableMask = new[]
+                {
+                    true, true, true,
+                    true, true, true,
+                    true, true, true
+                },
+                spawnableTileIds = new List<int> { 101, 102 }
+            };
+
+            BoardModel board = new BoardModel(levelData);
+            board.PopulateBoard(levelData.underlayLayout, levelData.tileLayout, levelData.overlayLayout, database);
+
+            // Verify the overlay at cell (1, 0) was NOT cleared during population even though the cell had no base tile.
+            CellModel cellWithOverlay = board.GetCell(1, 0);
+            Assert.That(cellWithOverlay.Overlay, Is.Not.Null);
+            Assert.That(cellWithOverlay.Overlay.TileId, Is.EqualTo(301));
+            Assert.That(cellWithOverlay.Tile, Is.Null);
+
+            // Verify refill successfully adds a tile under the overlay
+            int spawned = BoardRefillService.Apply(board, levelData, database, new Random(12));
+            Assert.That(spawned, Is.EqualTo(8));
+            Assert.That(cellWithOverlay.Tile, Is.Not.Null);
+            Assert.That(cellWithOverlay.Overlay, Is.Not.Null);
+            Assert.That(cellWithOverlay.Overlay.TileId, Is.EqualTo(301));
+        }
     }
 }

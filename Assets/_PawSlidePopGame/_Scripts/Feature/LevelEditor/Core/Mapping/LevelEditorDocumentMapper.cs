@@ -22,6 +22,7 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Mapping
                 displayLevelNumber = displayLevelNumber > 0 ? displayLevelNumber : 1,
                 movesLimit = movesLimit > 0 ? movesLimit : 1,
                 board = board,
+                cellArtLayout = new int[board.CellCount],
                 spawnableTileIds = spawnableTileIds != null ? new List<int>(spawnableTileIds) : new List<int>(),
                 isDirty = false
             };
@@ -38,12 +39,19 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Mapping
             CopyLayout(levelData.underlayLayout, board.underlayLayout);
             CopyMask(levelData.playableMask, board.playableMask);
 
+            int[] cellArtLayout = new int[board.CellCount];
+            if (levelData.cellArtLayout != null)
+            {
+                CopyLayout(levelData.cellArtLayout, cellArtLayout);
+            }
+
             return new LevelEditorSessionContext
             {
                 levelId = string.IsNullOrWhiteSpace(document?.levelId) ? levelData.levelID : document.levelId,
                 displayLevelNumber = levelData.DisplayLevelNumber,
                 movesLimit = levelData.movesLimit > 0 ? levelData.movesLimit : 1,
                 board = board,
+                cellArtLayout = cellArtLayout,
                 spawnableTileIds = levelData.spawnableTileIds != null ? new List<int>(levelData.spawnableTileIds) : new List<int>(),
                 isDirty = false
             };
@@ -55,6 +63,9 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Mapping
             IReadOnlyList<LevelTargetRequirement> targets,
             int schemaVersion = 1)
         {
+            // Sync session context spawnables with resolved spawnables from board
+            context.spawnableTileIds = ResolveSpawnableTileIds(context, database);
+
             Match3LevelData levelData = new Match3LevelData
             {
                 levelID = LevelPathUtility.SanitizeLevelId(context.levelId),
@@ -66,7 +77,8 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Mapping
                 overlayLayout = (int[])context.board.overlayLayout.Clone(),
                 underlayLayout = (int[])context.board.underlayLayout.Clone(),
                 playableMask = (bool[])context.board.playableMask.Clone(),
-                spawnableTileIds = ResolveSpawnableTileIds(context, database),
+                cellArtLayout = context.cellArtLayout != null ? (int[])context.cellArtLayout.Clone() : new int[context.board.CellCount],
+                spawnableTileIds = new List<int>(context.spawnableTileIds),
                 targets = BuildTargets(targets)
             };
 
@@ -77,48 +89,56 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Mapping
         {
             List<int> spawnables = new List<int>();
 
-            if (context.spawnableTileIds != null)
-            {
-                for (int i = 0; i < context.spawnableTileIds.Count; i++)
-                {
-                    int tileId = context.spawnableTileIds[i];
-                    if (tileId > 0 && !spawnables.Contains(tileId))
-                    {
-                        spawnables.Add(tileId);
-                    }
-                }
-            }
-
+            // 1. Gather all normal tiles currently present on the board
             if (context.board?.tileLayout != null && database != null)
             {
                 for (int i = 0; i < context.board.tileLayout.Length; i++)
                 {
                     int tileId = context.board.tileLayout[i];
-                    TileDefinitionSO definition = database.GetTileDefinition(tileId);
-                    if (definition == null || definition.TileKind != TileKind.Normal || !definition.CanSpawnOnRefill)
+                    if (tileId <= 0)
                     {
                         continue;
                     }
 
-                    if (!spawnables.Contains(tileId))
+                    TileDefinitionSO definition = database.GetTileDefinition(tileId);
+                    if (definition != null && definition.TileKind == TileKind.Normal && definition.CanSpawnOnRefill)
                     {
-                        spawnables.Add(tileId);
+                        if (!spawnables.Contains(tileId))
+                        {
+                            spawnables.Add(tileId);
+                        }
                     }
                 }
             }
 
-            if (spawnables.Count == 0 && database != null)
+            // 2. Fallback: If no normal tiles are on the board, use existing context spawnables or all database normal tiles
+            if (spawnables.Count == 0)
             {
-                IReadOnlyList<BoardContentDefinitionSO> definitions = database.Tiles;
-                for (int i = 0; i < definitions.Count; i++)
+                if (context.spawnableTileIds != null)
                 {
-                    if (definitions[i] is TileDefinitionSO tileDefinition &&
-                        tileDefinition.TileKind == TileKind.Normal &&
-                        tileDefinition.CanSpawnOnRefill &&
-                        tileDefinition.SpawnWeight > 0 &&
-                        !spawnables.Contains(tileDefinition.TileId))
+                    for (int i = 0; i < context.spawnableTileIds.Count; i++)
                     {
-                        spawnables.Add(tileDefinition.TileId);
+                        int tileId = context.spawnableTileIds[i];
+                        if (tileId > 0 && !spawnables.Contains(tileId))
+                        {
+                            spawnables.Add(tileId);
+                        }
+                    }
+                }
+
+                if (spawnables.Count == 0 && database != null)
+                {
+                    IReadOnlyList<BoardContentDefinitionSO> definitions = database.Tiles;
+                    for (int i = 0; i < definitions.Count; i++)
+                    {
+                        if (definitions[i] is TileDefinitionSO tileDefinition &&
+                            tileDefinition.TileKind == TileKind.Normal &&
+                            tileDefinition.CanSpawnOnRefill &&
+                            tileDefinition.SpawnWeight > 0 &&
+                            !spawnables.Contains(tileDefinition.TileId))
+                        {
+                            spawnables.Add(tileDefinition.TileId);
+                        }
                     }
                 }
             }

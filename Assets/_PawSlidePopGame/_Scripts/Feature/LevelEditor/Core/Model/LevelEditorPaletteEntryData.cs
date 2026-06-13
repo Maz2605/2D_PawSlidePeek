@@ -12,5 +12,6 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Model
         public BoardLayer Layer { get; set; }
         public bool SupportsTargetObjective { get; set; }
         public LevelEditorPaletteSectionType SectionType { get; set; }
+        public int SortOrder { get; set; }
     }
 }

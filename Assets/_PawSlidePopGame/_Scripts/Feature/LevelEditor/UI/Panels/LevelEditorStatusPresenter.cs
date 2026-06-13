@@ -19,7 +19,17 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
 
             if (statusText != null)
             {
-                statusText.text = service.Session.statusMessage ?? string.Empty;
+                string baseStatus = service.Session.statusMessage ?? string.Empty;
+                if (service.HoveredX >= 0 && service.HoveredY >= 0)
+                {
+                    statusText.text = string.IsNullOrEmpty(baseStatus) 
+                        ? $"Cell: ({service.HoveredX}, {service.HoveredY})" 
+                        : $"{baseStatus} | Cell: ({service.HoveredX}, {service.HoveredY})";
+                }
+                else
+                {
+                    statusText.text = baseStatus;
+                }
             }
 
             if (errorText != null)

@@ -42,6 +42,8 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Scene
                 context.board = new LevelEditorBoardState();
                 context.board.Initialize(width, height);
             }
+
+            EnsureCellArtLayout();
         }
 
         public void LoadContext(LevelEditorSessionContext sessionContext)
@@ -52,6 +54,8 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Scene
                 context.board = new LevelEditorBoardState();
                 context.board.Initialize(width, height);
             }
+
+            EnsureCellArtLayout();
 
             currentLevelId = string.IsNullOrWhiteSpace(context.levelId) ? currentLevelId : context.levelId;
             displayLevelNumber = context.displayLevelNumber > 0 ? context.displayLevelNumber : 1;
@@ -96,6 +100,21 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Scene
         {
             context.statusMessage = statusMessage ?? string.Empty;
             context.errorMessage = errorMessage ?? string.Empty;
+        }
+
+        private void EnsureCellArtLayout()
+        {
+            int cellCount = context.board != null ? context.board.CellCount : 0;
+            if (cellCount <= 0)
+            {
+                context.cellArtLayout = System.Array.Empty<int>();
+                return;
+            }
+
+            if (context.cellArtLayout == null || context.cellArtLayout.Length != cellCount)
+            {
+                context.cellArtLayout = new int[cellCount];
+            }
         }
     }
 }

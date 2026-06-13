@@ -1,0 +1,65 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c2cf5251c4579d4882a08e98cb39b60, type: 3}
+  m_Name: LevelEditorCellArtCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Model.LevelEditorCellArtCatalogSO
+  entries:
+  - id: 1
+    label: Classic Table
+    sprite: {fileID: 21300000, guid: 8531ad328e2b44dacae1ca305216d0d6, type: 3}
+    category: Table
+    sortOrder: 0
+  - id: 2
+    label: Dark Blue Table
+    sprite: {fileID: 21300000, guid: a794f051c36ab4f62a36c4a65e46ecbd, type: 3}
+    category: Table
+    sortOrder: 10
+  - id: 3
+    label: Blur Backdrop
+    sprite: {fileID: 21300000, guid: dfb4e5ad1f70042778b3bdabaa046d45, type: 3}
+    category: Backdrop
+    sortOrder: 20
+  - id: 4
+    label: Table 3
+    sprite: {fileID: 0}
+    category: Table
+    sortOrder: 11
+  - id: 5
+    label: Table 4
+    sprite: {fileID: 0}
+    category: Table
+    sortOrder: 12
+  - id: 6
+    label: Table 5
+    sprite: {fileID: 0}
+    category: Table
+    sortOrder: 13
+  - id: 7
+    label: Backdrop 2
+    sprite: {fileID: 0}
+    category: Backdrop
+    sortOrder: 21
+  - id: 8
+    label: Backdrop 3
+    sprite: {fileID: 0}
+    category: Backdrop
+    sortOrder: 22
+  - id: 9
+    label: Backdrop 4
+    sprite: {fileID: 0}
+    category: Backdrop
+    sortOrder: 23
+  - id: 10
+    label: Backdrop 5
+    sprite: {fileID: 0}
+    category: Backdrop
+    sortOrder: 24

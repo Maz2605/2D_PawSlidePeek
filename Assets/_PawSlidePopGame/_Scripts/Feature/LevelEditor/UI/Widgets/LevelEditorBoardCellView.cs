@@ -3,8 +3,6 @@ using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
-using UnityEngine.UI;
 
 namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
 {
@@ -14,19 +12,20 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
         Erase = 1
     }
 
-    public sealed class LevelEditorBoardCellView : MonoBehaviour, IPointerDownHandler, IPointerEnterHandler, IPointerUpHandler
+    public sealed class LevelEditorBoardCellView : MonoBehaviour, IPointerDownHandler, IPointerEnterHandler, IPointerUpHandler, IPointerExitHandler
     {
         private const float LayerTweenDuration = 0.12f;
         private const float SelectionTweenDuration = 0.1f;
         private const float PlayableTweenDuration = 0.1f;
 
-        [SerializeField] private TMP_Text coordinateText;
-        [SerializeField] private TMP_Text valueText;
-        [SerializeField] private Image underlayImage;
-        [SerializeField] private Image itemImage;
-        [SerializeField] private Image overlayImage;
-        [SerializeField] private Image selectedHighlight;
-        [SerializeField] private Graphic playableGraphic;
+        [SerializeField] private TextMeshPro coordinateText;
+        [SerializeField] private TextMeshPro valueText;
+        [SerializeField] private SpriteRenderer cellArtImage;
+        [SerializeField] private SpriteRenderer underlayImage;
+        [SerializeField] private SpriteRenderer itemImage;
+        [SerializeField] private SpriteRenderer overlayImage;
+        [SerializeField] private SpriteRenderer selectedHighlight;
+        [SerializeField] private SpriteRenderer playableGraphic;
         [SerializeField] private GameObject emptyStateRoot;
         [SerializeField] private Color playableColor = Color.white;
         [SerializeField] private Color disabledColor = new Color(0.35f, 0.35f, 0.35f, 1f);
@@ -38,28 +37,61 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
         private bool _hasBound;
         private bool _lastSelected;
         private bool _lastPlayable;
+        private Sprite _lastCellArtSprite;
         private Sprite _lastUnderlaySprite;
         private Sprite _lastItemSprite;
         private Sprite _lastOverlaySprite;
         private Action<int, int, LevelEditorBoardCellAction> _onActionRequested;
+        private LevelEditorUIController _service;
+        private Sprite _defaultSprite;
+        private bool _isAwake;
+
+        private void Awake()
+        {
+            EnsureAwake();
+        }
+
+        private void EnsureAwake()
+        {
+            if (_isAwake) return;
+            _isAwake = true;
+
+            if (playableGraphic != null)
+            {
+                _defaultSprite = playableGraphic.sprite;
+                if (_defaultSprite == null)
+                {
+                    Texture2D texture = new Texture2D(1, 1);
+                    texture.SetPixel(0, 0, Color.white);
+                    texture.Apply();
+                    _defaultSprite = Sprite.Create(texture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
+                    playableGraphic.sprite = _defaultSprite;
+                }
+            }
+        }
 
         public void Bind(
             int x,
             int y,
+            Sprite cellArtSprite,
             Sprite underlaySprite,
             Sprite itemSprite,
             Sprite overlaySprite,
+            Sprite cellBackgroundSprite,
             bool selected,
             bool playable,
-            Action<int, int, LevelEditorBoardCellAction> onActionRequested)
+            Action<int, int, LevelEditorBoardCellAction> onActionRequested,
+            LevelEditorUIController service)
         {
+            EnsureAwake();
             _x = x;
             _y = y;
             _onActionRequested = onActionRequested;
+            _service = service;
 
             if (coordinateText != null)
             {
-                coordinateText.text = $"({x}, {y})";
+                coordinateText.text = string.Empty; // Hide coordinates on cells
             }
 
             if (valueText != null)
@@ -67,18 +99,26 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
                 valueText.text = string.Empty;
             }
 
+            if (playableGraphic != null)
+            {
+                playableGraphic.sprite = cellBackgroundSprite != null ? cellBackgroundSprite : _defaultSprite;
+            }
+
+            EnsureCellArtImage();
             bool animate = Application.isPlaying && _hasBound;
-            SetLayerImage(underlayImage, underlaySprite, _lastUnderlaySprite, animate);
-            SetLayerImage(itemImage, itemSprite, _lastItemSprite, animate);
-            SetLayerImage(overlayImage, overlaySprite, _lastOverlaySprite, animate);
+            SetLayerImage(cellArtImage, playable ? cellArtSprite : null, _lastCellArtSprite, animate);
+            SetLayerImage(underlayImage, playable ? underlaySprite : null, _lastUnderlaySprite, animate);
+            SetLayerImage(itemImage, playable ? itemSprite : null, _lastItemSprite, animate);
+            SetLayerImage(overlayImage, playable ? overlaySprite : null, _lastOverlaySprite, animate);
             SetSelected(selected, animate && selected != _lastSelected);
             SetPlayable(playable, animate && playable != _lastPlayable);
 
             if (emptyStateRoot != null)
             {
-                emptyStateRoot.SetActive(playable && underlaySprite == null && itemSprite == null && overlaySprite == null);
+                emptyStateRoot.SetActive(playable && cellArtSprite == null && underlaySprite == null && itemSprite == null && overlaySprite == null);
             }
 
+            _lastCellArtSprite = cellArtSprite;
             _lastUnderlaySprite = underlaySprite;
             _lastItemSprite = itemSprite;
             _lastOverlaySprite = overlaySprite;
@@ -104,21 +144,16 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
 
         public void OnPointerEnter(PointerEventData eventData)
         {
-            if (_isDraggingAction && Mouse.current != null)
-            {
-                bool isButtonStillPressed = _dragAction == LevelEditorBoardCellAction.Erase
-                    ? Mouse.current.rightButton.isPressed
-                    : Mouse.current.leftButton.isPressed;
-                if (!isButtonStillPressed)
-                {
-                    _isDraggingAction = false;
-                }
-            }
-
+            _service?.SetHoveredCoordinate(_x, _y);
             if (_isDraggingAction)
             {
                 RequestAction(_dragAction);
             }
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            _service?.SetHoveredCoordinate(-1, -1);
         }
 
         public void OnPointerUp(PointerEventData eventData)
@@ -146,22 +181,22 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
             _onActionRequested?.Invoke(_x, _y, action);
         }
 
-        private static void SetLayerImage(Image image, Sprite nextSprite, Sprite previousSprite, bool animate)
+        private static void SetLayerImage(SpriteRenderer renderer, Sprite nextSprite, Sprite previousSprite, bool animate)
         {
-            if (image == null)
+            if (renderer == null)
             {
                 return;
             }
 
-            image.DOKill(false);
-            image.transform.DOKill(false);
+            renderer.DOKill(false);
+            renderer.transform.DOKill(false);
 
             if (!animate)
             {
-                image.sprite = nextSprite;
-                image.enabled = nextSprite != null;
-                SetGraphicAlpha(image, nextSprite != null ? 1f : 0f);
-                image.transform.localScale = Vector3.one;
+                renderer.sprite = nextSprite;
+                renderer.enabled = nextSprite != null;
+                SetGraphicAlpha(renderer, nextSprite != null ? 1f : 0f);
+                renderer.transform.localScale = Vector3.one;
                 return;
             }
 
@@ -169,34 +204,34 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
             {
                 if (nextSprite != null)
                 {
-                    image.sprite = nextSprite;
-                    image.enabled = true;
-                    SetGraphicAlpha(image, 1f);
-                    image.transform.localScale = Vector3.one;
+                    renderer.sprite = nextSprite;
+                    renderer.enabled = true;
+                    SetGraphicAlpha(renderer, 1f);
+                    renderer.transform.localScale = Vector3.one;
                 }
                 return;
             }
 
             if (nextSprite == null)
             {
-                image.DOFade(0f, LayerTweenDuration).SetEase(Ease.OutQuad);
-                image.transform.DOScale(0.85f, LayerTweenDuration)
+                renderer.DOFade(0f, LayerTweenDuration).SetEase(Ease.OutQuad);
+                renderer.transform.DOScale(0.85f, LayerTweenDuration)
                     .SetEase(Ease.OutQuad)
                     .OnComplete(() =>
                     {
-                        image.sprite = null;
-                        image.enabled = false;
-                        image.transform.localScale = Vector3.one;
+                        renderer.sprite = null;
+                        renderer.enabled = false;
+                        renderer.transform.localScale = Vector3.one;
                     });
                 return;
             }
 
-            image.sprite = nextSprite;
-            image.enabled = true;
-            SetGraphicAlpha(image, 0f);
-            image.transform.localScale = Vector3.one * 0.85f;
-            image.DOFade(1f, LayerTweenDuration).SetEase(Ease.OutQuad);
-            image.transform.DOScale(1f, LayerTweenDuration).SetEase(Ease.OutBack);
+            renderer.sprite = nextSprite;
+            renderer.enabled = true;
+            SetGraphicAlpha(renderer, 0f);
+            renderer.transform.localScale = Vector3.one * 0.85f;
+            renderer.DOFade(1f, LayerTweenDuration).SetEase(Ease.OutQuad);
+            renderer.transform.DOScale(1f, LayerTweenDuration).SetEase(Ease.OutBack);
         }
 
         private void SetSelected(bool selected, bool animate)
@@ -240,19 +275,39 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
             }
 
             playableGraphic.DOKill(false);
-            Color targetColor = playable ? playableColor : disabledColor;
-            if (animate)
+            if (playable)
             {
-                playableGraphic.DOColor(targetColor, PlayableTweenDuration).SetEase(Ease.OutQuad);
+                playableGraphic.enabled = true;
+                bool hasCustomSprite = playableGraphic.sprite != null && playableGraphic.sprite != _defaultSprite;
+                Color targetColor = hasCustomSprite ? Color.white : playableColor;
+                if (animate)
+                {
+                    playableGraphic.DOColor(targetColor, PlayableTweenDuration).SetEase(Ease.OutQuad);
+                }
+                else
+                {
+                    playableGraphic.color = targetColor;
+                }
             }
             else
             {
-                playableGraphic.color = targetColor;
+                if (animate)
+                {
+                    playableGraphic.DOFade(0f, PlayableTweenDuration).OnComplete(() => playableGraphic.enabled = false);
+                }
+                else
+                {
+                    Color c = playableGraphic.color;
+                    c.a = 0f;
+                    playableGraphic.color = c;
+                    playableGraphic.enabled = false;
+                }
             }
         }
 
         private void KillTweens()
         {
+            KillGraphicTween(cellArtImage);
             KillGraphicTween(underlayImage);
             KillGraphicTween(itemImage);
             KillGraphicTween(overlayImage);
@@ -260,22 +315,37 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
             KillGraphicTween(playableGraphic);
         }
 
-        private static void KillGraphicTween(Graphic graphic)
+        private void EnsureCellArtImage()
         {
-            if (graphic == null)
+            if (cellArtImage != null)
             {
                 return;
             }
 
-            graphic.DOKill(false);
-            graphic.transform.DOKill(false);
+            GameObject go = new GameObject("CellArtImage", typeof(SpriteRenderer));
+            go.transform.SetParent(transform, false);
+            go.transform.SetSiblingIndex(0);
+
+            cellArtImage = go.GetComponent<SpriteRenderer>();
+            cellArtImage.enabled = false;
         }
 
-        private static void SetGraphicAlpha(Graphic graphic, float alpha)
+        private static void KillGraphicTween(SpriteRenderer renderer)
         {
-            Color color = graphic.color;
+            if (renderer == null)
+            {
+                return;
+            }
+
+            renderer.DOKill(false);
+            renderer.transform.DOKill(false);
+        }
+
+        private static void SetGraphicAlpha(SpriteRenderer renderer, float alpha)
+        {
+            Color color = renderer.color;
             color.a = alpha;
-            graphic.color = color;
+            renderer.color = color;
         }
     }
 }

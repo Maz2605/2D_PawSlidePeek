@@ -28,21 +28,40 @@ namespace _PawSlidePopGame._Scripts.Data.LevelProvider
                 return false;
             }
 
-            TextAsset textAsset = Resources.Load<TextAsset>(resourcePath);
-            if (textAsset == null)
+#if UNITY_EDITOR
+            string absolutePath = LevelPathUtility.GetAbsoluteAssetPath(levelId);
+            if (!string.IsNullOrEmpty(absolutePath) && System.IO.File.Exists(absolutePath))
             {
-                Debug.LogError($"[LevelEditor] Level JSON not found at Resources path '{resourcePath}'.");
-                return false;
+                try
+                {
+                    string fileContent = System.IO.File.ReadAllText(absolutePath);
+                    document = JsonConvert.DeserializeObject<LevelSaveData>(fileContent);
+                }
+                catch (System.Exception exception)
+                {
+                    Debug.LogWarning($"[LevelEditor] Failed to load level '{levelId}' directly from file system: {exception.Message}. Falling back to Resources.");
+                }
             }
+#endif
 
-            try
+            if (document == null)
             {
-                document = JsonConvert.DeserializeObject<LevelSaveData>(textAsset.text);
-            }
-            catch (JsonException exception)
-            {
-                Debug.LogError($"[LevelEditor] Failed to deserialize level '{levelId}'. {exception.Message}");
-                return false;
+                TextAsset textAsset = Resources.Load<TextAsset>(resourcePath);
+                if (textAsset == null)
+                {
+                    Debug.LogError($"[LevelEditor] Level JSON not found at Resources path '{resourcePath}'.");
+                    return false;
+                }
+
+                try
+                {
+                    document = JsonConvert.DeserializeObject<LevelSaveData>(textAsset.text);
+                }
+                catch (JsonException exception)
+                {
+                    Debug.LogError($"[LevelEditor] Failed to deserialize level '{levelId}'. {exception.Message}");
+                    return false;
+                }
             }
 
             if (document == null)

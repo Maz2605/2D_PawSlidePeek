@@ -16,9 +16,12 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
 {
     public sealed class LevelEditorUIController : MonoBehaviour
     {
+        private const string DefaultCellArtCatalogResourcePath = "LevelEditor/LevelEditorCellArtCatalog";
+
         [SerializeField] private LevelEditorRuntimeBridge runtimeBridge;
         [SerializeField] private LevelEditorSessionStateHolder sessionStateHolder;
         [SerializeField] private LevelEditorSelectionStateHolder selectionStateHolder;
+        [SerializeField] private LevelEditorCellArtCatalogSO cellArtCatalog;
 
         private readonly JsonLevelDataProvider _levelDataProvider = new JsonLevelDataProvider();
         private readonly ResourcesLevelCatalogProvider _levelCatalogProvider = new ResourcesLevelCatalogProvider();
@@ -28,9 +31,39 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
         public event Action Changed;
 
         public Match3TileDatabaseSO TileDatabase => runtimeBridge != null ? runtimeBridge.TileDatabase : null;
+        public LevelEditorCellArtCatalogSO CellArtCatalog => ResolveCellArtCatalog();
         public LevelEditorSessionContext Session => sessionStateHolder != null ? sessionStateHolder.Context : null;
         public LevelEditorSelectionStateHolder Selection => selectionStateHolder;
         public IReadOnlyList<LevelTargetRequirement> Targets => _targets;
+
+        private LevelEditorViewMode _viewMode = LevelEditorViewMode.ShowAll;
+        public LevelEditorViewMode ViewMode
+        {
+            get => _viewMode;
+            set
+            {
+                if (_viewMode != value)
+                {
+                    _viewMode = value;
+                    NotifyChanged();
+                }
+            }
+        }
+
+        private int _hoveredX = -1;
+        private int _hoveredY = -1;
+        public int HoveredX => _hoveredX;
+        public int HoveredY => _hoveredY;
+
+        public void SetHoveredCoordinate(int x, int y)
+        {
+            if (_hoveredX != x || _hoveredY != y)
+            {
+                _hoveredX = x;
+                _hoveredY = y;
+                NotifyChanged();
+            }
+        }
 
         private void Awake()
         {
@@ -42,6 +75,7 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
             runtimeBridge = bridge;
             sessionStateHolder = sessionHolder;
             selectionStateHolder = selectionHolder;
+            ResolveCellArtCatalog();
             EnsureSession();
         }
 
@@ -226,10 +260,18 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
                 for (int x = 0; x < copyWidth; x++)
                 {
                     LevelEditorCellState previousCell = previousBoard.GetCell(x, y);
+                    int previousIndex = previousBoard.ToIndex(x, y);
+                    int nextIndex = resized.board.ToIndex(x, y);
                     resized.board.SetUnderlayId(x, y, previousCell.UnderlayId);
                     resized.board.SetTileId(x, y, previousCell.TileId);
                     resized.board.SetOverlayId(x, y, previousCell.OverlayId);
                     resized.board.SetPlayable(x, y, previousCell.Playable);
+                    if (Session.cellArtLayout != null &&
+                        previousIndex < Session.cellArtLayout.Length &&
+                        nextIndex < resized.cellArtLayout.Length)
+                    {
+                        resized.cellArtLayout[nextIndex] = Session.cellArtLayout[previousIndex];
+                    }
                 }
             }
 
@@ -287,6 +329,24 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
             }
 
             selectionStateHolder.SetActiveSection(sectionType);
+            
+            switch (sectionType)
+            {
+                case LevelEditorPaletteSectionType.ItemNormal:
+                case LevelEditorPaletteSectionType.ItemSpecial:
+                    ViewMode = LevelEditorViewMode.Normal;
+                    break;
+                case LevelEditorPaletteSectionType.Overlay:
+                    ViewMode = LevelEditorViewMode.Overlay;
+                    break;
+                case LevelEditorPaletteSectionType.Underlay:
+                    ViewMode = LevelEditorViewMode.Underlay;
+                    break;
+                case LevelEditorPaletteSectionType.CellArt:
+                    ViewMode = LevelEditorViewMode.ShowAll;
+                    break;
+            }
+
             sessionStateHolder?.SetStatus($"Active paint section: {sectionType}.", string.Empty);
             NotifyChanged();
         }
@@ -299,9 +359,28 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
             }
 
             selectionStateHolder.SetActiveSection(sectionType);
+            if (sectionType == LevelEditorPaletteSectionType.CellArt)
+            {
+                SetSelectedCellArt(contentId);
+                return;
+            }
+
             BoardLayer layer = LevelEditorSelectionStateHolder.ResolveBoardLayer(sectionType);
             selectionStateHolder.SetSelectedLayer(layer, contentId);
             sessionStateHolder?.SetStatus($"Selected {sectionType} id {Mathf.Max(0, contentId)}.", string.Empty);
+            NotifyChanged();
+        }
+
+        public void SetSelectedCellArt(int contentId)
+        {
+            if (selectionStateHolder == null)
+            {
+                return;
+            }
+
+            selectionStateHolder.SetActiveSection(LevelEditorPaletteSectionType.CellArt);
+            selectionStateHolder.SelectedCellArtId = contentId;
+            sessionStateHolder?.SetStatus($"Selected {LevelEditorPaletteSectionType.CellArt} id {Mathf.Max(0, contentId)}.", string.Empty);
             NotifyChanged();
         }
 
@@ -318,6 +397,12 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
             }
 
             selectionStateHolder.SetSelectedCoordinate(x, y);
+            if (selectionStateHolder.IsCellArtSectionActive)
+            {
+                PaintCellArt(x, y);
+                return;
+            }
+
             BoardLayer activeLayer = selectionStateHolder.ActiveBoardLayer;
             int contentId = selectionStateHolder.GetSelectedContentIdForActiveLayer();
             if (contentId <= 0)
@@ -341,6 +426,12 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
             }
 
             selectionStateHolder.SetSelectedCoordinate(x, y);
+            if (selectionStateHolder.IsCellArtSectionActive)
+            {
+                EraseCellArt(x, y);
+                return;
+            }
+
             BoardLayer activeLayer = selectionStateHolder.ActiveBoardLayer;
             ApplyCellLayerContent(x, y, activeLayer, 0);
             sessionStateHolder.MarkDirty($"Erased {activeLayer} at ({x}, {y}).");
@@ -362,17 +453,10 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
             int overlayId = selectionStateHolder.SelectedOverlayId;
             bool hasAnyContent = underlayId > 0 || tileId > 0 || overlayId > 0;
 
-            if (!hasAnyContent)
-            {
-                Session.board.ClearCell(x, y, false);
-            }
-            else
-            {
-                Session.board.SetUnderlayId(x, y, underlayId);
-                Session.board.SetTileId(x, y, tileId);
-                Session.board.SetOverlayId(x, y, overlayId);
-                Session.board.SetPlayable(x, y, true);
-            }
+            Session.board.SetUnderlayId(x, y, underlayId);
+            Session.board.SetTileId(x, y, tileId);
+            Session.board.SetOverlayId(x, y, overlayId);
+            Session.board.SetPlayable(x, y, true);
 
             sessionStateHolder.MarkDirty($"Applied selection payload to ({x}, {y}).");
             RevalidateSession();
@@ -389,6 +473,7 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
             int x = selectionStateHolder.SelectedX;
             int y = selectionStateHolder.SelectedY;
             Session.board.ClearCell(x, y, false);
+            SetCellArtId(x, y, 0);
             sessionStateHolder.MarkDirty($"Cleared cell ({x}, {y}).");
             RevalidateSession();
             NotifyChanged();
@@ -586,6 +671,11 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
             return GetTargetOptions();
         }
 
+        public List<LevelEditorPaletteEntryData> GetCellArtEntries()
+        {
+            return LevelEditorCellArtPaletteBuilder.Build(CellArtCatalog);
+        }
+
         public List<LevelEditorPaletteEntryData> GetTargetOptions()
         {
             return LevelEditorPaletteBuilder.BuildTargetEntries(TileDatabase);
@@ -623,6 +713,72 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
             }
 
             return definition != null ? definition.name : "None";
+        }
+
+        public string GetCellArtDisplayName(int contentId)
+        {
+            if (contentId <= 0)
+            {
+                return "None";
+            }
+
+            LevelEditorCellArtDefinition definition = CellArtCatalog != null ? CellArtCatalog.GetEntry(contentId) : null;
+            return definition != null && !string.IsNullOrWhiteSpace(definition.Label)
+                ? definition.Label
+                : $"Cell Art {contentId}";
+        }
+
+        public int GetCellArtId(int x, int y)
+        {
+            if (Session?.board == null ||
+                Session.cellArtLayout == null ||
+                !Session.board.IsInBounds(x, y))
+            {
+                return 0;
+            }
+
+            int index = Session.board.ToIndex(x, y);
+            return index >= 0 && index < Session.cellArtLayout.Length
+                ? Session.cellArtLayout[index]
+                : 0;
+        }
+
+        public void PaintCellArt(int x, int y)
+        {
+            if (Session?.board == null || selectionStateHolder == null || !Session.board.IsInBounds(x, y))
+            {
+                return;
+            }
+
+            selectionStateHolder.SetSelectedCoordinate(x, y);
+            int cellArtId = selectionStateHolder.SelectedCellArtId;
+            if (cellArtId <= 0)
+            {
+                sessionStateHolder.SetStatus($"Selected cell ({x}, {y}).", "No Cell Art content selected.");
+                NotifyChanged();
+                return;
+            }
+
+            SetCellArtId(x, y, cellArtId);
+            Session.board.SetPlayable(x, y, true);
+            sessionStateHolder.MarkDirty($"Painted Cell Art at ({x}, {y}).");
+            RevalidateSession();
+            NotifyChanged();
+        }
+
+        public void EraseCellArt(int x, int y)
+        {
+            if (Session?.board == null || selectionStateHolder == null || !Session.board.IsInBounds(x, y))
+            {
+                return;
+            }
+
+            selectionStateHolder.SetSelectedCoordinate(x, y);
+            Session.board.ClearCell(x, y, false);
+            SetCellArtId(x, y, 0);
+            sessionStateHolder.MarkDirty($"Erased Cell at ({x}, {y}).");
+            RevalidateSession();
+            NotifyChanged();
         }
 
         private Match3LevelDataValidationResult ValidateDocument(Match3LevelData levelData)
@@ -703,17 +859,30 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
 
         private void ApplyCellContent(int x, int y, int underlayId, int tileId, int overlayId)
         {
-            bool hasAnyContent = underlayId > 0 || tileId > 0 || overlayId > 0;
-            if (!hasAnyContent)
-            {
-                Session.board.ClearCell(x, y, false);
-                return;
-            }
-
+            bool wasPlayable = Session.board.GetCell(x, y).Playable;
             Session.board.SetUnderlayId(x, y, underlayId);
             Session.board.SetTileId(x, y, tileId);
             Session.board.SetOverlayId(x, y, overlayId);
-            Session.board.SetPlayable(x, y, true);
+            
+            int cellArtId = GetCellArtId(x, y);
+            bool hasContent = underlayId > 0 || tileId > 0 || overlayId > 0 || cellArtId > 0;
+            Session.board.SetPlayable(x, y, wasPlayable || hasContent);
+        }
+
+        private void SetCellArtId(int x, int y, int cellArtId)
+        {
+            if (Session?.board == null || Session.cellArtLayout == null || !Session.board.IsInBounds(x, y))
+            {
+                return;
+            }
+
+            int index = Session.board.ToIndex(x, y);
+            if (index < 0 || index >= Session.cellArtLayout.Length)
+            {
+                return;
+            }
+
+            Session.cellArtLayout[index] = Mathf.Max(0, cellArtId);
         }
 
         private void RevalidateSession()
@@ -749,6 +918,17 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
 
             return spawnables;
         }
+
+        private LevelEditorCellArtCatalogSO ResolveCellArtCatalog()
+        {
+            if (cellArtCatalog == null)
+            {
+                cellArtCatalog = Resources.Load<LevelEditorCellArtCatalogSO>(DefaultCellArtCatalogResourcePath);
+            }
+
+            return cellArtCatalog;
+        }
+
         private void NotifyChanged()
         {
             Changed?.Invoke();
