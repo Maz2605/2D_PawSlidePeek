@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using _PawSlidePopGame._Scripts.Data.Events.Payloads;
+using _PawSlidePopGame._Scripts.Feature.Match3.Flow;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -13,6 +14,8 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         [SerializeField] private TMP_Text levelText;
         [SerializeField] private Slider progressSlider;
         [SerializeField] private List<StarItemView> starViews = new List<StarItemView>(); 
+
+        public Slider ProgressSlider => progressSlider; 
 
         [Header("--- Super State (Sao 4) ---")]
         [Tooltip("Kéo Image nằm trong phần Fill của Slider vào đây")]
@@ -28,6 +31,10 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         private int _visualMaxScore = 1;
         private int _superScore = -1;
         private int _currentScore;
+        private int _visualScore;
+        private int _visualReachedStars;
+        private int[] _starThresholds;
+        private int _lastReachedStarIndex = -1;
         private Tween _sliderTween;
 
         public void SetData(GameplayHudSnapshot snapshot)
@@ -38,6 +45,10 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
             _totalStarsConfigured = snapshot.starScoreThresholds != null ? snapshot.starScoreThresholds.Length : 0;
             _currentScore = snapshot.currentScore;
+            _visualScore = snapshot.currentScore;
+            _visualReachedStars = snapshot.reachedStars;
+            _lastReachedStarIndex = snapshot.reachedStars - 1;
+            _starThresholds = snapshot.starScoreThresholds;
             
             // 1. Xác định mốc điểm để render UI
             _visualMaxScore = 1;
@@ -85,6 +96,9 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         public void PlayScoreChangedFx(ScoreChangedPayload payload)
         {
             _currentScore = payload.CurrentScore;
+            _visualScore = payload.CurrentScore;
+            _visualReachedStars = GameplayHudSnapshotBuilder.CountReachedStars(_currentScore, _starThresholds);
+            _lastReachedStarIndex = _visualReachedStars - 1;
             UpdateSliderVisual(_currentScore, true);
         }
 
@@ -96,7 +110,11 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             _visualMaxScore = 1;
             _superScore = -1;
             _currentScore = 0;
+            _visualScore = 0;
+            _visualReachedStars = 0;
+            _starThresholds = null;
             _totalStarsConfigured = 0;
+            _lastReachedStarIndex = -1;
 
             if (levelText != null)
             {
@@ -161,6 +179,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         public void PlayStarReachedFx(StarReachedPayload payload)
         {
             int starIndex = payload.StarIndex; 
+            _lastReachedStarIndex = starIndex - 1;
 
             if (starIndex > _visualMaxStars)
             {
@@ -177,6 +196,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         private void TriggerSuperStateFx()
         {
+            _lastReachedStarIndex = starViews.Count - 1;
             if (sliderFillImage != null)
             {
                 DOVirtual.DelayedCall(sliderAnimDuration, () => 
@@ -230,6 +250,55 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             _sliderTween = progressSlider.DOValue(targetValue, sliderAnimDuration)
                 .SetEase(Ease.OutQuad)
                 .SetLink(progressSlider.gameObject, LinkBehaviour.KillOnDisable);
+        }
+
+        public void PlayBounceFx()
+        {
+            if (starViews == null || starViews.Count == 0) return;
+
+            int targetIndex = _lastReachedStarIndex;
+            if (targetIndex < 0)
+            {
+                targetIndex = 0; // Bounce the first star if none reached yet
+            }
+            else if (targetIndex >= starViews.Count)
+            {
+                targetIndex = starViews.Count - 1; // Bounce the last physical star if in Super state / more than max stars
+            }
+
+            var star = starViews[targetIndex];
+            if (star != null)
+            {
+                star.PlayBounce();
+            }
+        }
+
+        public void AddScoreVisually(int amount)
+        {
+            _visualScore += amount;
+            UpdateSliderVisual(_visualScore, true);
+
+            if (_starThresholds != null)
+            {
+                int newReachedStars = 0;
+                for (int i = 0; i < _starThresholds.Length; i++)
+                {
+                    if (_visualScore >= _starThresholds[i])
+                    {
+                        newReachedStars = i + 1;
+                    }
+                }
+
+                if (newReachedStars > _visualReachedStars)
+                {
+                    for (int starIndex = _visualReachedStars + 1; starIndex <= newReachedStars; starIndex++)
+                    {
+                        PlayStarReachedFx(new StarReachedPayload(starIndex, _visualScore));
+                    }
+                    _visualReachedStars = newReachedStars;
+                    _lastReachedStarIndex = _visualReachedStars - 1;
+                }
+            }
         }
     }
 }

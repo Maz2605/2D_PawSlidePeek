@@ -1,6 +1,13 @@
+using System.Collections.Generic;
+using TMPro;
+using _PawSlidePopGame._Scripts.UI.Components.HUD;
+using _PawSlidePopGame._Scripts.Core.Vibration;
+using _PawSlidePopGame._Scripts.UI.Screens.Gameplay;
 using _PawSlidePopGame._Scripts.Core.System.GameFlow;
 using _PawSlidePopGame._Scripts.Data.Events;
 using _PawSlidePopGame._Scripts.Data.Events.Payloads;
+using _PawSlidePopGame._Scripts.Feature.Match3.Core.Enum;
+using _PawSlidePopGame._Scripts.Feature.Match3.Data;
 using _PawSlidePopGame._Scripts.Feature.Match3.Boosters;
 using _PawSlidePopGame._Scripts.Feature.Match3.Flow;
 using _PawSlidePopGame._Scripts.Feature.Match3.Logic.Move;
@@ -10,6 +17,7 @@ using _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presentation;
 using _PawSlidePopGame._Scripts.Feature.Match3.View;
 using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
+using DG.Tweening;
 using UnityEngine;
 
 namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
@@ -25,6 +33,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         private bool _isAnimatingMove;
         private bool _isAnimatingIntro;
         private bool _isBoardBound;
+
+        public bool IsVictoryOutroPlaying { get; private set; }
+        private bool _skipSugarCrush;
+
+        [Header("Sugar Crush Settings")]
+        [SerializeField] private float sugarCrushSpawnDelay = 0.05f;
+        [SerializeField] private float sugarCrushExplodeDelay = 0.05f;
+        [SerializeField] private int scorePerRemainingMove = 1000;
 
         [SerializeField] private float idleHintDelay = 15f;
         private float _idleTimer = 0f;
@@ -492,6 +508,15 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             {
                 StartCoroutine(PlayDefeatOutroRoutine());
             }
+            else if (payload.Current == InGameSubState.Victory)
+            {
+                StartCoroutine(PlayVictoryOutroRoutine());
+            }
+        }
+
+        public void SkipSugarCrush()
+        {
+            _skipSugarCrush = true;
         }
 
         private System.Collections.IEnumerator PlayDefeatOutroRoutine()
@@ -507,6 +532,246 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             }
 
             _isAnimatingMove = false;
+        }
+
+        private System.Collections.IEnumerator PlayVictoryOutroRoutine()
+        {
+            IsVictoryOutroPlaying = true;
+            _isAnimatingMove = true;
+            _skipSugarCrush = false;
+
+            inputController?.SetInputLocked(true);
+            boardView?.SetIdleEnabled(false);
+            boardView?.ClearPreview();
+
+            if (gameManager?.Board == null)
+            {
+                IsVictoryOutroPlaying = false;
+                _isAnimatingMove = false;
+                yield break;
+            }
+
+            int remainingMoves = gameManager.Board.RemainingMoves;
+            System.Random random = gameManager.Random ?? new System.Random();
+
+            // Lấy danh sách booster từ database
+            List<BoosterTileDefinitionSO> boosterDefinitions = new List<BoosterTileDefinitionSO>();
+            if (gameManager.TileDatabase != null)
+            {
+                var bombDef = gameManager.TileDatabase.GetBoosterDefinition(TileLogicType.BombBooster);
+                var crossDef = gameManager.TileDatabase.GetBoosterDefinition(TileLogicType.CrossBomb);
+                var squareDef = gameManager.TileDatabase.GetBoosterDefinition(TileLogicType.SquareBomb);
+                if (bombDef != null) boosterDefinitions.Add(bombDef);
+                if (crossDef != null) boosterDefinitions.Add(crossDef);
+                if (squareDef != null) boosterDefinitions.Add(squareDef);
+            }
+
+            if (boosterDefinitions.Count == 0 && gameManager.TileDatabase != null && gameManager.TileDatabase.BoosterTileCount > 0)
+            {
+                var tiles = gameManager.TileDatabase.Tiles;
+                for (int i = 0; i < tiles.Count; i++)
+                {
+                    if (tiles[i] is BoosterTileDefinitionSO booster)
+                    {
+                        boosterDefinitions.Add(booster);
+                        break;
+                    }
+                }
+            }
+
+            // GIAI ĐOẠN 1: Biến đổi Moves thành Special Tiles
+            while (remainingMoves > 0 && !_skipSugarCrush)
+            {
+                List<CellModel> normalCells = new List<CellModel>();
+                foreach (CellModel cell in gameManager.Board.GetAllCells())
+                {
+                    if (cell != null && cell.IsPlayable && cell.Tile != null && cell.Tile.TileKind == TileKind.Normal)
+                    {
+                        normalCells.Add(cell);
+                    }
+                }
+
+                if (normalCells.Count == 0)
+                {
+                    break;
+                }
+
+                CellModel chosenCell = normalCells[random.Next(0, normalCells.Count)];
+                BoosterTileDefinitionSO chosenBooster = boosterDefinitions.Count > 0 
+                    ? boosterDefinitions[random.Next(0, boosterDefinitions.Count)]
+                    : null;
+
+                if (chosenBooster != null)
+                {
+                    TileModel oldTile = chosenCell.Tile;
+                    TileModel createdTile = gameManager.Board.CreateTileFromDefinitionId(chosenBooster.TileId, gameManager.TileDatabase);
+                    if (createdTile != null)
+                    {
+                        int previousMoves = gameManager.Board.RemainingMoves;
+                        gameManager.Board.SetTile(chosenCell, TileStackLayer.Base, createdTile);
+                        gameManager.Board.AddScore(scorePerRemainingMove);
+                        gameManager.Board.ConsumeMove();
+
+                        BoardPresentationTraceBuilder traceBuilder = new BoardPresentationTraceBuilder();
+                        CascadeTrace spawnCascade = traceBuilder.BeginCascade();
+                        BoardFxContext fxContext = new BoardFxContext(spawnCascade, random);
+                        fxContext.RecordSpecialCreate(oldTile, createdTile, chosenCell, TileStackLayer.Base, true);
+
+                        BoardMoveExecutionResult transformResult = new BoardMoveExecutionResult
+                        {
+                            Kind = BoardExecutionKind.ChargedPlacement,
+                            IsApplied = true,
+                            IsAccepted = true,
+                            PresentationTrace = traceBuilder.Build()
+                        };
+
+                        if (boardView != null)
+                        {
+                            // Chạy diễn hoạt sinh Special Tile với tốc độ nhân 4.5 lần để diễn ra nhanh gọn nhưng vẫn lần lượt
+                            yield return StartCoroutine(boardView.PlayMoveExecution(transformResult, 4.5f));
+                            boardView.SyncToBoardState();
+
+                            // Đợi khi tạo special cell xong thì mới chạy hiệu ứng (delay 0.15s)
+                            yield return new WaitForSeconds(0.15f);
+
+                            Vector3 cellWorldPos = boardView.GetCellWorldPosition(chosenCell.X, chosenCell.Y);
+                            CreateScoreFloatText(cellWorldPos, scorePerRemainingMove);
+                        }
+
+                        EventManager<LogicGameEvent>.Post(
+                            LogicGameEvent.GameplayMovesChanged,
+                            new RemainingMovesChangedPayload(previousMoves, gameManager.Board.RemainingMoves));
+
+                        GameFlowManager.Instance?.ForcePublishHudState();
+                    }
+                }
+
+                remainingMoves = gameManager.Board.RemainingMoves;
+                yield return new WaitForSeconds(sugarCrushSpawnDelay);
+            }
+
+            // Trì hoãn 0.6s sau khi sinh xong special cells rồi mới kích nổ liên hoàn
+            if (!_skipSugarCrush)
+            {
+                yield return new WaitForSeconds(0.6f);
+            }
+
+            // GIAI ĐOẠN 2: Kích nổ liên hoàn
+            while (!_skipSugarCrush)
+            {
+                CellModel targetCell = null;
+                for (int y = gameManager.Board.Height - 1; y >= 0; y--)
+                {
+                    for (int x = 0; x < gameManager.Board.Width; x++)
+                    {
+                        CellModel cell = gameManager.Board.GetCell(x, y);
+                        if (cell != null && cell.IsPlayable && cell.Tile != null && cell.Tile.TileKind == TileKind.Booster)
+                        {
+                            targetCell = cell;
+                            break;
+                        }
+                    }
+                    if (targetCell != null) break;
+                }
+
+                if (targetCell == null)
+                {
+                    break;
+                }
+
+                BoardMoveExecutionResult result = BoardResolutionService.ExecuteSugarCrushActivation(
+                    gameManager.Board, targetCell.X, targetCell.Y, gameManager.LevelData, gameManager.TileDatabase, random, gameManager.RuleSet);
+
+                if (boardView != null)
+                {
+                    // Rung và lắc camera khi bắt đầu kích nổ tạo cảm giác mạnh mẽ
+                    if (Camera.main != null)
+                    {
+                        Camera.main.transform.DOComplete();
+                        Camera.main.transform.DOShakePosition(0.18f, 0.15f, 22, 90f, false, true)
+                            .SetLink(Camera.main.gameObject);
+                    }
+
+                    if (VibrationManager.Instance != null)
+                    {
+                        VibrationManager.Instance.PlayMediumImpact(true);
+                    }
+
+                    yield return StartCoroutine(boardView.PlayMoveExecution(result));
+                    boardView.SyncToBoardState();
+                }
+
+                GameFlowManager.Instance?.ForcePublishHudState();
+                yield return new WaitForSeconds(sugarCrushExplodeDelay);
+            }
+
+            // GIAI ĐOẠN 3: NỔ NHANH LẬP TỨC (FAST RESOLVE) NẾU SKIP
+            if (_skipSugarCrush)
+            {
+                boardView?.ClearPreview();
+
+                remainingMoves = gameManager.Board.RemainingMoves;
+                while (remainingMoves > 0)
+                {
+                    List<CellModel> normalCells = new List<CellModel>();
+                    foreach (CellModel cell in gameManager.Board.GetAllCells())
+                    {
+                        if (cell != null && cell.IsPlayable && cell.Tile != null && cell.Tile.TileKind == TileKind.Normal)
+                        {
+                            normalCells.Add(cell);
+                        }
+                    }
+
+                    if (normalCells.Count == 0) break;
+
+                    CellModel chosenCell = normalCells[random.Next(0, normalCells.Count)];
+                    BoosterTileDefinitionSO chosenBooster = boosterDefinitions.Count > 0 
+                        ? boosterDefinitions[random.Next(0, boosterDefinitions.Count)]
+                        : null;
+
+                    if (chosenBooster != null)
+                    {
+                        TileModel createdTile = gameManager.Board.CreateTileFromDefinitionId(chosenBooster.TileId, gameManager.TileDatabase);
+                        if (createdTile != null)
+                        {
+                            gameManager.Board.SetTile(chosenCell, TileStackLayer.Base, createdTile);
+                            gameManager.Board.AddScore(scorePerRemainingMove);
+                            gameManager.Board.ConsumeMove();
+                        }
+                    }
+                    remainingMoves = gameManager.Board.RemainingMoves;
+                }
+
+                while (true)
+                {
+                    CellModel targetCell = null;
+                    for (int y = gameManager.Board.Height - 1; y >= 0; y--)
+                    {
+                        for (int x = 0; x < gameManager.Board.Width; x++)
+                        {
+                            CellModel cell = gameManager.Board.GetCell(x, y);
+                            if (cell != null && cell.IsPlayable && cell.Tile != null && cell.Tile.TileKind == TileKind.Booster)
+                            {
+                                targetCell = cell;
+                                break;
+                            }
+                        }
+                        if (targetCell != null) break;
+                    }
+
+                    if (targetCell == null) break;
+
+                    BoardResolutionService.ExecuteSugarCrushActivation(
+                        gameManager.Board, targetCell.X, targetCell.Y, gameManager.LevelData, gameManager.TileDatabase, random, gameManager.RuleSet);
+                }
+
+                boardView?.SyncToBoardState();
+                GameFlowManager.Instance?.ForcePublishHudState();
+            }
+
+            IsVictoryOutroPlaying = false;
+            _isAnimatingMove = false;
+            GameFlowManager.Instance?.ForcePublishHudState();
         }
 
         private void ApplyInputState(InGameSubState subState)
@@ -562,6 +827,109 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                     GameFlowManager.Instance != null ? GameFlowManager.Instance.GetChargedComboSourceCell() : null,
                     GameFlowManager.Instance != null ? GameFlowManager.Instance.GetChargedComboPartnerCells() : null);
             }
+        }
+
+        private void CreateScoreFloatText(Vector3 startWorldPos, int scoreAmount)
+        {
+            Canvas mainCanvas = FindFirstObjectByType<Canvas>();
+            if (mainCanvas == null) return;
+
+            FloatingScoreText targetPrefab = null;
+            var gameplayScreen = FindFirstObjectByType<GameplayScreen>(FindObjectsInactive.Include);
+            if (gameplayScreen != null)
+            {
+                targetPrefab = gameplayScreen.FloatingScoreTextPrefab;
+            }
+
+            if (targetPrefab != null)
+            {
+                FloatingScoreText scoreTextInstance = Instantiate(targetPrefab, mainCanvas.transform, false);
+                if (scoreTextInstance != null)
+                {
+                    Vector3 targetPos = startWorldPos + new Vector3(0f, 4f, 0f);
+                    bool isTargetUI = false;
+
+                    var progressView = FindFirstObjectByType<LevelProgressView>(FindObjectsInactive.Include);
+                    if (progressView != null)
+                    {
+                        targetPos = (progressView.ProgressSlider != null) 
+                            ? progressView.ProgressSlider.transform.position 
+                            : progressView.transform.position;
+                        isTargetUI = true;
+                    }
+
+                    scoreTextInstance.Initialize(startWorldPos, targetPos, scoreAmount, isTargetUI, () => {
+                        if (progressView != null)
+                        {
+                            progressView.AddScoreVisually(scoreAmount);
+                            progressView.PlayBounceFx();
+                        }
+                    });
+                    return;
+                }
+            }
+
+            // Fallback to manual creation if prefab is not assigned
+            GameObject textObj = new GameObject("SugarCrush_ScoreFloatText", typeof(RectTransform));
+            textObj.transform.SetParent(mainCanvas.transform, false);
+
+            var textComponent = textObj.AddComponent<TextMeshProUGUI>();
+            textComponent.text = $"+{scoreAmount}";
+            textComponent.fontSize = 54;
+            textComponent.fontStyle = FontStyles.Bold;
+            textComponent.alignment = TextAlignmentOptions.Center;
+            textComponent.color = new Color(1.0f, 0.78f, 0.12f, 1.0f);
+
+            RectTransform rect = textObj.GetComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(300, 100);
+
+            Vector2 screenPos = Camera.main != null 
+                ? (Vector2)Camera.main.WorldToScreenPoint(startWorldPos)
+                : (Vector2)startWorldPos;
+
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                mainCanvas.transform as RectTransform, 
+                screenPos, 
+                mainCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : Camera.main, 
+                out Vector2 localPos);
+            rect.anchoredPosition = localPos;
+
+            Vector2 targetScreenPos = screenPos + new Vector2(0f, 500f);
+            var progressViewForFallback = FindFirstObjectByType<LevelProgressView>(FindObjectsInactive.Include);
+            if (progressViewForFallback != null)
+            {
+                Vector3 fallbackTargetWorldPos = (progressViewForFallback.ProgressSlider != null)
+                    ? progressViewForFallback.ProgressSlider.transform.position
+                    : progressViewForFallback.transform.position;
+
+                targetScreenPos = RectTransformUtility.WorldToScreenPoint(
+                    mainCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : mainCanvas.worldCamera,
+                    fallbackTargetWorldPos);
+            }
+
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                mainCanvas.transform as RectTransform, 
+                targetScreenPos, 
+                mainCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : Camera.main, 
+                out Vector2 targetLocalPos);
+
+            textObj.transform.localScale = Vector3.zero;
+            
+            Sequence seq = DOTween.Sequence();
+            seq.Append(textObj.transform.DOScale(1.2f, 0.25f).SetEase(Ease.OutBack))
+               .AppendInterval(0.05f)
+               .Append(rect.DOAnchorPos(targetLocalPos, 0.75f).SetEase(Ease.InQuad))
+               .Join(textObj.transform.DOScale(0.5f, 0.75f).SetEase(Ease.InQuad))
+               .Join(textComponent.DOFade(0.1f, 0.75f).SetEase(Ease.InQuad))
+               .OnComplete(() => {
+                   if (progressViewForFallback != null)
+                   {
+                       progressViewForFallback.AddScoreVisually(scoreAmount);
+                       progressViewForFallback.PlayBounceFx();
+                   }
+                   Destroy(textObj);
+               })
+               .SetLink(textObj);
         }
     }
 }

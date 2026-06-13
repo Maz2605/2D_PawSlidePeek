@@ -793,6 +793,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
             EventManager<LogicGameEvent>.Post(LogicGameEvent.GameplayHudStateChanged, _lastSnapshot.Clone());
         }
 
+        public void ForcePublishHudState()
+        {
+            PublishHudStateChanged();
+        }
+
         private bool IsChargedBoosterCell(CellModel cell)
         {
             return cell != null &&

@@ -134,7 +134,7 @@ namespace _PawSlidePopGame._Scripts.Core.Vibration
             _initialized = true;
         }
 
-        private void PlayLightImpact(bool requireEnabled)
+        public void PlayLightImpact(bool requireEnabled = true)
         {
             if (!CanVibrateInternal(requireEnabled))
             {
@@ -156,7 +156,7 @@ namespace _PawSlidePopGame._Scripts.Core.Vibration
             global::Vibration.Vibrate();
         }
 
-        private void PlayMediumImpact(bool requireEnabled)
+        public void PlayMediumImpact(bool requireEnabled = true)
         {
             if (!CanVibrateInternal(requireEnabled))
             {

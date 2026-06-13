@@ -25,6 +25,11 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
         {
             ClearNodes();
 
+            if (entries == null || entries.Count == 0)
+            {
+                return;
+            }
+
             IReadOnlyList<RectTransform> anchors = GetNodeAnchors();
             if (anchors.Count == 0)
             {

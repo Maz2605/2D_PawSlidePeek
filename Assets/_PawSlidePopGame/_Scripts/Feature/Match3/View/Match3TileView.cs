@@ -159,10 +159,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 true);
         }
 
-        public virtual IEnumerator PlaySpecialCreateAsync()
+        public virtual IEnumerator PlaySpecialCreateAsync(float speedMultiplier = 1f)
         {
             yield return PlayPulseTintAsync(
-                Mathf.Max(0.05f, specialCreateDuration),
+                Mathf.Max(0.02f, specialCreateDuration / speedMultiplier),
                 damagePunchScale * 1.35f,
                 new Color(1f, 0.98f, 0.8f, 1f),
                 TileShadowState.Active,
@@ -402,10 +402,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             yield return sequence.WaitForCompletion();
         }
 
-        public virtual IEnumerator PlayLandAsync(float intensity = 1f)
+        public virtual IEnumerator PlayLandAsync(float intensity = 1f, float speedMultiplier = 1f)
         {
             StopIdle();
-            float duration = Mathf.Max(0.05f, landingDuration);
+            float duration = Mathf.Max(0.05f, landingDuration / speedMultiplier);
             float clampedIntensity = Mathf.Max(0.25f, intensity);
             Vector3 punch = new Vector3(landingPunchScale * clampedIntensity, -landingPunchScale * 0.6f * clampedIntensity, 0f);
 

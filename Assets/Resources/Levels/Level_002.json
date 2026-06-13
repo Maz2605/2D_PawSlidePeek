@@ -6,7 +6,7 @@
     "displayLevelNumber": 2,
     "width": 8,
     "height": 8,
-    "movesLimit": 32,
+    "movesLimit": 5,
     "underlayLayout": [
       0,
       0,
@@ -96,8 +96,8 @@
       0,
       0,
       0,
-      0,
-      0,
+      101,
+      101,
       0,
       0,
       107,
@@ -156,15 +156,15 @@
       302,
       302,
       302,
+      0,
       301,
       302,
       302,
       302,
-      302,
-      302,
-      302,
       301,
-      301,
+      302,
+      0,
+      0,
       302,
       302,
       302,
@@ -222,6 +222,7 @@
       true,
       true,
       true,
+      false,
       true,
       true,
       true,
@@ -229,8 +230,7 @@
       true,
       true,
       true,
-      true,
-      true,
+      false,
       true,
       true,
       true,
@@ -286,14 +286,6 @@
       {
         "tileId": 301,
         "requiredCount": 4
-      },
-      {
-        "tileId": 302,
-        "requiredCount": 15
-      },
-      {
-        "tileId": 105,
-        "requiredCount": 26
       }
     ],
     "starScoreThresholds": [

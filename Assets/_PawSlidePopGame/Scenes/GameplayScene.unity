@@ -525,7 +525,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2271483723925056283, guid: d4d3ad37f734dcd4f950452aab3bde06, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -72.82013
+      value: -72.82019
       objectReference: {fileID: 0}
     - target: {fileID: 2573384290027391003, guid: d4d3ad37f734dcd4f950452aab3bde06, type: 3}
       propertyPath: m_Pivot.x
@@ -621,7 +621,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3884757489409173915, guid: d4d3ad37f734dcd4f950452aab3bde06, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -242.1836
+      value: -242.18353
       objectReference: {fileID: 0}
     - target: {fileID: 4423263467457918338, guid: d4d3ad37f734dcd4f950452aab3bde06, type: 3}
       propertyPath: m_AnchorMax.y
@@ -705,7 +705,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7091340991522958538, guid: d4d3ad37f734dcd4f950452aab3bde06, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -242.18372
+      value: -242.18378
       objectReference: {fileID: 0}
     - target: {fileID: 7450639052658021268, guid: d4d3ad37f734dcd4f950452aab3bde06, type: 3}
       propertyPath: m_AnchorMax.y
@@ -812,7 +812,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4996cad4d82749f0a55fe9687a2360cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Core.Vibration.VibrationController
-  dontDestroyOnLoad: 1
+  dontDestroyOnLoad: 0
 --- !u!1 &287066353
 GameObject:
   m_ObjectHideFlags: 0
@@ -1254,7 +1254,7 @@ MonoBehaviour:
     m_Bits: 1
   m_VolumeTrigger: {fileID: 0}
   m_VolumeFrameworkUpdateModeOption: 2
-  m_RenderPostProcessing: 0
+  m_RenderPostProcessing: 1
   m_Antialiasing: 0
   m_AntialiasingQuality: 2
   m_StopNaN: 0
@@ -2002,6 +2002,9 @@ MonoBehaviour:
   boardView: {fileID: 1712751364}
   inputController: {fileID: 1005209132}
   boosterController: {fileID: 1639912537}
+  sugarCrushSpawnDelay: 0.01
+  sugarCrushExplodeDelay: 0.01
+  scorePerRemainingMove: 500
   idleHintDelay: 5
 --- !u!1 &918496400
 GameObject:
@@ -2656,8 +2659,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Core.Audio.AudioController
   audioConfig: {fileID: 11400000, guid: 829e63a358754a542962f7a8e9027ba3, type: 2}
-  playMusicOnEnable: 1
-  dontDestroyOnLoad: 1
+  playMusicOnEnable: 0
+  dontDestroyOnLoad: 0
   matchSfxCooldown: 0.06
   bigMatchScoreThreshold: 50
   comboScoreThreshold: 90
@@ -2923,7 +2926,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1395952876
 Transform:
   m_ObjectHideFlags: 0
@@ -3603,7 +3606,56 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 07500bde85c13504999bd0eb5a61d14f, type: 2}
   - {fileID: 11400000, guid: 0d5f647949868c9439b7e304ed5b6645, type: 2}
   - {fileID: 11400000, guid: 5d9d160c7ac421941a0bf96ea3c92d07, type: 2}
-  logDebugMessages: 1
+  logDebugMessages: 0
+--- !u!1 &1662056889
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1662056891}
+  - component: {fileID: 1662056890}
+  m_Layer: 0
+  m_Name: GlobalVolume
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1662056890
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1662056889}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.Volume
+  m_IsGlobal: 1
+  priority: 0
+  blendDistance: 0
+  weight: 1
+  sharedProfile: {fileID: 11400000, guid: 8c70cc3daf450ec41a3c9a558b2e1683, type: 2}
+--- !u!4 &1662056891
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1662056889}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1712751362
 GameObject:
   m_ObjectHideFlags: 0
@@ -3662,6 +3714,9 @@ MonoBehaviour:
   refillDurationPerCell: 0.1
   phaseGap: 0.04
   spawnableTilePrewarmReserve: 2
+  introDuration: 0.9
+  loseOutroDuration: 0.8
+  loseOutroDelayBeforePopup: 1.8
 --- !u!1 &1718722689
 GameObject:
   m_ObjectHideFlags: 0
@@ -5501,3 +5556,4 @@ SceneRoots:
   - {fileID: 1353469431}
   - {fileID: 1940441513}
   - {fileID: 1718722690}
+  - {fileID: 1662056891}

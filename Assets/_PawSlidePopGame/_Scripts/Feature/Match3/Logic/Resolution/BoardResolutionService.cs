@@ -157,6 +157,60 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             return executionResult;
         }
 
+        public static BoardMoveExecutionResult ExecuteSugarCrushActivation(
+            BoardModel board,
+            int x,
+            int y,
+            Match3LevelData levelData,
+            Match3TileDatabaseSO tileDatabase,
+            Random random,
+            BoardRuleSet ruleSet = null)
+        {
+            BoardMoveExecutionResult executionResult = new BoardMoveExecutionResult();
+            executionResult.Kind = BoardExecutionKind.TileActivation;
+            BoardRuleSet activeRuleSet = ruleSet ?? BoardRuleSet.Default;
+            if (board == null || levelData == null || tileDatabase == null || activeRuleSet.MatchRule == null)
+            {
+                return executionResult;
+            }
+
+            CellModel cell = board.GetCell(x, y);
+            TileModel tile = cell?.Tile;
+            if (cell == null || !cell.IsPlayable || !cell.CanTileActivate() || tile == null || tile.TileKind != TileKind.Booster)
+            {
+                return executionResult;
+            }
+
+            executionResult.IsApplied = true;
+            executionResult.IsAccepted = true;
+
+            BoardPresentationTraceBuilder traceBuilder = new BoardPresentationTraceBuilder();
+            BoardResolutionResult resolutionResult = new BoardResolutionResult
+            {
+                IsMoveAccepted = true
+            };
+
+            int scoreBefore = board.CurrentScore;
+            CascadeTrace activationCascade = traceBuilder.BeginCascade();
+            BoardFxContext fxContext = new BoardFxContext(activationCascade, random);
+
+            tile.Activate(board, cell, fxContext);
+            resolutionResult.CascadesResolved += CountCascadeAsResolved(activationCascade);
+            resolutionResult.ClearedTiles += activationCascade.ClearPhase.ClearOps.Count;
+
+            BoardGravityService.Apply(board, activationCascade.GravityPhase.TravelOps);
+            resolutionResult.SpawnedTiles += BoardRefillService.Apply(board, levelData, tileDatabase, random, activationCascade.RefillPhase.SpawnOps);
+
+            ResolveBoard(board, levelData, tileDatabase, random, resolutionResult, activeRuleSet.MatchRule, null, traceBuilder, null);
+            ApplyDeliveryMechanics(board, levelData, tileDatabase, random, resolutionResult, activeRuleSet.MatchRule, traceBuilder);
+            ApplyChocolateGrowth(board, tileDatabase, random, resolutionResult, traceBuilder);
+            resolutionResult.ScoreDelta = board.CurrentScore - scoreBefore;
+
+            executionResult.ResolutionResult = resolutionResult;
+            executionResult.PresentationTrace = traceBuilder.Build();
+            return executionResult;
+        }
+
         public static bool CanPlaceChargedBoosterAt(BoardModel board, int x, int y, int chargedTileId, Match3TileDatabaseSO tileDatabase)
         {
             if (board == null || tileDatabase == null || chargedTileId <= 0)

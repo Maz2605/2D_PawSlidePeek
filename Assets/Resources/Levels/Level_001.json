@@ -284,10 +284,6 @@
     ],
     "targets": [
       {
-        "tileId": 105,
-        "requiredCount": 10
-      },
-      {
         "tileId": 301,
         "requiredCount": 5
       }

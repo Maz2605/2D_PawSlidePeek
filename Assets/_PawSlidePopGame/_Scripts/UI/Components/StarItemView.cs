@@ -86,6 +86,14 @@ namespace _PawSlidePopGame._Scripts.UI.Components
             DOVirtual.DelayedCall(delay, PlayParticles).SetUpdate(true).SetLink(gameObject, LinkBehaviour.KillOnDisable);
         }
 
+        public void PlayBounce()
+        {
+            transform.DOKill(true);
+            transform.localScale = Vector3.one;
+            transform.DOPunchScale(new Vector3(0.3f, 0.3f, 0f), 0.25f, 5, 0.5f)
+                .SetLink(gameObject, LinkBehaviour.KillOnDisable);
+        }
+
         private void ApplyVisualState(StarVisualState state)
         {
 

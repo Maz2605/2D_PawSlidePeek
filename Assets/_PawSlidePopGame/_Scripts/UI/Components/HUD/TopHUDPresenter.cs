@@ -2,6 +2,7 @@ using _PawSlidePopGame._Scripts.Core.System.GameFlow;
 using _PawSlidePopGame._Scripts.Data.Events;
 using _PawSlidePopGame._Scripts.Data.Events.Payloads;
 using _PawSlidePopGame._Scripts.Feature.Match3.Flow;
+using _PawSlidePopGame._Scripts.Feature.Match3.Presenter;
 using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
 using DG.Tweening;
 using UnityEngine;
@@ -89,6 +90,13 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             _currentSnapshot = snapshot.Clone();
             movesCounterView?.SetValue(_currentSnapshot.remainingMoves);
             targetListView?.SetTargets(_currentSnapshot.targets);
+
+            var boardPresenter = FindFirstObjectByType<Match3BoardPresenter>(FindObjectsInactive.Include);
+            if (boardPresenter != null && boardPresenter.IsVictoryOutroPlaying)
+            {
+                return;
+            }
+
             levelProgressView?.SetData(_currentSnapshot);
         }
 
@@ -235,6 +243,12 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         private void HandleStarReachedFx(StarReachedPayload payload)
         {
+            var boardPresenter = FindFirstObjectByType<Match3BoardPresenter>(FindObjectsInactive.Include);
+            if (boardPresenter != null && boardPresenter.IsVictoryOutroPlaying)
+            {
+                return;
+            }
+
             levelProgressView?.PlayStarReachedFx(payload);
         }
 
@@ -264,6 +278,13 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
             _currentSnapshot.currentScore = payload.CurrentScore;
             _currentSnapshot.reachedStars = GameplayHudSnapshotBuilder.CountReachedStars(payload.CurrentScore, _currentSnapshot.starScoreThresholds);
+
+            var boardPresenter = FindFirstObjectByType<Match3BoardPresenter>(FindObjectsInactive.Include);
+            if (boardPresenter != null && boardPresenter.IsVictoryOutroPlaying)
+            {
+                return;
+            }
+
             levelProgressView?.PlayScoreChangedFx(payload);
         }
 

@@ -104,12 +104,26 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         private void HandleSubStateChanged(InGameSubStateChangedPayload payload)
         {
             SetInputEnabled(GameFlowManager.IsInteractiveGameplaySubState(payload.Current));
+            if (payload.Current == InGameSubState.Victory)
+            {
+                PlayOutroAnimation();
+            }
         }
 
         public void SetInputEnabled(bool enabled)
         {
             _inputEnabled = enabled;
             chargedAbilityView?.SetInputEnabled(enabled);
+        }
+
+        public void PlayOutroAnimation()
+        {
+            CacheOriginalPosition();
+            transform.DOKill();
+            Vector3 targetPos = _originalLocalPos - new Vector3(0f, 500f, 0f);
+            transform.DOLocalMove(targetPos, 0.6f)
+                .SetEase(Ease.InBack)
+                .SetLink(gameObject);
         }
 
         private void HandleHudInitialized(GameplayHudSnapshot snapshot)

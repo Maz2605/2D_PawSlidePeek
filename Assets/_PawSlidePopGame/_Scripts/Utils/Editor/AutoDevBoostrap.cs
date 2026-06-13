@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using System;
 using System.Reflection;
 using _PawSlidePopGame._Scripts.Core.Boostrap;
@@ -17,7 +17,7 @@ namespace _PawSlidePopGame._Scripts.Utils.Editor
         {
             ResetSingletonStateForPlayMode();
 
-            if (SceneManager.GetActiveScene().name == "LoadingScene")
+            if (SceneManager.GetActiveScene().name != "GameplayScene")
             {
                 return;
             }

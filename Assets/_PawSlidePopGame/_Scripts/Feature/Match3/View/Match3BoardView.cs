@@ -500,7 +500,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             }
         }
 
-        public IEnumerator PlayMoveExecution(BoardMoveExecutionResult executionResult)
+        public IEnumerator PlayMoveExecution(BoardMoveExecutionResult executionResult, float speedMultiplier = 1f)
         {
             if (executionResult == null || executionResult.PresentationTrace == null)
             {
@@ -511,14 +511,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
             if (trace.MoveAttempt != null && trace.MoveAttempt.TravelOps.Count > 0)
             {
-                yield return StartCoroutine(PlayLineTravel(trace.MoveAttempt.TravelOps, trace.MoveAttempt.Axis, trace.MoveAttempt.Direction, moveDuration));
+                yield return StartCoroutine(PlayLineTravel(trace.MoveAttempt.TravelOps, trace.MoveAttempt.Axis, trace.MoveAttempt.Direction, moveDuration / speedMultiplier));
             }
 
             if (!executionResult.IsAccepted)
             {
                 if (trace.Rollback != null && trace.Rollback.TravelOps.Count > 0)
                 {
-                    yield return StartCoroutine(PlayLineTravel(trace.Rollback.TravelOps, trace.Rollback.Axis, trace.Rollback.Direction, rollbackDuration));
+                    yield return StartCoroutine(PlayLineTravel(trace.Rollback.TravelOps, trace.Rollback.Axis, trace.Rollback.Direction, rollbackDuration / speedMultiplier));
                 }
 
                 yield break;
@@ -527,9 +527,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             for (int i = 0; i < trace.Cascades.Count; i++)
             {
                 CascadeTrace cascadeTrace = trace.Cascades[i];
-                yield return StartCoroutine(PlayClearPhase(cascadeTrace.ClearPhase));
-                yield return StartCoroutine(PlayGravityPhase(cascadeTrace.GravityPhase));
-                yield return StartCoroutine(PlayRefillPhase(cascadeTrace.RefillPhase));
+                yield return StartCoroutine(PlayClearPhase(cascadeTrace.ClearPhase, speedMultiplier));
+                yield return StartCoroutine(PlayGravityPhase(cascadeTrace.GravityPhase, speedMultiplier));
+                yield return StartCoroutine(PlayRefillPhase(cascadeTrace.RefillPhase, speedMultiplier));
             }
         }
 
@@ -814,7 +814,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             return counts;
         }
 
-        private IEnumerator PlayClearPhase(ClearPhaseTrace clearPhase)
+        private IEnumerator PlayClearPhase(ClearPhaseTrace clearPhase, float speedMultiplier = 1f)
         {
             if (clearPhase == null)
             {
@@ -885,7 +885,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 SpecialCreateOp op = clearPhase.SpecialCreateOps[i];
                 OnSpecialCreatePlaybackStarted?.Invoke(op);
                 DispatchScoreGainsForSpecialCreateOp(op, pendingScoreGains);
-                routines.Add(PlaySpecialCreateOp(op));
+                routines.Add(PlaySpecialCreateOp(op, speedMultiplier));
             }
 
             DispatchRemainingScoreGains(pendingScoreGains);
@@ -894,11 +894,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
             if (phaseGap > 0f)
             {
-                yield return new WaitForSeconds(phaseGap);
+                yield return new WaitForSeconds(phaseGap / speedMultiplier);
             }
         }
 
-        private IEnumerator PlayGravityPhase(GravityPhaseTrace gravityPhase)
+        private IEnumerator PlayGravityPhase(GravityPhaseTrace gravityPhase, float speedMultiplier = 1f)
         {
             if (gravityPhase == null || gravityPhase.TravelOps.Count == 0)
             {
@@ -916,21 +916,21 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                     continue;
                 }
 
-                float duration = Mathf.Max(0.05f, gravityDurationPerCell * Mathf.Max(1, op.Distance));
+                float duration = Mathf.Max(0.05f / speedMultiplier, (gravityDurationPerCell / speedMultiplier) * Mathf.Max(1, op.Distance));
                 moveRoutines.Add(tileView.PlayMoveAsync(GetTileLocalPosition(op.ToCell.X, op.ToCell.Y, op.Layer), duration));
                 landingViews.Add(tileView);
             }
 
             yield return StartCoroutine(RunParallel(moveRoutines));
-            yield return StartCoroutine(PlayLandings(landingViews, gravityPhase.TravelOps));
+            yield return StartCoroutine(PlayLandings(landingViews, gravityPhase.TravelOps, speedMultiplier));
 
             if (phaseGap > 0f)
             {
-                yield return new WaitForSeconds(phaseGap);
+                yield return new WaitForSeconds(phaseGap / speedMultiplier);
             }
         }
 
-        private IEnumerator PlayRefillPhase(RefillPhaseTrace refillPhase)
+        private IEnumerator PlayRefillPhase(RefillPhaseTrace refillPhase, float speedMultiplier = 1f)
         {
             if (refillPhase == null || refillPhase.SpawnOps.Count == 0)
             {
@@ -959,7 +959,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 }
 
                 float distance = Mathf.Abs(op.ToCell.Y - op.SpawnFromRowAboveBoard);
-                float duration = Mathf.Max(0.08f, refillDurationPerCell * Mathf.Max(1f, distance));
+                float duration = Mathf.Max(0.08f / speedMultiplier, (refillDurationPerCell / speedMultiplier) * Mathf.Max(1f, distance));
                 spawnRoutines.Add(tileView.PlaySpawnFallAsync(
                     GetTileLocalPosition(op.ToCell.X, op.SpawnFromRowAboveBoard, op.Layer),
                     GetTileLocalPosition(op.ToCell.X, op.ToCell.Y, op.Layer),
@@ -980,11 +980,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 });
             }
 
-            yield return StartCoroutine(PlayLandings(landingViews, landingOps));
+            yield return StartCoroutine(PlayLandings(landingViews, landingOps, speedMultiplier));
 
             if (phaseGap > 0f)
             {
-                yield return new WaitForSeconds(phaseGap);
+                yield return new WaitForSeconds(phaseGap / speedMultiplier);
             }
         }
 
@@ -1045,7 +1045,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         }
 
 
-        private IEnumerator PlayLandings(IReadOnlyList<Match3TileView> tileViews, IReadOnlyList<TileTravelOp> ops)
+        private IEnumerator PlayLandings(IReadOnlyList<Match3TileView> tileViews, IReadOnlyList<TileTravelOp> ops, float speedMultiplier = 1f)
         {
             if (tileViews == null || tileViews.Count == 0)
             {
@@ -1057,7 +1057,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             {
                 Match3TileView tileView = tileViews[i];
                 int distance = ops != null && i < ops.Count ? Mathf.Max(1, ops[i].Distance) : 1;
-                routines.Add(tileView.PlayLandAsync(Mathf.Clamp(distance * 0.35f, 0.7f, 1.5f)));
+                routines.Add(tileView.PlayLandAsync(Mathf.Clamp(distance * 0.35f, 0.7f, 1.5f), speedMultiplier));
             }
 
             yield return StartCoroutine(RunParallel(routines));
@@ -1101,7 +1101,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             }
         }
 
-        private IEnumerator PlaySpecialCreateOp(SpecialCreateOp createOp)
+        private IEnumerator PlaySpecialCreateOp(SpecialCreateOp createOp, float speedMultiplier = 1f)
         {
             Match3TileView sourceTileView = null;
             if (_tileViews.TryGetValue(createOp.SourceTileInstanceId, out Match3TileView existingView))
@@ -1111,7 +1111,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
             if (sourceTileView != null)
             {
-                yield return StartCoroutine(sourceTileView.PlaySpecialCreateAsync());
+                yield return StartCoroutine(sourceTileView.PlaySpecialCreateAsync(speedMultiplier));
             }
 
             if (createOp.ReplaceSourceTileView)
@@ -1129,7 +1129,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             Match3TileView newTileView = CreateTileView(boardTile, createOp.Definition, GetTileLocalPosition(createOp.Cell.X, createOp.Cell.Y, createOp.Layer));
             if (newTileView != null)
             {
-                yield return StartCoroutine(newTileView.PlaySpecialCreateAsync());
+                yield return StartCoroutine(newTileView.PlaySpecialCreateAsync(speedMultiplier));
             }
         }
 
@@ -1273,6 +1273,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             }
 
             return GetTileLocalPosition(cell.X, cell.Y, layer);
+        }
+
+        public Vector3 GetCellWorldPosition(int x, int y)
+        {
+            return transform.TransformPoint(GetTileLocalPosition(x, y, TileStackLayer.Base));
         }
 
         private Vector3 ResolveWorldPosition(TileClearOp clearOp)

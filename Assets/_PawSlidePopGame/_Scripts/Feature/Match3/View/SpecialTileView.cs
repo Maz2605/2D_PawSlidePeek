@@ -33,10 +33,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 true);
         }
 
-        public override IEnumerator PlaySpecialCreateAsync()
+        public override IEnumerator PlaySpecialCreateAsync(float speedMultiplier = 1f)
         {
             yield return PlayPulseTintAsync(
-                Mathf.Max(0.05f, SpecialCreateDuration),
+                Mathf.Max(0.02f, SpecialCreateDuration / speedMultiplier),
                 DamagePunchScale * specialCreatePunchMultiplier,
                 specialCreateColor,
                 TileShadowState.Active,

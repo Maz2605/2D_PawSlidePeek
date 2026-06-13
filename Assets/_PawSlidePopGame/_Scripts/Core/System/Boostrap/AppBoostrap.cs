@@ -48,7 +48,10 @@ namespace _PawSlidePopGame._Scripts.Core.System.Boostrap
             }
 
             yield return null;
-            sceneLoader.LoadScene(nameMainScene);
+            if (!isEditorAutoInject)
+            {
+                sceneLoader.LoadScene(nameMainScene);
+            }
         }
 
         private void EnsureGameAppFlowManagerExists()

@@ -97,7 +97,8 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
             }
 
             button.onClick.RemoveAllListeners();
-            button.interactable = entry.State != MapLevelState.Locked;
+            // Nút luôn có thể tương tác (interactable = true) để người chơi có thể click vào màn bị khóa và mở LevelLockedPopup
+            button.interactable = true;
             string capturedLevelId = entry.LevelId;
             button.onClick.AddListener(() => onPressed?.Invoke(capturedLevelId));
         }

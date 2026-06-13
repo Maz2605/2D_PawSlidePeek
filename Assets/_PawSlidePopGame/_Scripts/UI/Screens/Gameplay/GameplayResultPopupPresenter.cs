@@ -3,6 +3,7 @@ using _PawSlidePopGame._Scripts.Core.Vibration;
 using _PawSlidePopGame._Scripts.Data.Events;
 using _PawSlidePopGame._Scripts.Data.Events.Payloads;
 using _PawSlidePopGame._Scripts.Feature.Match3.Flow;
+using _PawSlidePopGame._Scripts.Feature.Match3.Presenter;
 using _PawSlidePopGame._Scripts.Feature.Match3.View;
 using _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager;
 using _PawSlidePopGame._Scripts.UI.Manager;
@@ -28,11 +29,22 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.Gameplay
 
         private void HandleGameplayWon(GameplayHudSnapshot snapshot)
         {
-            GameplayHudSnapshot resolvedSnapshot = snapshot?.Clone() ?? GameFlowManager.Instance?.LastSnapshot?.Clone();
+            StartCoroutine(ShowWinPopupDelayed(snapshot));
+        }
+
+        private System.Collections.IEnumerator ShowWinPopupDelayed(GameplayHudSnapshot snapshot)
+        {
+            var boardPresenter = FindFirstObjectByType<Match3BoardPresenter>(FindObjectsInactive.Include);
+            if (boardPresenter != null)
+            {
+                yield return new WaitUntil(() => !boardPresenter.IsVictoryOutroPlaying);
+            }
+
+            GameplayHudSnapshot resolvedSnapshot = GameFlowManager.Instance?.LastSnapshot?.Clone() ?? snapshot?.Clone();
             if (resolvedSnapshot == null)
             {
                 Debug.LogWarning("[GameplayResultPopupPresenter] Missing GameplayHudSnapshot for WinPopup.");
-                return;
+                yield break;
             }
 
             RecordLevelProgress(resolvedSnapshot);

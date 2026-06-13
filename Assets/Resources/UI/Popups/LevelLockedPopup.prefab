@@ -1528,7 +1528,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.UI.Popups.LevelLockedPopup
   canvasGroup: {fileID: 8972525754447014665}
   animDuration: 0.25
-  animatedContent: {fileID: 947731947235026685}
+  animatedContent: {fileID: 0}
   lockTransform: {fileID: 347431782701148491}
   okButtonTransform: {fileID: 6792203958136162443}
   levelText: {fileID: 1795196521139440156}
