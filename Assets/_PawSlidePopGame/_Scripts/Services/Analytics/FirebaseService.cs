@@ -40,6 +40,8 @@ namespace _PawSlidePopGame._Scripts.Services.Analytics
         public static FirebaseService Instance { get; private set; }
         public static bool IsReady { get; private set; }
 
+        public static event System.Action OnReady;
+
         public void Init()
         {
             if (_initStarted)
@@ -103,6 +105,7 @@ namespace _PawSlidePopGame._Scripts.Services.Analytics
                 Crashlytics.IsCrashlyticsCollectionEnabled = crashlyticsEnabled;
 
                 IsReady = true;
+                OnReady?.Invoke();
                 SubscribeGameplayEvents();
 
                 if (logLifecycleEvents)
