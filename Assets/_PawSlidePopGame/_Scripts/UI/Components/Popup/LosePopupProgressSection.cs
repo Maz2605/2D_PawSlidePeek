@@ -8,6 +8,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.Popup
 {
     public sealed class LosePopupProgressSection : MonoBehaviour
     {
+        [SerializeField] private TMP_Text levelText;
         [SerializeField] private TMP_Text scoreText;
         [SerializeField] private TargetListView targetListView;
         [SerializeField] private float countDuration = 0.6f;
@@ -24,11 +25,21 @@ namespace _PawSlidePopGame._Scripts.UI.Components.Popup
                 scoreText.SetText("Your score: {0}", 0);
             }
 
+            if (levelText != null)
+            {
+                levelText.SetText("Level {0}", 0);
+            }
+
             targetListView?.SetTargets(null);
         }
 
         public void Bind(GameplayHudSnapshot snapshot)
         {
+            if (levelText != null)
+            {
+                levelText.SetText("Level {0}", snapshot?.levelNumber ?? 1);
+            }
+
             _displayedScore = snapshot?.currentScore ?? 0;
             if (scoreText != null)
             {
@@ -40,6 +51,11 @@ namespace _PawSlidePopGame._Scripts.UI.Components.Popup
 
         public Sequence GetShowSequence(GameplayHudSnapshot snapshot)
         {
+            if (levelText != null)
+            {
+                levelText.SetText("Level {0}", snapshot?.levelNumber ?? 1);
+            }
+
             targetListView?.SetTargets(snapshot?.targets);
 
             Sequence sequence = DOTween.Sequence()
@@ -58,6 +74,11 @@ namespace _PawSlidePopGame._Scripts.UI.Components.Popup
                     countDuration)
                 .SetEase(Ease.OutCubic)
                 .SetLink(gameObject, LinkBehaviour.KillOnDisable));
+
+            if (targetListView != null)
+            {
+                sequence.Join(targetListView.GetEntranceSequence());
+            }
 
             return sequence;
         }

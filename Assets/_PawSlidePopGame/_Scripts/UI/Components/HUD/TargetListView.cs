@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using _PawSlidePopGame._Scripts.Data.Events.Payloads;
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 {
@@ -31,6 +32,14 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         {
             int count = targets != null ? targets.Count : 0;
             EnsureItemCount(count);
+
+            AdjustLayoutSpacing(count);
+
+            var layoutGroup = GetComponent<LayoutGroup>();
+            if (layoutGroup != null)
+            {
+                layoutGroup.enabled = true;
+            }
 
             for (int i = 0; i < _spawnedItems.Count; i++)
             {
@@ -81,6 +90,12 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         public void ResetView()
         {
+            var layoutGroup = GetComponent<LayoutGroup>();
+            if (layoutGroup != null)
+            {
+                layoutGroup.enabled = true;
+            }
+
             transform.DOKill();
             transform.localScale = Vector3.one;
 
@@ -89,6 +104,137 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                 if (_spawnedItems[i] != null)
                 {
                     _spawnedItems[i].SetData(null);
+                }
+            }
+        }
+
+        public Sequence GetEntranceSequence(float delayPerItem = 0.08f, float duration = 0.45f)
+        {
+            Sequence seq = DOTween.Sequence().SetUpdate(true);
+
+            int activeCount = 0;
+            for (int i = 0; i < _spawnedItems.Count; i++)
+            {
+                if (_spawnedItems[i] != null && _spawnedItems[i].gameObject.activeSelf)
+                {
+                    activeCount++;
+                }
+            }
+            AdjustLayoutSpacing(activeCount);
+
+            var layoutGroup = GetComponent<LayoutGroup>();
+            if (layoutGroup != null)
+            {
+                layoutGroup.enabled = true;
+                Canvas.ForceUpdateCanvases();
+                LayoutRebuilder.ForceRebuildLayoutImmediate(transform as RectTransform);
+                layoutGroup.enabled = false;
+            }
+
+            for (int i = 0; i < _spawnedItems.Count; i++)
+            {
+                TargetItemView item = _spawnedItems[i];
+                if (item == null || !item.gameObject.activeSelf)
+                {
+                    continue;
+                }
+
+                Vector3 targetLocalPos = item.transform.localPosition;
+                item.transform.localPosition = targetLocalPos + new Vector3(0f, -80f, 0f);
+                item.transform.localScale = Vector3.zero;
+
+                seq.Join(item.transform.DOLocalMoveY(targetLocalPos.y, duration)
+                    .SetEase(Ease.OutBack)
+                    .SetDelay(i * delayPerItem)
+                    .SetUpdate(true)
+                    .SetLink(item.gameObject, LinkBehaviour.KillOnDisable));
+
+                seq.Join(item.transform.DOScale(Vector3.one, duration)
+                    .SetEase(Ease.OutBack)
+                    .SetDelay(i * delayPerItem)
+                    .SetUpdate(true)
+                    .SetLink(item.gameObject, LinkBehaviour.KillOnDisable));
+            }
+
+            return seq;
+        }
+
+        private void AdjustLayoutSpacing(int count)
+        {
+            var layoutGroup = GetComponent<HorizontalLayoutGroup>();
+            if (layoutGroup == null)
+            {
+                return;
+            }
+
+            if (count <= 1)
+            {
+                layoutGroup.childAlignment = TextAnchor.MiddleCenter;
+                layoutGroup.spacing = 0f;
+            }
+            else
+            {
+                RectTransform rectTransform = transform as RectTransform;
+                if (rectTransform != null)
+                {
+                    float containerWidth = rectTransform.rect.width;
+                    if (containerWidth <= 0f)
+                    {
+                        containerWidth = rectTransform.sizeDelta.x;
+                    }
+
+                    if (containerWidth <= 0f)
+                    {
+                        containerWidth = 1080f;
+                    }
+
+                    float paddingLeft = layoutGroup.padding.left;
+                    float paddingRight = layoutGroup.padding.right;
+
+                    float itemWidth = 200f; // fallback
+                    if (_spawnedItems.Count > 0 && _spawnedItems[0] != null)
+                    {
+                        var itemRect = _spawnedItems[0].transform as RectTransform;
+                        if (itemRect != null)
+                        {
+                            itemWidth = itemRect.rect.width;
+                            if (itemWidth <= 0f)
+                            {
+                                itemWidth = itemRect.sizeDelta.x;
+                            }
+                        }
+                    }
+                    else if (targetItemPrefab != null)
+                    {
+                        var prefabRect = targetItemPrefab.transform as RectTransform;
+                        if (prefabRect != null)
+                        {
+                            itemWidth = prefabRect.rect.width;
+                            if (itemWidth <= 0f)
+                            {
+                                itemWidth = prefabRect.sizeDelta.x;
+                            }
+                        }
+                    }
+
+                    if (itemWidth <= 0f)
+                    {
+                        itemWidth = 200f;
+                    }
+
+                    float totalItemWidth = count * itemWidth;
+                    float availableSpace = containerWidth - paddingLeft - paddingRight - totalItemWidth;
+
+                    if (availableSpace > 0f)
+                    {
+                        layoutGroup.spacing = availableSpace / (count - 1);
+                        layoutGroup.childAlignment = TextAnchor.MiddleCenter;
+                    }
+                    else
+                    {
+                        layoutGroup.spacing = 32f;
+                        layoutGroup.childAlignment = TextAnchor.MiddleCenter;
+                    }
                 }
             }
         }

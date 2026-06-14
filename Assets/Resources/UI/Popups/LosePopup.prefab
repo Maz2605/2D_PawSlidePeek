@@ -1,5 +1,144 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &209700593248487231
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4799407412217240468}
+  - component: {fileID: 4303894863277409252}
+  - component: {fileID: 2996171365226298918}
+  m_Layer: 5
+  m_Name: Level
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &4799407412217240468
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 209700593248487231}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7640902666831673435}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: -80}
+  m_SizeDelta: {x: 0, y: 50}
+  m_Pivot: {x: 0.5, y: 1}
+--- !u!222 &4303894863277409252
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 209700593248487231}
+  m_CullTransparentMesh: 1
+--- !u!114 &2996171365226298918
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 209700593248487231}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_text: Level
+  m_isRightToLeft: 0
+  m_fontAsset: {fileID: 11400000, guid: 2f63e46dd6f596e44ba10bb13f0fda41, type: 2}
+  m_sharedMaterial: {fileID: -5193080906506839638, guid: 2f63e46dd6f596e44ba10bb13f0fda41, type: 2}
+  m_fontSharedMaterials:
+  - {fileID: 0}
+  m_fontMaterial: {fileID: 0}
+  m_fontMaterials:
+  - {fileID: 0}
+  m_fontColor32:
+    serializedVersion: 2
+    rgba: 4291736104
+  m_fontColor: {r: 0.15686275, g: 0.69803923, b: 0.8078432, a: 1}
+  m_enableVertexGradient: 0
+  m_colorMode: 3
+  m_fontColorGradient:
+    topLeft: {r: 1, g: 1, b: 1, a: 1}
+    topRight: {r: 1, g: 1, b: 1, a: 1}
+    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
+    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColorGradientPreset: {fileID: 0}
+  m_spriteAsset: {fileID: 0}
+  m_tintAllSprites: 0
+  m_StyleSheet: {fileID: 0}
+  m_TextStyleHashCode: -1183493901
+  m_overrideHtmlColors: 0
+  m_faceColor:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontSize: 64
+  m_fontSizeBase: 64
+  m_fontWeight: 400
+  m_enableAutoSizing: 0
+  m_fontSizeMin: 18
+  m_fontSizeMax: 72
+  m_fontStyle: 0
+  m_HorizontalAlignment: 2
+  m_VerticalAlignment: 512
+  m_textAlignment: 65535
+  m_characterSpacing: 0
+  m_characterHorizontalScale: 1
+  m_wordSpacing: 0
+  m_lineSpacing: 0
+  m_lineSpacingMax: 0
+  m_paragraphSpacing: 0
+  m_charWidthMaxAdj: 0
+  m_TextWrappingMode: 1
+  m_wordWrappingRatios: 0.4
+  m_overflowMode: 0
+  m_linkedTextComponent: {fileID: 0}
+  parentLinkedComponent: {fileID: 0}
+  m_enableKerning: 0
+  m_ActiveFontFeatures: 6e72656b
+  m_enableExtraPadding: 0
+  checkPaddingRequired: 0
+  m_isRichText: 1
+  m_EmojiFallbackSupport: 1
+  m_parseCtrlCharacters: 1
+  m_isOrthographic: 1
+  m_isCullingEnabled: 0
+  m_horizontalMapping: 0
+  m_verticalMapping: 0
+  m_uvLineOffset: 0
+  m_geometrySortingOrder: 0
+  m_IsTextObjectScaleStatic: 0
+  m_VertexBufferAutoSizeReduction: 0
+  m_useMaxVisibleDescender: 1
+  m_pageToDisplay: 1
+  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_isUsingLegacyAnimationComponent: 0
+  m_isVolumetricText: 0
+  m_hasFontAssetChanged: 0
+  m_baseMaterial: {fileID: 0}
+  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &851027910680730440
 GameObject:
   m_ObjectHideFlags: 0
@@ -4992,9 +5131,11 @@ MonoBehaviour:
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 2f63e46dd6f596e44ba10bb13f0fda41, type: 2}
   m_sharedMaterial: {fileID: -5193080906506839638, guid: 2f63e46dd6f596e44ba10bb13f0fda41, type: 2}
-  m_fontSharedMaterials: []
+  m_fontSharedMaterials:
+  - {fileID: 0}
   m_fontMaterial: {fileID: 0}
-  m_fontMaterials: []
+  m_fontMaterials:
+  - {fileID: 0}
   m_fontColor32:
     serializedVersion: 2
     rgba: 4291736104
@@ -5254,6 +5395,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7640902666831673435}
+  - component: {fileID: 4772454961345987335}
   m_Layer: 5
   m_Name: Center
   m_TagString: Untagged
@@ -5275,6 +5417,7 @@ RectTransform:
   m_Children:
   - {fileID: 8403412521519153410}
   - {fileID: 3577085136198923479}
+  - {fileID: 4799407412217240468}
   m_Father: {fileID: 7291253613222109237}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.2}
@@ -5282,6 +5425,22 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &4772454961345987335
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1964349174321783512}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4cb6b704de72bb94c88f848d956ff3c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.UI.Components.Popup.LosePopupProgressSection
+  levelText: {fileID: 2996171365226298918}
+  scoreText: {fileID: 1711593958657162824}
+  targetListView: {fileID: 5651328619205765144}
+  countDuration: 0.6
 --- !u!1 &2818203065394957701
 GameObject:
   m_ObjectHideFlags: 0
@@ -5347,9 +5506,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.UI.Popups.LosePopup
   canvasGroup: {fileID: 5773521075456221621}
   animDuration: 0.25
+  animatedContent: {fileID: 0}
+  topRoot: {fileID: 0}
+  centerRoot: {fileID: 0}
+  bottomRoot: {fileID: 0}
+  topElement: {fileID: 0}
+  centerElement: {fileID: 0}
+  progressSection: {fileID: 4772454961345987335}
   buttonsElement: {fileID: 8423517877091119224}
   homeButton: {fileID: 8435942307114467986}
   repeatButton: {fileID: 3638098685956465812}
+  sectionOverlap: 0.14
+  phaseOverlap: -0.08
+  contentFrameShowDuration: 0.18
+  contentFrameStartScale: 0.94
 --- !u!1 &4236931630605288723
 GameObject:
   m_ObjectHideFlags: 0
@@ -10936,7 +11106,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_AnchorMin.x
@@ -10944,11 +11114,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 220
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_SizeDelta.y
@@ -10964,7 +11134,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -10799.999
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_LocalRotation.w
@@ -10988,7 +11158,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: -113
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -11082,7 +11252,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_AnchorMin.x
@@ -11090,11 +11260,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 220
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_SizeDelta.y
@@ -11110,7 +11280,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -10799.999
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_LocalRotation.w
@@ -11134,7 +11304,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: -113
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -11438,6 +11608,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 8381302123846645206, guid: fe4cb5cc7067bb74ca31bf9ddff546b2, type: 3}
   m_PrefabInstance: {fileID: 5040660594046025985}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &5651328619205765144 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 835852542187301145, guid: fe4cb5cc7067bb74ca31bf9ddff546b2, type: 3}
+  m_PrefabInstance: {fileID: 5040660594046025985}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b677b115da94e8e40b25292e9692b965, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.UI.Components.HUD.TargetListView
 --- !u!1001 &6676276806921991125
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11689,7 +11870,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_AnchorMin.x
@@ -11697,11 +11878,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 220
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_SizeDelta.y
@@ -11717,7 +11898,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -10799.999
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_LocalRotation.w
@@ -11741,7 +11922,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: -113
       objectReference: {fileID: 0}
     - target: {fileID: 9116391970122389108, guid: 59e6b21ddf9c3334e8c79fe3f57ff111, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

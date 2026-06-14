@@ -563,6 +563,7 @@ GameObject:
   - component: {fileID: 5445434038792260284}
   - component: {fileID: 3837202635381871966}
   - component: {fileID: 3919064900403487193}
+  - component: {fileID: -3689835213127522164}
   m_Layer: 5
   m_Name: Avatar
   m_TagString: Untagged
@@ -643,6 +644,36 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &-3689835213127522164
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6380168812678070592}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44617f202ce606f459bd4163bbd9a6e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.UI.Components.ProfileButtonController
+  imgAvatar: {fileID: 750323474677961859}
+  avatarSprites:
+  - {fileID: 21300000, guid: e9b09a76dbcd14de8bb32afd4497023a, type: 3}
+  - {fileID: 21300000, guid: 4fe2e4f34a04f40daa6cc87bc60a5311, type: 3}
+  - {fileID: 21300000, guid: 2417c196a99c2418b88f5e486edd9fcc, type: 3}
+  - {fileID: 21300000, guid: ff77df300de4d408aa7c591f849214b0, type: 3}
+  - {fileID: 21300000, guid: f4740c94ee1744f3c93578b6a9d8cb75, type: 3}
+  - {fileID: 21300000, guid: eb873c3f4759343e0ab8f8ff99995f09, type: 3}
+  - {fileID: 21300000, guid: 7eaf37b6519504526acfbbd66584ee49, type: 3}
+  - {fileID: 21300000, guid: b2d0d379537114d5e902648671e047c5, type: 3}
+  - {fileID: 21300000, guid: da266ea4448be46529f28d3d511e0dfb, type: 3}
+  - {fileID: 21300000, guid: 767db110ed2444924a96094dc80c2299, type: 3}
+  - {fileID: 21300000, guid: 739de52e4e8994b9c8af513bee678708, type: 3}
+  - {fileID: 21300000, guid: ee59e5338f80d4a2ca72d29e2653f6a3, type: 3}
+  - {fileID: 21300000, guid: 57140213a7d91434795a4e030d9bf21f, type: 3}
+  punchScale: 0.12
+  punchDuration: 0.18
+  punchVibrato: 6
 --- !u!1 &7034695687127776986
 GameObject:
   m_ObjectHideFlags: 0
@@ -1030,7 +1061,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1975847765141390106, guid: 61c9eebe836b4614a8eb77d1f6e6d79e, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 1379.8401
+      value: 748.16
       objectReference: {fileID: 0}
     - target: {fileID: 1975847765141390106, guid: 61c9eebe836b4614a8eb77d1f6e6d79e, type: 3}
       propertyPath: m_AnchoredPosition.y
