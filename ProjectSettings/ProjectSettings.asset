@@ -13,7 +13,7 @@ PlayerSettings:
   useOnDemandResources: 0
   accelerometerFrequency: 60
   companyName: MazCompany
-  productName: 2DPawSlidePop
+  productName: 2D_PawSlidePop
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
   m_SplashScreenBackgroundColor: {r: 0.13725491, g: 0.12156863, b: 0.1254902, a: 1}
@@ -297,7 +297,14 @@ PlayerSettings:
   AndroidAppBundleSizeToValidate: 150
   AndroidReportGooglePlayAppDependencies: 1
   androidSymbolsSizeThreshold: 800
-  m_BuildTargetIcons: []
+  m_BuildTargetIcons:
+  - m_BuildTarget: 
+    m_Icons:
+    - serializedVersion: 2
+      m_Icon: {fileID: 2800000, guid: 9c9c56ea68ab04c9f8f46a6c0fd5ffa2, type: 3}
+      m_Width: 128
+      m_Height: 128
+      m_Kind: 0
   m_BuildTargetPlatformIcons:
   - m_BuildTarget: Android
     m_Icons:
@@ -685,7 +692,7 @@ PlayerSettings:
   webWasm2023: 0
   webEnableSubmoduleStrippingCompatibility: 0
   scriptingDefineSymbols:
-    Android: DOTWEEN
+    Android: DOTWEEN;FIREBASE_AUTH_ENABLED;GOOGLE_SIGNIN_ENABLED;FACEBOOK_SDK_ENABLED;FIREBASE_FIRESTORE_ENABLED
     EmbeddedLinux: DOTWEEN
     GameCoreScarlett: DOTWEEN
     GameCoreXboxOne: DOTWEEN
@@ -696,12 +703,12 @@ PlayerSettings:
     PS4: DOTWEEN
     PS5: DOTWEEN
     QNX: DOTWEEN
-    Standalone: DOTWEEN
+    Standalone: DOTWEEN;FIREBASE_AUTH_ENABLED;GOOGLE_SIGNIN_ENABLED;FACEBOOK_SDK_ENABLED;FIREBASE_FIRESTORE_ENABLED
     VisionOS: DOTWEEN
     WebGL: DOTWEEN
     Windows Store Apps: DOTWEEN
     XboxOne: DOTWEEN
-    iPhone: DOTWEEN
+    iPhone: DOTWEEN;FIREBASE_AUTH_ENABLED;GOOGLE_SIGNIN_ENABLED;FACEBOOK_SDK_ENABLED;FIREBASE_FIRESTORE_ENABLED
     tvOS: DOTWEEN
   additionalCompilerArguments: {}
   platformArchitecture: {}

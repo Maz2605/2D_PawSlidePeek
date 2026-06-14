@@ -1,9 +1,11 @@
 <?xml version='1.0' encoding='utf-8'?>
-<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@string/gcm_defaultSenderId,@string/google_storage_bucket,@string/project_id,@string/google_api_key,@string/google_crash_reporting_api_key,@string/google_app_id">
+<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@string/gcm_defaultSenderId,@string/google_storage_bucket,@string/project_id,@string/google_api_key,@string/google_crash_reporting_api_key,@string/google_app_id,@string/default_android_client_id,@string/default_web_client_id">
   <string name="gcm_defaultSenderId" translatable="false">398760079055</string>
   <string name="google_storage_bucket" translatable="false">pawslidepop.firebasestorage.app</string>
   <string name="project_id" translatable="false">pawslidepop</string>
   <string name="google_api_key" translatable="false">AIzaSyDikGypzpW2iMvLzNAwQQdbFOYl8OIAwq0</string>
   <string name="google_crash_reporting_api_key" translatable="false">AIzaSyDikGypzpW2iMvLzNAwQQdbFOYl8OIAwq0</string>
   <string name="google_app_id" translatable="false">1:398760079055:android:5d1615c2a0d0a0340a91ba</string>
+  <string name="default_android_client_id" translatable="false">398760079055-fseqnd0ooa5878e0d09rprgaa2da3nt8.apps.googleusercontent.com</string>
+  <string name="default_web_client_id" translatable="false">398760079055-cai9m31jk678m2nac03je2051s5b7ehh.apps.googleusercontent.com</string>
 </resources>
