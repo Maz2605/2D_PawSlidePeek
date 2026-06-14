@@ -26,6 +26,9 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
         [Tooltip("Nơi chứa các gói vật phẩm đặc biệt.")]
         [SerializeField] private Transform specialContentRoot;
 
+        [Tooltip("Text hiển thị số lượng vật phẩm trong Shop.")]
+        [SerializeField] private TMPro.TMP_Text itemCountText;
+
         private readonly List<ShopItemSO> _items = new List<ShopItemSO>();
 
         private readonly List<ShopItemView> _activeViews = new List<ShopItemView>();
@@ -96,6 +99,11 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
             if (_items.Count == 0)
             {
                 Debug.LogWarning("[ShopSubScreen] Không tìm thấy file ShopItemSO nào trong thư mục Resources/Shop/Items.", this);
+            }
+
+            if (itemCountText != null)
+            {
+                itemCountText.SetText(_items.Count.ToString());
             }
 
             // Sinh động các ô vật phẩm tương ứng
@@ -174,7 +182,7 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
 
         private void HandlePurchaseSuccess(ShopItemSO item)
         {
-            UIManager.Instance?.ShowToast($"Mua thành công: {item.DisplayName}!");
+            UIManager.Instance?.ShowToast($"Successfully purchased: {item.DisplayName}!");
             RefreshAllAffordability();
         }
 
@@ -182,10 +190,10 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
         {
             string message = reason switch
             {
-                PurchaseFailReason.InsufficientCoins    => "Không đủ Coin!",
-                PurchaseFailReason.InvalidRewardConfig  => "Cấu hình phần thưởng bị lỗi. Liên hệ GD!",
-                PurchaseFailReason.SystemError          => "Lỗi hệ thống. Vui lòng thử lại.",
-                _                                       => "Không thể mua vật phẩm này."
+                PurchaseFailReason.InsufficientCoins    => "Not enough Coins!",
+                PurchaseFailReason.InvalidRewardConfig  => "Invalid reward configuration. Please contact GD!",
+                PurchaseFailReason.SystemError          => "System error. Please try again.",
+                _                                       => "Cannot purchase this item."
             };
 
             UIManager.Instance?.ShowToast(message);

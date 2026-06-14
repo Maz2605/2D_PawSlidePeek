@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e5d822ce2a2652c4d81c816525d28776, type: 3}
-  m_Name: Shuffle_x2
+  m_Name: InfiniteHeart_30m
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Meta.Reward.RewardEntrySO
-  rewardKind: 1
-  amount: 2
-  displayName: 2 Shuffles
+  rewardKind: 3
+  amount: 30
+  displayName: 30m Infinite Lives
   icon: {fileID: 0}
-  boosterDefinition: {fileID: 11400000, guid: 5d9d160c7ac421941a0bf96ea3c92d07, type: 2}
+  boosterDefinition: {fileID: 0}

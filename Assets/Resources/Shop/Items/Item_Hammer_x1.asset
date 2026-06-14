@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 021deb72aa589ad47bb2a66874371cda, type: 3}
   m_Name: Item_Hammer_x1
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Meta.Shop.ShopItemSO
-  displayName: "B\xFAa \u0111\u1EADp"
-  description: "\u0110\u1EADp b\u1EC3 1 \xF4 b\u1EA5t k\u1EF3 tr\xEAn b\xE0n ch\u01A1i."
+  displayName: Toy Hammer
+  description: Smash and destroy any block of your choice.
   icon: {fileID: 21300000, guid: ee18696bad3da4fb4ab6b1a61eef4d8a, type: 3}
   priceCoins: 200
   originalPriceCoins: 0
   rewards:
   - {fileID: 11400000, guid: 20206f238fd920b4181a549348e3f0f3, type: 2}
-  sortOrder: 0
+  sortOrder: 3
   isSpecial: 0
   tagText: 

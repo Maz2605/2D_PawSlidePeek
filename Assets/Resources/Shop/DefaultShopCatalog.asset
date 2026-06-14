@@ -13,8 +13,13 @@ MonoBehaviour:
   m_Name: DefaultShopCatalog
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Meta.Shop.ShopCatalogSO
   items:
-  - {fileID: 11400000, guid: 0c4b2eb65aefcdd4d9d1d6825465ff93, type: 2}
-  - {fileID: 11400000, guid: d2b01796e36e06f4ca5f7d0094d3be7a, type: 2}
   - {fileID: 11400000, guid: 6395ece1bea182d45965113454656e50, type: 2}
-  - {fileID: 11400000, guid: 17a3d9f5ab105e546b17ce2eddfa91d3, type: 2}
+  - {fileID: 11400000, guid: ee6f078f596f4b440b69abb1f69e68b2, type: 2}
   - {fileID: 11400000, guid: 6a03fe14d93ee3148bfbf0dde0395779, type: 2}
+  - {fileID: 11400000, guid: 10e186ff53f34ec4988f8167e3ca2bb9, type: 2}
+  - {fileID: 11400000, guid: 350cc00a78bc68644ad2a07bb114c0c9, type: 2}
+  - {fileID: 11400000, guid: 17a3d9f5ab105e546b17ce2eddfa91d3, type: 2}
+  - {fileID: 11400000, guid: 681791cf610f4e640bed715816392225, type: 2}
+  - {fileID: 11400000, guid: d2b01796e36e06f4ca5f7d0094d3be7a, type: 2}
+  - {fileID: 11400000, guid: e5749adc9380cc04fb2d0ff8db438d14, type: 2}
+  - {fileID: 11400000, guid: 0c4b2eb65aefcdd4d9d1d6825465ff93, type: 2}

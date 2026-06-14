@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Meta.Reward.RewardEntrySO
   rewardKind: 1
   amount: 1
-  displayName: Extra Moves +3
+  displayName: Hammer
   icon: {fileID: 21300000, guid: ac5d84d05c2684e5bbfe2c056bccd450, type: 3}
   boosterDefinition: {fileID: 11400000, guid: 2d3d4fc7e1e1d6a4f9bda98cc5f9611e, type: 2}

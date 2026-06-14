@@ -147,6 +147,8 @@ GameObject:
   - component: {fileID: 680991663035619336}
   - component: {fileID: 5077149861647906391}
   - component: {fileID: 7959588473251290888}
+  - component: {fileID: -6953610961533518124}
+  - component: {fileID: 3900624257975223307}
   m_Layer: 0
   m_Name: AppBootstrap
   m_TagString: Untagged
@@ -194,6 +196,8 @@ MonoBehaviour:
   - {fileID: 5077149861647906391}
   - {fileID: 6412311779083642}
   - {fileID: 7959588473251290888}
+  - {fileID: -6953610961533518124}
+  - {fileID: 3900624257975223307}
 --- !u!114 &823730163174776434
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -331,3 +335,27 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Services.Ads.RewardedAdRewardService
   placementCatalog: {fileID: 11400000, guid: 39032d454048a5b43ae9d45ac931f8fb, type: 2}
   logRewardGrants: 1
+--- !u!114 &-6953610961533518124
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10f2cb91a49351b429058fefc7c584dc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Services.Auth.FirebaseAuthService
+--- !u!114 &3900624257975223307
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c720e33b60a9c74483da8949e4de736, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Services.Save.FirebaseSaveManager

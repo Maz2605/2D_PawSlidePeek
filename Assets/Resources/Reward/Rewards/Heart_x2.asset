@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Meta.Reward.RewardEntrySO
   rewardKind: 2
   amount: 2
-  displayName: 
+  displayName: 2 Lives
   icon: {fileID: 0}
   boosterDefinition: {fileID: 0}

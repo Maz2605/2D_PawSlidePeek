@@ -12,12 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 021deb72aa589ad47bb2a66874371cda, type: 3}
   m_Name: Item_Heart_x1
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Meta.Shop.ShopItemSO
-  displayName: "Tim c\u01B0\u1EE9u h\u1ED9"
-  description: "N\u1EA1p 1 tim \u0111\u1EC3 ti\u1EBFp t\u1EE5c ch\u01A1i."
+  displayName: Single Life
+  description: Instantly restores 1 life to keep playing.
   icon: {fileID: 0}
   priceCoins: 100
   originalPriceCoins: 0
   rewards:
   - {fileID: 11400000, guid: dfa407064325e3743b5af846a4dab009, type: 2}
+  sortOrder: 1
   isSpecial: 0
   tagText: 

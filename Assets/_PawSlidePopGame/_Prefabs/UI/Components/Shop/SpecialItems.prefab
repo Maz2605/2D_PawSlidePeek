@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5614897495232251183}
+  - component: {fileID: 2853042503329280836}
   m_Layer: 5
   m_Name: SpecialItems
   m_TagString: Untagged
@@ -37,8 +38,32 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1020, y: 200}
+  m_SizeDelta: {x: 980, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &2853042503329280836
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 549911602839945789}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05dca5ffa2c6c5d45bd4f3f1d838b69d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.UI.Screens.SubScreens.ShopItemView
+  itemIconImage: {fileID: 2465907499970554486}
+  itemNameText: {fileID: 6276976792904565232}
+  itemDescriptionText: {fileID: 7674240748168745868}
+  priceText: {fileID: 3608971442130161770}
+  originalPriceContainer: {fileID: 0}
+  originalPriceText: {fileID: 0}
+  purchaseButton: {fileID: 7387536175715825292}
+  notEnoughCoinsIndicator: {fileID: 0}
+  normalPriceColor: {r: 1, g: 1, b: 1, a: 1}
+  notEnoughCoinsPriceColor: {r: 1, g: 0, b: 0, a: 1}
+  specialBadge: {fileID: 2219852607000259930}
+  specialBadgeText: {fileID: 3403797541004413393}
 --- !u!1 &1231038444564928802
 GameObject:
   m_ObjectHideFlags: 0
@@ -1199,7 +1224,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7228811146730450747, guid: 8778ec2c2c843fe41b7149f690859836, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -38
+      value: -48
       objectReference: {fileID: 0}
     - target: {fileID: 7228811146730450747, guid: 8778ec2c2c843fe41b7149f690859836, type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -1238,3 +1263,14 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 7228811146730450747, guid: 8778ec2c2c843fe41b7149f690859836, type: 3}
   m_PrefabInstance: {fileID: 3681684336830315469}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &7387536175715825292 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6166049556606766401, guid: 8778ec2c2c843fe41b7149f690859836, type: 3}
+  m_PrefabInstance: {fileID: 3681684336830315469}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button

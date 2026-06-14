@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Meta.Reward.RewardEntrySO
   rewardKind: 2
   amount: 1
-  displayName: Heart
+  displayName: 1 Life
   icon: {fileID: 21300000, guid: 6523f7e3386b346cf982584dde88039d, type: 3}
-  boosterId: 
+  boosterDefinition: {fileID: 0}
