@@ -31,6 +31,7 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
         private Match3LevelManager _levelManager;
         private Match3BoardPresenter _boardPresenter;
         private Transform _gameplaySessionRoot;
+        private bool _hasShownStartScreen;
 
         public GameAppState CurrentAppState { get; private set; } = GameAppState.None;
         public string CurrentLevelId { get; private set; }
@@ -92,6 +93,7 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
                 {
                     EnterMainMenu();
                 }
+                UIManager.Instance?.ShowPopup<RefillHeartPopup>();
                 return false;
             }
 
@@ -269,7 +271,29 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
 
             TryResolveGameplayFlowManager();
             TryResolveGameplaySessionRoot();
-            EnterMainMenu();
+
+            if (!_hasShownStartScreen)
+            {
+                _hasShownStartScreen = true;
+                ShowStartScreen();
+            }
+            else
+            {
+                EnterMainMenu();
+            }
+        }
+
+        public void ShowStartScreen()
+        {
+            if (!EnsureUiManager())
+            {
+                return;
+            }
+
+            ExitGameplaySession();
+            UIManager.Instance.ClearAllPopups();
+            UIManager.Instance.ShowScreen<StartScreen>();
+            SetAppState(GameAppState.MainMenu);
         }
 
         private void HandleInGameSubStateChanged(InGameSubStateChangedPayload payload)
