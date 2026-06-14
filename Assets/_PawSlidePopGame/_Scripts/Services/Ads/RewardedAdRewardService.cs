@@ -35,7 +35,7 @@ namespace _PawSlidePopGame._Scripts.Services.Ads
 
         private void HandleRewardedAdCompleted(RewardedAdCompletedPayload payload)
         {
-            if (payload.placement == RewardedAdPlacement.FreeBooster)
+            if (payload.placement == RewardedAdPlacement.FreeBooster || payload.placement == RewardedAdPlacement.FreeHeart)
             {
                 return;
             }

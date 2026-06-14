@@ -2,6 +2,10 @@ using System;
 using _PawSlidePopGame._Scripts.UI.Base;
 using _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager;
 using _PawSlidePopGame._Scripts.UI.Manager;
+using _PawSlidePopGame._Scripts.Data.Events;
+using _PawSlidePopGame._Scripts.Data.Events.Payloads;
+using _PawSlidePopGame._Scripts.Services.Ads;
+using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -20,6 +24,7 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
 
         [Header("--- Buttons ---")]
         [SerializeField] private Button refillButton;
+        [SerializeField] private Button freeAdButton;
         [SerializeField] private Button closeButton;
         [SerializeField] private Button backgroundButton;
 
@@ -57,6 +62,7 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
         private int _cachedHearts = -1;
         private int _cachedSecondsRemaining = -1;
         private bool _cachedInfiniteState;
+        private bool _isAdShowing;
 
         protected override void Awake()
         {
@@ -276,6 +282,7 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
             SetButtonsInteractable(false);
 
             BindButton(refillButton, HandleRefillPressed);
+            BindButton(freeAdButton, HandleFreeAdPressed);
             BindButton(closeButton, HandleClosePressed);
             BindButtonWithoutPressFx(backgroundButton, HandleClosePressed);
         }
@@ -335,9 +342,73 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
             }
         }
 
+        private void HandleFreeAdPressed()
+        {
+            HeartManager hearts = HeartManager.Instance;
+            if (hearts == null) return;
+
+            if (hearts.Hearts >= HeartManager.MaxHearts)
+            {
+                UIManager.Instance?.ShowToast("Hearts are already full!");
+                return;
+            }
+
+            if (_isAdShowing) return;
+            _isAdShowing = true;
+
+            EventManager<AdsGameEvent>.Post(
+                AdsGameEvent.RewardedAdRequested,
+                new RewardedAdRequestPayload(RewardedAdPlacement.FreeHeart));
+        }
+
+        private void OnEnable()
+        {
+            EventManager<AdsGameEvent>.AddListener<RewardedAdCompletedPayload>(
+                AdsGameEvent.RewardedAdCompleted,
+                HandleRewardedAdCompleted);
+            EventManager<AdsGameEvent>.AddListener<RewardedAdFailedPayload>(
+                AdsGameEvent.RewardedAdFailed,
+                HandleRewardedAdFailed);
+        }
+
+        private void OnDisable()
+        {
+            EventManager<AdsGameEvent>.RemoveListener<RewardedAdCompletedPayload>(
+                AdsGameEvent.RewardedAdCompleted,
+                HandleRewardedAdCompleted);
+            EventManager<AdsGameEvent>.RemoveListener<RewardedAdFailedPayload>(
+                AdsGameEvent.RewardedAdFailed,
+                HandleRewardedAdFailed);
+
+            _isAdShowing = false;
+        }
+
+        private void HandleRewardedAdCompleted(RewardedAdCompletedPayload payload)
+        {
+            if (payload.placement != RewardedAdPlacement.FreeHeart) return;
+
+            _isAdShowing = false;
+
+            HeartManager hearts = HeartManager.Instance;
+            if (hearts != null)
+            {
+                hearts.AddHearts(1, allowOverfill: false);
+                UIManager.Instance?.ShowToast("Earned 1 Heart!");
+            }
+        }
+
+        private void HandleRewardedAdFailed(RewardedAdFailedPayload payload)
+        {
+            if (payload.placement != RewardedAdPlacement.FreeHeart) return;
+
+            _isAdShowing = false;
+            UIManager.Instance?.ShowToast("Failed to watch ad. Please try again.");
+        }
+
         private void SetButtonsInteractable(bool interactable)
         {
             if (refillButton != null) refillButton.interactable = interactable;
+            if (freeAdButton != null) freeAdButton.interactable = interactable;
             if (closeButton != null) closeButton.interactable = interactable;
             if (backgroundButton != null) backgroundButton.interactable = interactable;
         }

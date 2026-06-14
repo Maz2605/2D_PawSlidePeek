@@ -7,6 +7,7 @@ namespace _PawSlidePopGame._Scripts.Services.Ads
         FreeBooster = 3,
         WheelExtraSpin = 4,
         Revive = 5,
-        DoubleLevelReward = 6
+        DoubleLevelReward = 6,
+        FreeHeart = 7
     }
 }

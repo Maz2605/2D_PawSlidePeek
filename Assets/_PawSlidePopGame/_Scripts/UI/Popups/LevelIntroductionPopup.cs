@@ -555,6 +555,7 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
             if (!HeartManager.Instance.CanSpendHeart())
             {
                 UIManager.Instance?.ShowToast("Not enough hearts!");
+                UIManager.Instance?.ShowPopup<RefillHeartPopup>();
                 return;
             }
 
