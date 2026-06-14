@@ -20,6 +20,15 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager
         public LevelProgressRepository(string saveKey)
         {
             _saveKey = string.IsNullOrWhiteSpace(saveKey) ? DefaultSaveKey : saveKey;
+            SaveSystem.OnSaveSynced += HandleSaveSynced;
+        }
+
+        private void HandleSaveSynced(string key)
+        {
+            if (key == _saveKey)
+            {
+                Reload();
+            }
         }
 
         public void Reload()

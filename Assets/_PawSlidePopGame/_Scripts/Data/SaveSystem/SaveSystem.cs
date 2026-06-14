@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text;
 using Newtonsoft.Json;
@@ -10,12 +10,16 @@ namespace _PawSlidePopGame._Scripts.Data.SaveSystem
     {
         private static bool USE_ENCRYPTION = true;
 
+        public static event Action<string, string> OnSaveCompleted; // (gameId, rawJson)
+        public static event Action<string> OnSaveSynced; // (gameId)
+
         public static void Save<T>(string gameId, T data)
         {
             try
             {
                 string filePath = GetPath(gameId);
                 string json = JsonConvert.SerializeObject(data, Formatting.Indented);
+                string rawJson = json;
                 
                 if(USE_ENCRYPTION) json = Encrypt(json);
 
@@ -28,6 +32,7 @@ namespace _PawSlidePopGame._Scripts.Data.SaveSystem
                 File.Move(tempPath, filePath);
                 
                 Debug.Log($"[Save System] Saved: {gameId}");
+                OnSaveCompleted?.Invoke(gameId, rawJson);
             }
             catch (Exception e)
             {
@@ -55,9 +60,53 @@ namespace _PawSlidePopGame._Scripts.Data.SaveSystem
         
         //Helpers
 
-        private static string GetPath(string gameId)
+        public static string GetPath(string gameId)
         {
             return Path.Combine(Application.persistentDataPath,$"{gameId}.json");
+        }
+
+        public static void SaveRawJson(string gameId, string rawJson)
+        {
+            try
+            {
+                string filePath = GetPath(gameId);
+                string json = rawJson;
+                
+                if (USE_ENCRYPTION) json = Encrypt(json);
+
+                string tempPath = filePath + ".tmp";
+                File.WriteAllText(tempPath, json);
+                
+                if (File.Exists(filePath))
+                    File.Delete(filePath);
+                
+                File.Move(tempPath, filePath);
+                
+                Debug.Log($"[Save System] SaveRawJson (Cloud Sync): {gameId}");
+                OnSaveSynced?.Invoke(gameId);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[SaveSystem] SaveRawJson ERROR: {e.Message}");
+            }
+        }
+
+        public static string LoadRawJson(string gameId)
+        {
+            string filePath = GetPath(gameId);
+            if (!File.Exists(filePath)) return null;
+
+            try
+            {
+                string json = File.ReadAllText(filePath);
+                if (USE_ENCRYPTION) json = Decrypt(json);
+                return json;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[SaveSystem] LoadRawJson Error: {e.Message}");
+                return null;
+            }
         }
 
         private static string Encrypt(string data)

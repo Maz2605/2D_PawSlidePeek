@@ -15,23 +15,36 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager
         private readonly string _saveKey;
         private PlayerEconomySaveData _data;
 
+        public static event Action OnDataChanged;
+
         public static PlayerEconomyRepository Instance => LazyInstance.Value;
         public PlayerEconomySaveData Data => _data ??= Load();
 
         public PlayerEconomyRepository(string saveKey)
         {
             _saveKey = saveKey;
+            SaveSystem.OnSaveSynced += HandleSaveSynced;
+        }
+
+        private void HandleSaveSynced(string key)
+        {
+            if (key == _saveKey)
+            {
+                Reload();
+            }
         }
 
         public void Reload()
         {
             _data = Load();
+            OnDataChanged?.Invoke();
         }
 
         public void Save()
         {
             Data.Sanitize();
             SaveSystem.Save(_saveKey, Data);
+            OnDataChanged?.Invoke();
         }
         private PlayerEconomySaveData Load()
         {

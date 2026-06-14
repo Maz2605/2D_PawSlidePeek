@@ -13,6 +13,20 @@ namespace _PawSlidePopGame._Scripts.Feature.Meta.Wheel
         public WheelStateRepository(string saveKey = DefaultSaveKey)
         {
             _saveKey = string.IsNullOrWhiteSpace(saveKey) ? DefaultSaveKey : saveKey;
+            SaveSystem.OnSaveSynced += HandleSaveSynced;
+        }
+
+        ~WheelStateRepository()
+        {
+            SaveSystem.OnSaveSynced -= HandleSaveSynced;
+        }
+
+        private void HandleSaveSynced(string key)
+        {
+            if (key == _saveKey)
+            {
+                Reload();
+            }
         }
 
         public DateTime? UtcNowOverride { get; set; }
