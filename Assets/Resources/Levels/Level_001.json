@@ -140,7 +140,6 @@
       102
     ],
     "overlayLayout": [
-      301,
       0,
       0,
       0,
@@ -151,7 +150,6 @@
       0,
       0,
       0,
-      301,
       0,
       0,
       0,
@@ -162,7 +160,6 @@
       0,
       0,
       0,
-      301,
       0,
       0,
       0,
@@ -173,7 +170,6 @@
       0,
       0,
       0,
-      301,
       0,
       0,
       0,
@@ -184,7 +180,11 @@
       0,
       0,
       0,
-      301,
+      0,
+      0,
+      0,
+      0,
+      0,
       0,
       0,
       0,
@@ -205,7 +205,72 @@
       0,
       0
     ],
-    "cellArtLayout": null,
+    "cellArtLayout": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
     "playableMask": [
       true,
       true,
@@ -283,13 +348,62 @@
       108,
       109
     ],
+    "spawnableTileConfigs": [
+      {
+        "tileId": 101,
+        "weight": 100,
+        "enabled": true
+      },
+      {
+        "tileId": 102,
+        "weight": 100,
+        "enabled": true
+      },
+      {
+        "tileId": 103,
+        "weight": 100,
+        "enabled": true
+      },
+      {
+        "tileId": 104,
+        "weight": 100,
+        "enabled": true
+      },
+      {
+        "tileId": 105,
+        "weight": 100,
+        "enabled": true
+      },
+      {
+        "tileId": 106,
+        "weight": 100,
+        "enabled": true
+      },
+      {
+        "tileId": 107,
+        "weight": 100,
+        "enabled": true
+      },
+      {
+        "tileId": 108,
+        "weight": 100,
+        "enabled": true
+      },
+      {
+        "tileId": 109,
+        "weight": 100,
+        "enabled": true
+      }
+    ],
+    "targetSpawnBias": 1.25,
+    "enableDynamicBalancing": true,
     "targets": [
       {
         "tileId": 105,
         "requiredCount": 10
       },
       {
-        "tileId": 301,
+        "tileId": 103,
         "requiredCount": 5
       }
     ],

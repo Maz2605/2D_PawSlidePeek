@@ -1,9 +1,9 @@
 {
-  "levelId": "Level_003",
+  "levelId": "Level_010",
   "schemaVersion": 1,
   "levelData": {
-    "levelID": "Level_003",
-    "displayLevelNumber": 3,
+    "levelID": "Level_010",
+    "displayLevelNumber": 10,
     "width": 8,
     "height": 8,
     "movesLimit": 30,
@@ -78,28 +78,21 @@
       102,
       103,
       104,
+      106,
       101,
       102,
       103,
       104,
-      104,
+      106,
       101,
-      102,
-      103,
-      104,
-      101,
-      102,
-      103,
+      107,
       103,
       104,
+      106,
       101,
-      102,
       103,
-      104,
+      103,
       101,
-      102,
-      102,
-      103,
       104,
       101,
       102,
@@ -110,34 +103,41 @@
       102,
       103,
       104,
+      106,
+      101,
+      102,
+      104,
+      106,
+      106,
       101,
       102,
       103,
       104,
-      104,
+      106,
       101,
       102,
       103,
       104,
-      101,
-      102,
-      103,
-      103,
-      104,
+      106,
       101,
       102,
       103,
       104,
-      101,
-      102,
-      102,
-      103,
-      104,
+      106,
       101,
       102,
       103,
       104,
-      101
+      106,
+      101,
+      102,
+      103,
+      104,
+      106,
+      101,
+      102,
+      103,
+      104
     ],
     "overlayLayout": [
       0,
@@ -276,7 +276,8 @@
       101,
       102,
       103,
-      104
+      104,
+      106
     ],
     "spawnableTileConfigs": [
       {
@@ -298,6 +299,11 @@
         "tileId": 104,
         "weight": 100,
         "enabled": true
+      },
+      {
+        "tileId": 106,
+        "weight": 100,
+        "enabled": true
       }
     ],
     "targetSpawnBias": 1.25,
@@ -305,11 +311,11 @@
     "targets": [
       {
         "tileId": 101,
-        "requiredCount": 15
+        "requiredCount": 20
       },
       {
-        "tileId": 103,
-        "requiredCount": 15
+        "tileId": 102,
+        "requiredCount": 20
       }
     ],
     "starScoreThresholds": [
