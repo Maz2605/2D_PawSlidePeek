@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1983a804fec400648a199fa4e67982ad, type: 3}
   m_Name: DefaultMapWorldConfig
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Gameplay.Meta.MapManager.MapWorldConfigSO
-  maxVisibleLevels: 30
+  maxVisibleLevels: 36
   markHardLevels: 1
   hardLevelInterval: 10
   sectionSpacing: 0
@@ -23,3 +23,5 @@ MonoBehaviour:
   - {fileID: 100002, guid: f92dff50b4f7cda4986ce55118721ea7, type: 3}
   - {fileID: 100002, guid: 3d320aefa128fc4408620c81ecdca833, type: 3}
   - {fileID: 100002, guid: 944efabd75a11224ca45178bc906211f, type: 3}
+  - {fileID: 100002, guid: 0051632ea1b41c84685d39fba060bf72, type: 3}
+  - {fileID: 100002, guid: 86f0eecd4bfcb5e46a867a995a8d41c4, type: 3}
