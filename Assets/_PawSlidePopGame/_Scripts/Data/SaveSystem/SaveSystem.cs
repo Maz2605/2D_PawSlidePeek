@@ -12,11 +12,18 @@ namespace _PawSlidePopGame._Scripts.Data.SaveSystem
 
         public static event Action<string, string> OnSaveCompleted; // (gameId, rawJson)
         public static event Action<string> OnSaveSynced; // (gameId)
+        public static event Action<string> OnBeforeLocalSaveWrite; // (gameId)
+
+        public static void TriggerOnSaveSynced(string gameId)
+        {
+            OnSaveSynced?.Invoke(gameId);
+        }
 
         public static void Save<T>(string gameId, T data)
         {
             try
             {
+                OnBeforeLocalSaveWrite?.Invoke(gameId);
                 string filePath = GetPath(gameId);
                 string json = JsonConvert.SerializeObject(data, Formatting.Indented);
                 string rawJson = json;
@@ -69,6 +76,7 @@ namespace _PawSlidePopGame._Scripts.Data.SaveSystem
         {
             try
             {
+                OnBeforeLocalSaveWrite?.Invoke(gameId);
                 string filePath = GetPath(gameId);
                 string json = rawJson;
                 

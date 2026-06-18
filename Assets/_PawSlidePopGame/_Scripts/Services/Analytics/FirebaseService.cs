@@ -29,6 +29,16 @@ namespace _PawSlidePopGame._Scripts.Services.Analytics
         private const string ParamRewardAmount = "reward_amount";
         private const string ParamRewardSource = "reward_source";
 
+        // Booster Events
+        private const string EventBoosterUsed = "booster_used";
+        private const string EventBoosterPurchased = "booster_purchased";
+
+        // Booster Parameters
+        private const string ParamBoosterId = "booster_id";
+        private const string ParamUsagePhase = "use_phase";
+        private const string ParamPriceCoins = "price_coins";
+        private const string ParamQuantity = "quantity";
+
         [Header("Firebase")]
         [SerializeField] private bool analyticsEnabled = true;
         [SerializeField] private bool crashlyticsEnabled = true;
@@ -81,6 +91,24 @@ namespace _PawSlidePopGame._Scripts.Services.Analytics
                 new Parameter(ParamRewardType, SanitizeString(rewardType, "unknown")),
                 new Parameter(ParamRewardAmount, amount),
                 new Parameter(ParamRewardSource, SanitizeString(source, "unknown")));
+        }
+
+        public static void LogBoosterUsed(string boosterId, string usagePhase, string levelId)
+        {
+            LogEvent(
+                EventBoosterUsed,
+                new Parameter(ParamBoosterId, SanitizeString(boosterId, "unknown")),
+                new Parameter(ParamUsagePhase, SanitizeString(usagePhase, "unknown")),
+                new Parameter(ParamLevelId, SanitizeString(levelId, "unknown")));
+        }
+
+        public static void LogBoosterPurchased(string boosterId, int priceCoins, int quantity)
+        {
+            LogEvent(
+                EventBoosterPurchased,
+                new Parameter(ParamBoosterId, SanitizeString(boosterId, "unknown")),
+                new Parameter(ParamPriceCoins, priceCoins),
+                new Parameter(ParamQuantity, quantity));
         }
 
         private void CheckDependenciesAndInitialize()

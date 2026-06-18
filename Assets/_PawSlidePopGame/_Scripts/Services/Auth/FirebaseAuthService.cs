@@ -175,6 +175,22 @@ namespace _PawSlidePopGame._Scripts.Services.Auth
             }
         }
 
+        private void UpdateDisplayNameFromGame(FirebaseUser user)
+        {
+            if (user == null) return;
+            string gameUsername = _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager.PlayerEconomyRepository.Instance.Data.username;
+            if (!string.IsNullOrEmpty(gameUsername) && gameUsername != "Player")
+            {
+                UserProfile profile = new UserProfile { DisplayName = gameUsername };
+                user.UpdateUserProfileAsync(profile).ContinueWithOnMainThread(t => {
+                    if (t.IsCompletedSuccessfully)
+                    {
+                        Debug.Log($"[FirebaseAuthService] DisplayName sync success: {gameUsername}");
+                    }
+                });
+            }
+        }
+
         public void LinkAccount(Credential credential, Action<FirebaseUser> onSuccess, Action<string> onFailure)
         {
             if (CurrentUser == null)
@@ -202,6 +218,7 @@ namespace _PawSlidePopGame._Scripts.Services.Auth
 
                 AuthResult result = task.Result;
                 Debug.Log($"[FirebaseAuthService] Account linked successfully! UID: {result.User.UserId}");
+                UpdateDisplayNameFromGame(result.User);
                 onSuccess?.Invoke(result.User);
             });
         }
@@ -304,24 +321,39 @@ namespace _PawSlidePopGame._Scripts.Services.Auth
             }
 
             Debug.Log($"[FirebaseAuthService] Registering with Email: {email}...");
-            _auth.CreateUserWithEmailAndPasswordAsync(email, password).ContinueWithOnMainThread(task =>
-            {
-                if (task.IsCanceled)
-                {
-                    onFailure?.Invoke("Canceled");
-                    return;
-                }
-                if (task.IsFaulted)
-                {
-                    onFailure?.Invoke(task.Exception?.GetBaseException()?.Message ?? "Registration failed");
-                    return;
-                }
+            Credential credential = EmailAuthProvider.GetCredential(email, password);
 
-                AuthResult result = task.Result;
-                Debug.Log($"[FirebaseAuthService] Registration successful! UID: {result.User.UserId}");
-                HandleLoginSuccessInternal(result.User);
-                onSuccess?.Invoke(result.User);
-            });
+            if (IsLoggedIn && CurrentUser.IsAnonymous)
+            {
+                LinkAccount(credential, 
+                    user => {
+                        UpdateDisplayNameFromGame(user);
+                        onSuccess?.Invoke(user);
+                    }, 
+                    onFailure);
+            }
+            else
+            {
+                _auth.CreateUserWithEmailAndPasswordAsync(email, password).ContinueWithOnMainThread(task =>
+                {
+                    if (task.IsCanceled)
+                    {
+                        onFailure?.Invoke("Canceled");
+                        return;
+                    }
+                    if (task.IsFaulted)
+                    {
+                        onFailure?.Invoke(task.Exception?.GetBaseException()?.Message ?? "Registration failed");
+                        return;
+                    }
+
+                    AuthResult result = task.Result;
+                    Debug.Log($"[FirebaseAuthService] Registration successful! UID: {result.User.UserId}");
+                    UpdateDisplayNameFromGame(result.User);
+                    HandleLoginSuccessInternal(result.User);
+                    onSuccess?.Invoke(result.User);
+                });
+            }
         }
 
         public void SignInWithEmail(string email, string password, Action<FirebaseUser> onSuccess, Action<string> onFailure)
@@ -467,12 +499,14 @@ namespace _PawSlidePopGame._Scripts.Services.Auth
         public void RegisterWithEmail(string email, string password, Action<string> onSuccess, Action<string> onFailure)
         {
             Debug.Log($"[FirebaseAuthService] Mock Register successful for {email}.");
+            OnLoginSuccess?.Invoke("LocalPlayer");
             onSuccess?.Invoke("LocalPlayer");
         }
 
         public void SignInWithEmail(string email, string password, Action<string> onSuccess, Action<string> onFailure)
         {
             Debug.Log($"[FirebaseAuthService] Mock Sign In successful for {email}.");
+            OnLoginSuccess?.Invoke("LocalPlayer");
             onSuccess?.Invoke("LocalPlayer");
         }
 #endif
