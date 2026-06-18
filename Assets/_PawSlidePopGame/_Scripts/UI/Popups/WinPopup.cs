@@ -1,4 +1,5 @@
 using _PawSlidePopGame._Scripts.Core.Audio;
+using _PawSlidePopGame._Scripts.Core.Vibration;
 using _PawSlidePopGame._Scripts.Core.System.GameFlow;
 using _PawSlidePopGame._Scripts.Data.Events.Payloads;
 using _PawSlidePopGame._Scripts.UI.Base;
@@ -37,8 +38,21 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
             _snapshot = snapshot?.Clone();
         }
 
+        protected override UISoundType OpenSound => UISoundType.None;
+        protected override UISoundType CloseSound => UISoundType.None;
+
         protected override void OnBeforeShow()
         {
+            if (AudioController.Instance != null)
+            {
+                AudioController.Instance.PlayWinMusic();
+                AudioController.Instance.PlayLevelWin();
+            }
+            if (VibrationManager.Instance != null)
+            {
+                VibrationManager.Instance.PlayWin();
+            }
+
             KillActiveTweens();
             ResetLayoutState();
 

@@ -45,12 +45,7 @@ namespace _PawSlidePopGame._Scripts.Core.Vibration
             EventManager<FeedbackEvent>.AddListener(
                 FeedbackEvent.BoosterReject,
                 HandleBoosterRejectFeedback);
-            EventManager<LogicGameEvent>.AddListener<GameplayHudSnapshot>(
-                LogicGameEvent.GameplayWon,
-                HandleGameplayWon);
-            EventManager<LogicGameEvent>.AddListener<GameplayHudSnapshot>(
-                LogicGameEvent.GameplayLost,
-                HandleGameplayLost);
+
 
             _eventsBound = true;
         }
@@ -80,12 +75,7 @@ namespace _PawSlidePopGame._Scripts.Core.Vibration
             EventManager<FeedbackEvent>.RemoveListener(
                 FeedbackEvent.BoosterReject,
                 HandleBoosterRejectFeedback);
-            EventManager<LogicGameEvent>.RemoveListener<GameplayHudSnapshot>(
-                LogicGameEvent.GameplayWon,
-                HandleGameplayWon);
-            EventManager<LogicGameEvent>.RemoveListener<GameplayHudSnapshot>(
-                LogicGameEvent.GameplayLost,
-                HandleGameplayLost);
+
             _eventsBound = false;
         }
 
@@ -154,14 +144,5 @@ namespace _PawSlidePopGame._Scripts.Core.Vibration
             VibrationManager.Instance?.PlayLose();
         }
 
-        private void HandleGameplayWon(GameplayHudSnapshot _)
-        {
-            PlayWin();
-        }
-
-        private void HandleGameplayLost(GameplayHudSnapshot _)
-        {
-            PlayLose();
-        }
     }
 }

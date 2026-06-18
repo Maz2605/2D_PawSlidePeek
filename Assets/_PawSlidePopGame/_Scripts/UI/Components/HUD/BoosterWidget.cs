@@ -212,7 +212,18 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
             OnBoosterClicked?.Invoke(definition);
 
-            if (!definition.IsUnlocked)
+            int currentLevelNumber = 1;
+            if (_PawSlidePopGame._Scripts.Feature.Match3.Flow.Match3LevelManager.Instance != null && 
+                _PawSlidePopGame._Scripts.Feature.Match3.Flow.Match3LevelManager.Instance.CurrentLevelData != null)
+            {
+                currentLevelNumber = _PawSlidePopGame._Scripts.Feature.Match3.Flow.Match3LevelManager.Instance.CurrentLevelData.DisplayLevelNumber;
+            }
+            else if (_PawSlidePopGame._Scripts.Gameplay.Meta.MapManager.LevelProgressRepository.Instance != null)
+            {
+                currentLevelNumber = _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager.LevelProgressRepository.Instance.GetHighestUnlockedLevelNumber();
+            }
+
+            if (!definition.IsUnlockedAtLevel(currentLevelNumber))
             {
                 OnLockedBoosterClicked?.Invoke(definition);
                 return;
@@ -290,6 +301,50 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             RefreshAll();
         }
 
+        public void SetButtonsDimmed(bool isDimmed, BoosterDefinitionSO selectedBooster, float duration = 0.25f)
+        {
+            for (int i = 0; i < _managedViews.Count; i++)
+            {
+                BoosterButtonView view = _managedViews[i];
+                if (view == null) continue;
+
+                bool isSelected = isDimmed && selectedBooster != null && view.Definition != null && view.Definition.BoosterId == selectedBooster.BoosterId;
+
+                var cg = view.GetComponent<CanvasGroup>();
+                if (cg == null)
+                {
+                    cg = view.gameObject.AddComponent<CanvasGroup>();
+                }
+
+                cg.DOKill();
+                if (isDimmed)
+                {
+                    float targetAlpha = isSelected ? 1f : 0.35f;
+                    if (duration > 0f && Application.isPlaying)
+                    {
+                        cg.DOFade(targetAlpha, duration).SetEase(Ease.OutQuad).SetUpdate(true);
+                    }
+                    else
+                    {
+                        cg.alpha = targetAlpha;
+                    }
+                    cg.blocksRaycasts = isSelected;
+                }
+                else
+                {
+                    if (duration > 0f && Application.isPlaying)
+                    {
+                        cg.DOFade(1f, duration).SetEase(Ease.OutQuad).SetUpdate(true);
+                    }
+                    else
+                    {
+                        cg.alpha = 1f;
+                    }
+                    cg.blocksRaycasts = true;
+                }
+            }
+        }
+
         public void PlayIntroAnimation()
         {
             Rebuild();
@@ -356,7 +411,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         {
             if (boosterController == null)
             {
-                boosterController = FindFirstObjectByType<BoosterController>(FindObjectsInactive.Include);
+                boosterController = BoosterController.Instance;
             }
         }
 

@@ -73,7 +73,6 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         private bool _hasCachedBaseState;
         private bool _initialized;
         private bool _isRewardedAdShowing;
-        private EconomyManager _economyManager;
 
         private RectTransform AmountRoot
         {
@@ -114,14 +113,14 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         private void OnDisable()
         {
-            if (_economyManager != null)
+            EconomyManager economyManager = GetEconomyManager();
+            if (economyManager != null)
             {
-                _economyManager.OnCoinsChanged -= HandleCoinsChanged;
+                economyManager.OnCoinsChanged -= HandleCoinsChanged;
             }
 
             UnregisterAddButton();
             UnsubscribeAdEvents();
-            _economyManager = null;
             _isRewardedAdShowing = false;
             KillTweens();
             KillIdleAndShakeTweens();
@@ -294,13 +293,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         private EconomyManager GetEconomyManager()
         {
-            if (_economyManager != null)
-            {
-                return _economyManager;
-            }
-
-            _economyManager = FindFirstObjectByType<EconomyManager>(FindObjectsInactive.Include);
-            return _economyManager;
+            return EconomyManager.Instance;
         }
 
         private void PlayAmountChanged(int previousAmount, int currentAmount)

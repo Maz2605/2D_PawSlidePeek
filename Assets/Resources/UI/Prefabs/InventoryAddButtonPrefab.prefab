@@ -522,6 +522,7 @@ GameObject:
   - component: {fileID: 7692704910963386565}
   - component: {fileID: 7986067139772524494}
   - component: {fileID: 1151122595496934620}
+  - component: {fileID: 2552320827206242623}
   m_Layer: 5
   m_Name: InventoryAddButtonPrefab
   m_TagString: Untagged
@@ -727,6 +728,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a48daf1a182f39469df26bdd5c3bc92, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.UI.Components.InventoryAddButton
+--- !u!114 &2552320827206242623
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8591750081209145322}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 1
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &8773125387601143715
 GameObject:
   m_ObjectHideFlags: 0

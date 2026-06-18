@@ -1,4 +1,7 @@
-﻿using System;
+using System;
+using _PawSlidePopGame._Scripts.Data.Audio;
+using _PawSlidePopGame._Scripts.Core.Audio;
+using _PawSlidePopGame._Scripts.Core.Vibration;
 using _PawSlidePopGame._Scripts.Data.Events;
 using DG.Tweening;
 using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
@@ -18,6 +21,9 @@ namespace _PawSlidePopGame._Scripts.UI.Base
 
         public Action OnOpened;
         public Action OnClosed;
+
+        protected virtual UISoundType OpenSound => UISoundType.PopupOpenStandard;
+        protected virtual UISoundType CloseSound => UISoundType.PopupCloseStandard;
 
         protected virtual void Awake()
         {
@@ -41,6 +47,15 @@ namespace _PawSlidePopGame._Scripts.UI.Base
             
             OnOpened = onOpenedCallback;
 
+            if (OpenSound != UISoundType.None && AudioController.Instance != null)
+            {
+                AudioController.Instance.PlayUISound(OpenSound);
+            }
+            if (OpenSound != UISoundType.None && VibrationManager.Instance != null)
+            {
+                VibrationManager.Instance.PlayLightImpact();
+            }
+
             _animTween?.Kill();
             canvasGroup.alpha = 0f;
             _animTween = canvasGroup.DOFade(1f, animDuration)
@@ -59,6 +74,11 @@ namespace _PawSlidePopGame._Scripts.UI.Base
         {
             canvasGroup.blocksRaycasts = false; 
             
+            if (CloseSound != UISoundType.None && AudioController.Instance != null)
+            {
+                AudioController.Instance.PlayUISound(CloseSound);
+            }
+
             _animTween?.Kill();
             
             PlayHideAnimation(() => 
@@ -77,7 +97,15 @@ namespace _PawSlidePopGame._Scripts.UI.Base
             btn.onClick?.RemoveAllListeners();
             btn.onClick?.AddListener(() =>
             {
-                EventManager<FeedbackEvent>.Post(FeedbackEvent.UiButtonTap);
+                bool hasButtonSound = btn.TryGetComponent<UIButtonSound>(out var _);
+                Debug.Log($"[BasePopup] BindButton clicked: '{btn.name}' on popup '{gameObject.name}'. hasUIButtonSound={hasButtonSound}");
+                
+                if (!hasButtonSound)
+                {
+                    Debug.Log("[BasePopup] Posting FeedbackEvent.UiButtonTap");
+                    EventManager<FeedbackEvent>.Post(FeedbackEvent.UiButtonTap);
+                }
+                
                 btn.transform.DOKill();
                 btn.transform.localScale = Vector3.one;
                 btn.transform

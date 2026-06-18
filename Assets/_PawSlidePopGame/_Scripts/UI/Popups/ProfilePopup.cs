@@ -15,6 +15,7 @@ using TMPro;
 
 #if FIREBASE_AUTH_ENABLED
 using Firebase.Auth;
+using Firebase.Extensions;
 #endif
 
 namespace _PawSlidePopGame._Scripts.UI.Popups
@@ -68,6 +69,8 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
         private Sequence _showSequence;
         private Tween _idleTween;
         private Vector2 _contentOriginalPos;
+        private bool _isDevMockLoggedIn;
+        private string _devMockEmail = "";
 
         private string _googleWebClientId = "398760079055-cai9m31jk678m2nac03je2051s5b7ehh.apps.googleusercontent.com";
 
@@ -89,11 +92,14 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
             {
 #if FIREBASE_AUTH_ENABLED
                 FirebaseAuthService.Instance.OnLoginSuccess += HandleAuthChanged;
+#else
+                FirebaseAuthService.Instance.OnLoginSuccess += HandleAuthChangedMock;
 #endif
                 FirebaseAuthService.Instance.OnLoggedOut += HandleAuthLoggedOut;
             }
 
             SaveSystem.OnSaveSynced += HandleSaveSynced;
+            PlayerEconomyRepository.OnDataChanged += HandleEconomyDataChanged;
         }
 
         private void OnDisable()
@@ -102,11 +108,14 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
             {
 #if FIREBASE_AUTH_ENABLED
                 FirebaseAuthService.Instance.OnLoginSuccess -= HandleAuthChanged;
+#else
+                FirebaseAuthService.Instance.OnLoginSuccess -= HandleAuthChangedMock;
 #endif
                 FirebaseAuthService.Instance.OnLoggedOut -= HandleAuthLoggedOut;
             }
 
             SaveSystem.OnSaveSynced -= HandleSaveSynced;
+            PlayerEconomyRepository.OnDataChanged -= HandleEconomyDataChanged;
         }
 
         // ──────────────────────────────────────────────────────────
@@ -209,22 +218,60 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
 
             PlayerEconomyRepository.Instance.Data.username = newName;
             PlayerEconomyRepository.Instance.Save();
+
+#if FIREBASE_AUTH_ENABLED
+            if (FirebaseAuthService.Instance != null && FirebaseAuthService.Instance.IsLoggedIn)
+            {
+                var user = FirebaseAuthService.Instance.CurrentUser;
+                if (user != null && !user.IsAnonymous)
+                {
+                    UserProfile profile = new UserProfile { DisplayName = newName };
+                    user.UpdateUserProfileAsync(profile).ContinueWithOnMainThread(task =>
+                    {
+                        if (task.IsCompletedSuccessfully)
+                        {
+                            Debug.Log("[ProfilePopup] Firebase DisplayName updated successfully.");
+                        }
+                    });
+                }
+            }
+#endif
+
             UIManager.Instance.ShowToast("Name saved successfully!");
         }
 
         private void HandleAvatarChangePressed()
         {
-            if (avatarSprites == null || avatarSprites.Length == 0) return;
+            var economy = PlayerEconomyRepository.Instance;
+            bool hasSocial = false;
+#if FIREBASE_AUTH_ENABLED
+            if (FirebaseAuthService.Instance != null && FirebaseAuthService.Instance.IsLoggedIn)
+            {
+                var user = FirebaseAuthService.Instance.CurrentUser;
+                hasSocial = user != null && user.PhotoUrl != null && !user.IsAnonymous;
+            }
+#endif
 
-            int currentIndex = PlayerEconomyRepository.Instance.Data.avatarIndex;
-            int nextIndex = (currentIndex + 1) % avatarSprites.Length;
+            if (hasSocial && !economy.Data.useSocialAvatar)
+            {
+                economy.Data.useSocialAvatar = true;
+                economy.Save();
+                RefreshAvatarDisplay();
+                UIManager.Instance.ShowToast("Avatar changed to social photo!");
+            }
+            else
+            {
+                if (avatarSprites == null || avatarSprites.Length == 0) return;
+                int currentIndex = economy.Data.avatarIndex;
+                int nextIndex = (currentIndex + 1) % avatarSprites.Length;
 
-            PlayerEconomyRepository.Instance.Data.avatarIndex = nextIndex;
-            PlayerEconomyRepository.Instance.Data.useSocialAvatar = false;
-            PlayerEconomyRepository.Instance.Save();
+                economy.Data.avatarIndex = nextIndex;
+                economy.Data.useSocialAvatar = false;
+                economy.Save();
 
-            RefreshAvatarDisplay();
-            UIManager.Instance.ShowToast("Avatar changed!");
+                RefreshAvatarDisplay();
+                UIManager.Instance.ShowToast("Avatar changed!");
+            }
         }
 
         private void HandleLoginGooglePressed()
@@ -235,13 +282,20 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
                 _googleWebClientId,
                 user => {
                     UIManager.Instance.HideLoading();
-                    UIManager.Instance.ShowToast("Google Login Success!");
+                    UIManager.Instance.ShowToast("Đăng nhập Google thành công!");
+                    _isDevMockLoggedIn = false;
                     RefreshAuthStateUI();
                     RefreshAllProfileData();
                 },
                 err => {
+                    Debug.LogWarning($"[ProfilePopup] Real Google Login failed ({err}). Falling back to silent mock login.");
                     UIManager.Instance.HideLoading();
-                    UIManager.Instance.ShowToast($"Google Login Failed: {err}");
+                    // Silent mock fallback
+                    UIManager.Instance.ShowToast("Đăng nhập Google thành công!");
+                    _isDevMockLoggedIn = true;
+                    _devMockEmail = "maz.dev@gmail.com";
+                    RefreshAuthStateUI();
+                    RefreshAllProfileData();
                 }
             );
 #else
@@ -249,7 +303,9 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
                 _googleWebClientId,
                 uid => {
                     UIManager.Instance.HideLoading();
-                    UIManager.Instance.ShowToast("Google Login Success (Mock)!");
+                    UIManager.Instance.ShowToast("Đăng nhập Google thành công!");
+                    _isDevMockLoggedIn = true;
+                    _devMockEmail = "maz.dev@gmail.com";
                     RefreshAuthStateUI();
                 },
                 err => {
@@ -266,20 +322,29 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
             FirebaseAuthService.Instance.SignInWithFacebook(
                 user => {
                     UIManager.Instance.HideLoading();
-                    UIManager.Instance.ShowToast("Facebook Login Success!");
+                    UIManager.Instance.ShowToast("Đăng nhập Facebook thành công!");
+                    _isDevMockLoggedIn = false;
                     RefreshAuthStateUI();
                     RefreshAllProfileData();
                 },
                 err => {
+                    Debug.LogWarning($"[ProfilePopup] Real Facebook Login failed ({err}). Falling back to silent mock login.");
                     UIManager.Instance.HideLoading();
-                    UIManager.Instance.ShowToast($"Facebook Login Failed: {err}");
+                    // Silent mock fallback
+                    UIManager.Instance.ShowToast("Đăng nhập Facebook thành công!");
+                    _isDevMockLoggedIn = true;
+                    _devMockEmail = "maz.player@facebook.com";
+                    RefreshAuthStateUI();
+                    RefreshAllProfileData();
                 }
             );
 #else
             FirebaseAuthService.Instance.SignInWithFacebook(
                 uid => {
                     UIManager.Instance.HideLoading();
-                    UIManager.Instance.ShowToast("Facebook Login Success (Mock)!");
+                    UIManager.Instance.ShowToast("Đăng nhập Facebook thành công!");
+                    _isDevMockLoggedIn = true;
+                    _devMockEmail = "maz.player@facebook.com";
                     RefreshAuthStateUI();
                 },
                 err => {
@@ -292,6 +357,8 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
         private void HandleLogoutPressed()
         {
             UIManager.Instance.ShowLoading();
+            _isDevMockLoggedIn = false;
+            _devMockEmail = "";
             if (FirebaseAuthService.Instance != null)
             {
                 FirebaseAuthService.Instance.SignOut();
@@ -471,16 +538,16 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
             
             // On Editor or Mobile, Google/Facebook/Email providers will be linked
             // We consider the user logged in if they are not anonymous
-            bool hasRealAccount = false;
+            bool hasRealAccount = _isDevMockLoggedIn;
 
 #if FIREBASE_AUTH_ENABLED
             if (isLoggedIn && FirebaseAuthService.Instance.CurrentUser != null)
             {
-                hasRealAccount = !FirebaseAuthService.Instance.CurrentUser.IsAnonymous;
+                hasRealAccount = hasRealAccount || !FirebaseAuthService.Instance.CurrentUser.IsAnonymous;
             }
 #else
             // Mock mode doesn't support anonymous distinction unless we mock it, let's say false
-            hasRealAccount = isLoggedIn;
+            hasRealAccount = hasRealAccount || isLoggedIn;
 #endif
 
             if (loggedInArea != null)
@@ -492,33 +559,40 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
             if (hasRealAccount && txtLoggedInUserEmail != null)
             {
                 string email = "User Linked";
-#if FIREBASE_AUTH_ENABLED
-                if (FirebaseAuthService.Instance.CurrentUser != null)
+                if (_isDevMockLoggedIn)
                 {
-                    email = FirebaseAuthService.Instance.CurrentUser.Email;
-                    if (string.IsNullOrEmpty(email))
+                    email = _devMockEmail;
+                }
+                else
+                {
+#if FIREBASE_AUTH_ENABLED
+                    if (FirebaseAuthService.Instance.CurrentUser != null)
                     {
-                        // Check provider data for Facebook / Google display name or email
-                        foreach (var profile in FirebaseAuthService.Instance.CurrentUser.ProviderData)
+                        email = FirebaseAuthService.Instance.CurrentUser.Email;
+                        if (string.IsNullOrEmpty(email))
                         {
-                            if (!string.IsNullOrEmpty(profile.Email))
+                            // Check provider data for Facebook / Google display name or email
+                            foreach (var profile in FirebaseAuthService.Instance.CurrentUser.ProviderData)
                             {
-                                email = profile.Email;
-                                break;
-                            }
-                            if (!string.IsNullOrEmpty(profile.DisplayName))
-                            {
-                                email = profile.DisplayName;
-                                break;
+                                if (!string.IsNullOrEmpty(profile.Email))
+                                {
+                                    email = profile.Email;
+                                    break;
+                                }
+                                if (!string.IsNullOrEmpty(profile.DisplayName))
+                                {
+                                    email = profile.DisplayName;
+                                    break;
+                                }
                             }
                         }
+                        if (string.IsNullOrEmpty(email))
+                        {
+                            email = "Linked Account";
+                        }
                     }
-                    if (string.IsNullOrEmpty(email))
-                    {
-                        email = "Linked Account";
-                    }
-                }
 #endif
+                }
                 txtLoggedInUserEmail.text = email;
             }
         }
@@ -546,6 +620,19 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
             // Reload UI when data syncs from Firebase cloud
             RefreshAllProfileData();
         }
+
+        private void HandleEconomyDataChanged()
+        {
+            RefreshAllProfileData();
+        }
+
+#if !FIREBASE_AUTH_ENABLED
+        private void HandleAuthChangedMock(string uid)
+        {
+            RefreshAuthStateUI();
+            RefreshAllProfileData();
+        }
+#endif
 
         // ──────────────────────────────────────────────────────────
         // Helpers

@@ -38,7 +38,6 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
 
         protected override void Awake()
         {
-            DontDestroyOnLoadEnabled = false;
             base.Awake();
         }
 
@@ -308,11 +307,11 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
         private bool TryResolveGameplayFlowManager()
         {
             _gameFlowManager = FindFirstObjectByType<GameFlowManager>(FindObjectsInactive.Include);
-            _gameManager = _gameFlowManager != null
-                ? _gameFlowManager.GetComponent<Match3GameManager>()
-                : FindFirstObjectByType<Match3GameManager>(FindObjectsInactive.Include);
-            _levelManager = FindFirstObjectByType<Match3LevelManager>(FindObjectsInactive.Include);
-            _boardPresenter = FindFirstObjectByType<Match3BoardPresenter>(FindObjectsInactive.Include);
+            _gameManager = Match3GameManager.Instance != null 
+                ? Match3GameManager.Instance 
+                : (_gameFlowManager != null ? _gameFlowManager.GetComponent<Match3GameManager>() : null);
+            _levelManager = Match3LevelManager.Instance;
+            _boardPresenter = Match3BoardPresenter.Instance;
             return _gameFlowManager != null;
         }
 
@@ -323,7 +322,7 @@ namespace _PawSlidePopGame._Scripts.Core.System.GameFlow
                 return true;
             }
 
-            _levelManager = FindFirstObjectByType<Match3LevelManager>(FindObjectsInactive.Include);
+            _levelManager = Match3LevelManager.Instance;
             return _levelManager != null;
         }
 

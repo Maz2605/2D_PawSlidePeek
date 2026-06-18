@@ -25,12 +25,14 @@ namespace _PawSlidePopGame._Scripts.Core.System.DesignPattern.Singleton
                 {
                     if (_instance == null)
                     {
-                        _instance = (T)Object.FindAnyObjectByType(typeof(T));
-
-                        if (Object.FindObjectsByType(typeof(T), FindObjectsSortMode.None).Length > 1)
+                        T[] instances = Object.FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                        if (instances.Length > 0)
                         {
-                            Debug.LogError($"[Singleton] Something went really wrong - there are two instances of {typeof(T)}");
-                            return _instance;
+                            _instance = instances[0];
+                            if (instances.Length > 1)
+                            {
+                                Debug.LogError($"[Singleton] Something went really wrong - there are two instances of {typeof(T)}");
+                            }
                         }
 
                         if (_instance == null)
@@ -39,7 +41,7 @@ namespace _PawSlidePopGame._Scripts.Core.System.DesignPattern.Singleton
                             _instance = singleton.AddComponent<T>();
                             singleton.name = "[Singleton] " + typeof(T);
 
-                            if (DontDestroyOnLoadEnabled)
+                            if (DontDestroyOnLoadEnabled && Application.isPlaying)
                                 DontDestroyOnLoad(singleton);
                         }
                     }
@@ -57,14 +59,21 @@ namespace _PawSlidePopGame._Scripts.Core.System.DesignPattern.Singleton
                 if (_instance == null)
                 {
                     _instance = this as T;
-                    if (DontDestroyOnLoadEnabled && transform.parent == null)
+                    if (DontDestroyOnLoadEnabled && transform.parent == null && Application.isPlaying)
                     {
                         DontDestroyOnLoad(gameObject);
                     }
                 }
                 else if (_instance != this)
                 {
-                    Destroy(gameObject);
+                    if (GetComponents<Component>().Length > 2)
+                    {
+                        Destroy(this);
+                    }
+                    else
+                    {
+                        Destroy(gameObject);
+                    }
                 }
             }
         }

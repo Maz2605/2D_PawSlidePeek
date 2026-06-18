@@ -566,6 +566,7 @@ GameObject:
   - component: {fileID: 6227519769498365876}
   - component: {fileID: 363414575451906193}
   - component: {fileID: 3899384268587089325}
+  - component: {fileID: 5541568754089606260}
   m_Layer: 5
   m_Name: Background
   m_TagString: Untagged
@@ -674,6 +675,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &5541568754089606260
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 516560482516559794}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 2
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &559627283044189092
 GameObject:
   m_ObjectHideFlags: 0
@@ -686,6 +703,7 @@ GameObject:
   - component: {fileID: 5280485226595544923}
   - component: {fileID: 2253800945157330803}
   - component: {fileID: 4999460524467748344}
+  - component: {fileID: 4011499991941075357}
   m_Layer: 5
   m_Name: InventoryUiView
   m_TagString: Untagged
@@ -784,6 +802,22 @@ MonoBehaviour:
   imgIcon: {fileID: 456520605800868460}
   txtAmount: {fileID: 103777853766767196}
   lockOverlay: {fileID: 5874614147730713152}
+--- !u!114 &4011499991941075357
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 559627283044189092}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 1
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &658962450833845511
 GameObject:
   m_ObjectHideFlags: 0
@@ -870,6 +904,7 @@ GameObject:
   - component: {fileID: 8814887376083771054}
   - component: {fileID: 6714818952964314105}
   - component: {fileID: 783021908345261213}
+  - component: {fileID: 2338150605843129960}
   m_Layer: 5
   m_Name: Edit Button
   m_TagString: Untagged
@@ -957,6 +992,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &2338150605843129960
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 723600538308169497}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 1
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &727242879619986733
 GameObject:
   m_ObjectHideFlags: 0
@@ -1193,6 +1244,7 @@ GameObject:
   - component: {fileID: 2929400260799073616}
   - component: {fileID: 3509871292524617167}
   - component: {fileID: 6707887405914822923}
+  - component: {fileID: 5381000901920784183}
   m_Layer: 5
   m_Name: CloseButtons
   m_TagString: Untagged
@@ -1282,6 +1334,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &5381000901920784183
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 866422176724157419}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 2
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &900752417009046129
 GameObject:
   m_ObjectHideFlags: 0
@@ -1404,6 +1472,7 @@ GameObject:
   - component: {fileID: 8239332580210267551}
   - component: {fileID: 6999221167524683896}
   - component: {fileID: 5747974215296572626}
+  - component: {fileID: 7924045199219003458}
   m_Layer: 5
   m_Name: InventoryUiView (8)
   m_TagString: Untagged
@@ -1487,6 +1556,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &7924045199219003458
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 995339880431878974}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 1
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &1001514054143213938
 GameObject:
   m_ObjectHideFlags: 0
@@ -2809,6 +2894,7 @@ GameObject:
   - component: {fileID: 4928231603030688115}
   - component: {fileID: 6814175876671421320}
   - component: {fileID: 3911738125217706682}
+  - component: {fileID: 3379012587946989331}
   m_Layer: 5
   m_Name: InventoryUiView (6)
   m_TagString: Untagged
@@ -2892,6 +2978,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &3379012587946989331
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2062353223080665440}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 1
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &2077411485157893744
 GameObject:
   m_ObjectHideFlags: 0
@@ -5046,6 +5148,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4629643149266530338}
   - component: {fileID: 5887967084754900743}
+  - component: {fileID: 1101006407454563198}
   m_Layer: 5
   m_Name: Camera Button
   m_TagString: Untagged
@@ -5119,6 +5222,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1101006407454563198
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3811771475767749357}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 1
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &3850205949907820036
 GameObject:
   m_ObjectHideFlags: 0
@@ -5430,6 +5549,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4310578265633878469}
   - component: {fileID: 7675857314527196916}
+  - component: {fileID: 7759288630204988603}
   m_Layer: 5
   m_Name: Google
   m_TagString: Untagged
@@ -5503,6 +5623,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &7759288630204988603
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4537123676869936560}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 1
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &4650348707281088770
 GameObject:
   m_ObjectHideFlags: 0
@@ -5514,6 +5650,7 @@ GameObject:
   - component: {fileID: 5303262031811255529}
   - component: {fileID: 6787497196650698200}
   - component: {fileID: 1585393865567121199}
+  - component: {fileID: 5838934487391014986}
   m_Layer: 5
   m_Name: InventoryUiView (5)
   m_TagString: Untagged
@@ -5597,6 +5734,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &5838934487391014986
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4650348707281088770}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 1
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &4676282254118110326
 GameObject:
   m_ObjectHideFlags: 0
@@ -7653,6 +7806,7 @@ GameObject:
   - component: {fileID: 262270153025373463}
   - component: {fileID: 1274379557593489586}
   - component: {fileID: 505635303339617828}
+  - component: {fileID: 4048518179698027026}
   m_Layer: 5
   m_Name: btnLogout
   m_TagString: Untagged
@@ -7763,6 +7917,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &4048518179698027026
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5272592169027408638}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 1
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &5290278564965411548
 GameObject:
   m_ObjectHideFlags: 0
@@ -8806,6 +8976,7 @@ GameObject:
   - component: {fileID: 3726863833251254689}
   - component: {fileID: 8874334037462790190}
   - component: {fileID: 2393251523025469354}
+  - component: {fileID: 5273743705510180676}
   m_Layer: 5
   m_Name: AddInventory
   m_TagString: Untagged
@@ -8898,6 +9069,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a48daf1a182f39469df26bdd5c3bc92, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.UI.Components.InventoryAddButton
+--- !u!114 &5273743705510180676
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5783001967657712869}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 1
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &5834723014502622393
 GameObject:
   m_ObjectHideFlags: 0
@@ -9747,6 +9934,7 @@ GameObject:
   - component: {fileID: 7828184708377915407}
   - component: {fileID: 4155178657989074650}
   - component: {fileID: 1803894808215089443}
+  - component: {fileID: 1322207780994375549}
   m_Layer: 5
   m_Name: InventoryUiView (1)
   m_TagString: Untagged
@@ -9830,6 +10018,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1322207780994375549
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6324359948019328098}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 1
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &6421960581350956579
 GameObject:
   m_ObjectHideFlags: 0
@@ -10026,6 +10230,7 @@ GameObject:
   m_Component:
   - component: {fileID: 630430622407838774}
   - component: {fileID: 125807289580996024}
+  - component: {fileID: 6245076122049901283}
   m_Layer: 5
   m_Name: Fb
   m_TagString: Untagged
@@ -10099,6 +10304,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &6245076122049901283
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6516836155983027311}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 1
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &6549627322286595383
 GameObject:
   m_ObjectHideFlags: 0
@@ -10445,6 +10666,7 @@ GameObject:
   - component: {fileID: 4887123614754414277}
   - component: {fileID: 3351105916800126873}
   - component: {fileID: 6375313316308692562}
+  - component: {fileID: 6179474917143648000}
   m_Layer: 5
   m_Name: InventoryUiView (7)
   m_TagString: Untagged
@@ -10528,6 +10750,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &6179474917143648000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6612529080231916449}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 1
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &6678356746723834612
 GameObject:
   m_ObjectHideFlags: 0
@@ -10539,6 +10777,7 @@ GameObject:
   - component: {fileID: 142330883286812768}
   - component: {fileID: 338018449101943429}
   - component: {fileID: 6792432353962418524}
+  - component: {fileID: 6594132904341671844}
   m_Layer: 5
   m_Name: InventoryUiView (2)
   m_TagString: Untagged
@@ -10622,6 +10861,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &6594132904341671844
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6678356746723834612}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 1
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &6703975451382955380
 GameObject:
   m_ObjectHideFlags: 0
@@ -10782,6 +11037,7 @@ GameObject:
   - component: {fileID: 5506108109612702032}
   - component: {fileID: 4483411666126037889}
   - component: {fileID: 8980472977499999242}
+  - component: {fileID: 3813772162127718789}
   m_Layer: 5
   m_Name: InventoryUiView (4)
   m_TagString: Untagged
@@ -10865,6 +11121,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &3813772162127718789
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6843784846778861793}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 1
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &6852002333584515390
 GameObject:
   m_ObjectHideFlags: 0
@@ -11756,6 +12028,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1896145284021220022}
   - component: {fileID: 2178885353112389279}
+  - component: {fileID: 1157063237364795370}
   m_Layer: 5
   m_Name: Mail
   m_TagString: Untagged
@@ -11829,6 +12102,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1157063237364795370
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7385035094909624887}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 1
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &7531347520946635722
 GameObject:
   m_ObjectHideFlags: 0
@@ -13087,6 +13376,7 @@ GameObject:
   - component: {fileID: 128732186018123561}
   - component: {fileID: 7710972314356056356}
   - component: {fileID: 7915978402051773119}
+  - component: {fileID: 3235716831103330054}
   m_Layer: 5
   m_Name: InventoryUiView (3)
   m_TagString: Untagged
@@ -13170,6 +13460,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &3235716831103330054
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8711420081999127440}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 1
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &8712128953611542377
 GameObject:
   m_ObjectHideFlags: 0

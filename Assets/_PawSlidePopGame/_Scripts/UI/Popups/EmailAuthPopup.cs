@@ -60,11 +60,15 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
         private Tween _confirmFieldTween;
         private CanvasGroup _confirmFieldCanvasGroup;
 
+        private Vector3 _statusLogOriginalLocalPos;
+
         protected override void Awake()
         {
             base.Awake();
             if (animatedContent != null)
                 _contentOriginalPos = animatedContent.anchoredPosition;
+            if (txtStatusLog != null)
+                _statusLogOriginalLocalPos = txtStatusLog.transform.localPosition;
         }
 
         protected override void OnBeforeShow()
@@ -306,6 +310,35 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
             BindButton(btnTogglePasswordVisibility, TogglePasswordVisibility);
         }
 
+        private void ShowStatusLog(string message, bool isError = true)
+        {
+            if (txtStatusLog == null) return;
+
+            txtStatusLog.text = message;
+            txtStatusLog.color = isError ? Color.red : new Color(0.12f, 0.73f, 0.22f); // Đỏ cho lỗi, Xanh lá cho thành công
+
+            // Hiệu ứng rung chữ dựa trên vị trí ban đầu được cache
+            txtStatusLog.transform.DOKill();
+            txtStatusLog.transform.localPosition = _statusLogOriginalLocalPos;
+            txtStatusLog.transform.DOShakePosition(0.4f, new Vector3(10f, 0f, 0f), 10, 90f, false, true)
+                .SetUpdate(true)
+                .SetLink(txtStatusLog.gameObject, LinkBehaviour.KillOnDisable);
+
+            // Rung lắc cả khung nội dung của popup khi có lỗi
+            if (isError && animatedContent != null)
+            {
+                _idleTween?.Kill();
+                animatedContent.DOKill();
+                animatedContent.localScale = Vector3.one;
+                animatedContent.localRotation = Quaternion.identity;
+                
+                animatedContent.DOShakePosition(0.5f, new Vector3(25f, 0f, 0f), 12, 90f, false, true)
+                    .SetUpdate(true)
+                    .SetLink(animatedContent.gameObject, LinkBehaviour.KillOnDisable)
+                    .OnComplete(PlayIdleAnimation); // Tiếp tục chạy idle sau khi shake xong
+            }
+        }
+
         private void HandleSubmitRegisterPressed()
         {
             if (inputEmail == null || inputPassword == null) return;
@@ -317,25 +350,25 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
 
             if (string.IsNullOrWhiteSpace(email))
             {
-                if (txtStatusLog != null) txtStatusLog.text = "Email cannot be empty.";
+                ShowStatusLog("Email cannot be empty.");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(password))
             {
-                if (txtStatusLog != null) txtStatusLog.text = "Password cannot be empty.";
+                ShowStatusLog("Password cannot be empty.");
                 return;
             }
 
             if (password.Length < 6)
             {
-                if (txtStatusLog != null) txtStatusLog.text = "Password must be at least 6 characters.";
+                ShowStatusLog("Password must be at least 6 characters.");
                 return;
             }
 
             if (password != confirm)
             {
-                if (txtStatusLog != null) txtStatusLog.text = "Passwords do not match.";
+                ShowStatusLog("Passwords do not match.");
                 return;
             }
 
@@ -353,7 +386,7 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
                 err =>
                 {
                     UIManager.Instance.HideLoading();
-                    if (txtStatusLog != null) txtStatusLog.text = $"Error: {err}";
+                    ShowStatusLog($"Error: {err}");
                 }
             );
 #else
@@ -367,7 +400,7 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
                 },
                 err => {
                     UIManager.Instance.HideLoading();
-                    if (txtStatusLog != null) txtStatusLog.text = $"Error: {err}";
+                    ShowStatusLog($"Error: {err}");
                 }
             );
 #endif
@@ -383,13 +416,13 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
 
             if (string.IsNullOrWhiteSpace(email))
             {
-                if (txtStatusLog != null) txtStatusLog.text = "Email cannot be empty.";
+                ShowStatusLog("Email cannot be empty.");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(password))
             {
-                if (txtStatusLog != null) txtStatusLog.text = "Password cannot be empty.";
+                ShowStatusLog("Password cannot be empty.");
                 return;
             }
 
@@ -407,7 +440,7 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
                 err =>
                 {
                     UIManager.Instance.HideLoading();
-                    if (txtStatusLog != null) txtStatusLog.text = $"Error: {err}";
+                    ShowStatusLog($"Error: {err}");
                 }
             );
 #else
@@ -421,7 +454,7 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
                 },
                 err => {
                     UIManager.Instance.HideLoading();
-                    if (txtStatusLog != null) txtStatusLog.text = $"Error: {err}";
+                    ShowStatusLog($"Error: {err}");
                 }
             );
 #endif

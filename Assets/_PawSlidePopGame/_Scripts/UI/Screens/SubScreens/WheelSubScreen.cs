@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using _PawSlidePopGame._Scripts.Core.Audio;
+using _PawSlidePopGame._Scripts.Core.Vibration;
 using _PawSlidePopGame._Scripts.Feature.Match3.Boosters;
 using _PawSlidePopGame._Scripts.Feature.Meta.Wheel;
 using _PawSlidePopGame._Scripts.UI.Base;
@@ -89,9 +91,25 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
             RefreshStatusText(status);
         }
 
+        private void OnEnable()
+        {
+            WheelStateRepository.OnDataChanged += HandleWheelDataChanged;
+        }
+
         private void OnDisable()
         {
+            WheelStateRepository.OnDataChanged -= HandleWheelDataChanged;
             KillSpinTween();
+        }
+
+        private void HandleWheelDataChanged()
+        {
+            if (isInitialized)
+            {
+                LoadSnapshot();
+                BindSegments();
+                RefreshState();
+            }
         }
 
         private void Update()
@@ -276,11 +294,32 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
                     .SetUpdate(useUnscaledTime));
             }
 
+            int lastTickSegment = -1;
+            int segmentCount = _snapshot.Rewards.Count;
+
             _spinSequence.Append(DOVirtual.Float(0f, 1f, totalDuration, progress =>
                 {
                     float unifiedProgress = EvaluateUnifiedProgress(progress, tZero, c);
                     float angle = Mathf.LerpUnclamped(startAngle, targetAngle, unifiedProgress);
                     wheelRoot.localRotation = Quaternion.Euler(0f, 0f, angle);
+
+                    if (segmentCount > 0)
+                    {
+                        float normalizedAngle = (angle % 360f + 360f) % 360f;
+                        int currentSegment = Mathf.FloorToInt(normalizedAngle / (360f / segmentCount));
+                        if (currentSegment != lastTickSegment)
+                        {
+                            lastTickSegment = currentSegment;
+                            if (AudioController.Instance != null)
+                            {
+                                AudioController.Instance.PlayUISound(UISoundType.ClickNormal);
+                            }
+                            if (VibrationManager.Instance != null)
+                            {
+                                VibrationManager.Instance.PlayLightImpact(requireEnabled: true);
+                            }
+                        }
+                    }
                 })
                 .SetEase(Ease.Linear));
 
@@ -300,6 +339,15 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
             bool granted = WheelRewardGrantService.TryGrant(reward);
             if (granted)
             {
+                if (AudioController.Instance != null)
+                {
+                    AudioController.Instance.PlayUISound(UISoundType.PurchaseSuccess);
+                }
+                if (VibrationManager.Instance != null)
+                {
+                    VibrationManager.Instance.PlayMediumImpact();
+                }
+
                 _stateRepository.MarkFreeSpinUsed();
                 Debug.Log($"[WheelSubScreen] Reward granted: id='{reward.RewardId}', kind={reward.RewardKind}, amount={reward.Amount}, display='{reward.DisplayName}'.", this);
                 if (resultText != null)

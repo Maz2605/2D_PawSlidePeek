@@ -3,6 +3,7 @@ using _PawSlidePopGame._Scripts.Data.Events;
 using _PawSlidePopGame._Scripts.Data.Events.Payloads;
 using _PawSlidePopGame._Scripts.Feature.Match3.Flow;
 using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
+using _PawSlidePopGame._Scripts.Feature.Match3.Boosters;
 using UnityEngine;
 using DG.Tweening;
 
@@ -83,6 +84,52 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             }
 
             chargedAbilityView?.ResetView();
+
+            if (chargedAbilityView != null)
+            {
+                var cg = chargedAbilityView.GetComponent<CanvasGroup>();
+                if (cg != null)
+                {
+                    cg.DOKill();
+                    cg.alpha = 1f;
+                    cg.blocksRaycasts = true;
+                }
+            }
+
+            BoosterWidget boosterWidget = GetComponentInChildren<BoosterWidget>(true);
+            if (boosterWidget != null)
+            {
+                boosterWidget.SetButtonsDimmed(false, null, 0f);
+            }
+        }
+
+        public void SetDimmed(bool isDimmed, BoosterDefinitionSO selectedBooster, float duration = 0.25f)
+        {
+            if (chargedAbilityView != null)
+            {
+                var cg = chargedAbilityView.GetComponent<CanvasGroup>();
+                if (cg == null)
+                {
+                    cg = chargedAbilityView.gameObject.AddComponent<CanvasGroup>();
+                }
+                cg.DOKill();
+                float targetAlpha = isDimmed ? 0.35f : 1f;
+                if (duration > 0f && Application.isPlaying)
+                {
+                    cg.DOFade(targetAlpha, duration).SetEase(Ease.OutQuad).SetUpdate(true);
+                }
+                else
+                {
+                    cg.alpha = targetAlpha;
+                }
+                cg.blocksRaycasts = !isDimmed;
+            }
+
+            BoosterWidget boosterWidget = GetComponentInChildren<BoosterWidget>(true);
+            if (boosterWidget != null)
+            {
+                boosterWidget.SetButtonsDimmed(isDimmed, selectedBooster, duration);
+            }
         }
 
         private void HandleHudSnapshot(GameplayHudSnapshot snapshot)

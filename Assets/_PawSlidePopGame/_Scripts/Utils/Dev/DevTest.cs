@@ -34,6 +34,10 @@ namespace _PawSlidePopGame._Scripts.Utils.Dev
         [SerializeField] private bool enableDevWheelRestore = true;
         [SerializeField] private Key devWheelRestoreKey = Key.Digit8;
 
+        [Header("Global Toggle")]
+        [SerializeField] private bool enableDevMode = true;
+        [SerializeField] private Key toggleDevModeKey = Key.F1;
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void InitializeDevTest()
@@ -54,6 +58,17 @@ namespace _PawSlidePopGame._Scripts.Utils.Dev
 #endif
             Keyboard keyboard = Keyboard.current;
             if (keyboard == null) return;
+
+            // Toggle Dev Mode
+            if (keyboard[toggleDevModeKey].wasPressedThisFrame)
+            {
+                enableDevMode = !enableDevMode;
+                string stateMsg = enableDevMode ? "ENABLED" : "DISABLED";
+                UIManager.Instance?.ShowToast($"Dev Hotkeys {stateMsg}");
+                Debug.Log($"[DevTest] Dev Mode hotkeys {stateMsg}");
+            }
+
+            if (!enableDevMode) return;
 
             // 1. Refill Hearts
             if (enableDevRefillHearts && keyboard[devRefillHeartsKey].wasPressedThisFrame)

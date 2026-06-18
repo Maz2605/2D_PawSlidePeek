@@ -1,3 +1,4 @@
+using _PawSlidePopGame._Scripts.Data.Audio;
 using _PawSlidePopGame._Scripts.Data.Events;
 using _PawSlidePopGame._Scripts.UI.Manager;
 using _PawSlidePopGame._Scripts.UI.Popups;
@@ -49,7 +50,10 @@ namespace _PawSlidePopGame._Scripts.UI.Components
 
         private void HandleClicked()
         {
-            EventManager<FeedbackEvent>.Post(FeedbackEvent.UiButtonTap);
+            if (!TryGetComponent<UIButtonSound>(out var _))
+            {
+                EventManager<FeedbackEvent>.Post(FeedbackEvent.UiButtonTap);
+            }
 
             if (UIManager.Instance == null)
             {

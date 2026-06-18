@@ -19,6 +19,11 @@ namespace _PawSlidePopGame._Scripts.Core.System.Boostrap
         [Header("Core Services")]
         [SerializeField] private List<MonoBehaviour> coreServices;
 
+        private void Awake()
+        {
+            DontDestroyOnLoad(gameObject);
+        }
+
         private void Start()
         {
             if (SceneManager.GetActiveScene().name == nameInitScene)
@@ -34,7 +39,6 @@ namespace _PawSlidePopGame._Scripts.Core.System.Boostrap
 
         private IEnumerator RunInitFlowRoutine(bool isEditorAutoInject)
         {
-            DontDestroyOnLoad(gameObject);
             EnsureUIManagerExists();
             EnsureGameAppFlowManagerExists();
             SceneLoaderManager sceneLoader = EnsureSceneLoaderManagerExists();
@@ -44,10 +48,10 @@ namespace _PawSlidePopGame._Scripts.Core.System.Boostrap
                 if (mono is IAppService service)
                 {
                     service.Init();
+                    yield return null;
                 }
             }
 
-            yield return null;
             if (!isEditorAutoInject)
             {
                 sceneLoader.LoadScene(nameMainScene);
@@ -56,13 +60,11 @@ namespace _PawSlidePopGame._Scripts.Core.System.Boostrap
 
         private void EnsureGameAppFlowManagerExists()
         {
-            GameAppFlowManager flowManager = GetComponent<GameAppFlowManager>();
-            if (flowManager == null)
+            GameAppFlowManager flowManager = GameAppFlowManager.Instance;
+            if (flowManager != null)
             {
-                flowManager = gameObject.AddComponent<GameAppFlowManager>();
+                flowManager.Initialize();
             }
-
-            flowManager.Initialize();
         }
 
         private SceneLoaderManager EnsureSceneLoaderManagerExists()

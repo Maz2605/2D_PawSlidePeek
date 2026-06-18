@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using _PawSlidePopGame._Scripts.Data.Audio;
 using _PawSlidePopGame._Scripts.Data.Events;
 using DG.Tweening;
 using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
@@ -16,7 +17,15 @@ namespace _PawSlidePopGame._Scripts.UI.Base
             btn.onClick?.RemoveAllListeners();
             btn.onClick?.AddListener(() =>
             {
-                EventManager<FeedbackEvent>.Post(FeedbackEvent.UiButtonTap);
+                bool hasButtonSound = btn.TryGetComponent<UIButtonSound>(out var _);
+                Debug.Log($"[BaseHUD] BindButton clicked: '{btn.name}' on HUD '{gameObject.name}'. hasUIButtonSound={hasButtonSound}");
+                
+                if (!hasButtonSound)
+                {
+                    Debug.Log("[BaseHUD] Posting FeedbackEvent.UiButtonTap");
+                    EventManager<FeedbackEvent>.Post(FeedbackEvent.UiButtonTap);
+                }
+                
                 btn.transform.DOKill();
                 btn.transform.localScale = Vector3.one;
                 btn.transform

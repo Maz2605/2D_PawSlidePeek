@@ -23,8 +23,14 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         private Vector3 _originalLocalPos;
         private bool _hasOriginalLocalPos;
 
+        public static TopHUDPresenter Instance { get; private set; }
+
+        public MovesCounterView MovesCounterView => movesCounterView;
+        public LevelProgressView LevelProgressView => levelProgressView;
+
         private void Awake()
         {
+            Instance = this;
             if (canvasGroup == null)
             {
                 canvasGroup = GetComponent<CanvasGroup>();
@@ -35,6 +41,14 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             }
 
             CacheOriginalPosition();
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
         }
 
         private void CacheOriginalPosition()
@@ -93,7 +107,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             movesCounterView?.SetValue(_currentSnapshot.remainingMoves);
             targetListView?.SetTargets(_currentSnapshot.targets);
 
-            var boardPresenter = FindFirstObjectByType<Match3BoardPresenter>(FindObjectsInactive.Include);
+            var boardPresenter = Match3BoardPresenter.Instance;
             if (boardPresenter != null && boardPresenter.IsVictoryOutroPlaying)
             {
                 return;
@@ -129,11 +143,30 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             {
                 canvasGroup.DOKill();
                 canvasGroup.alpha = 1f;
+                canvasGroup.blocksRaycasts = true;
             }
 
             movesCounterView?.ResetView();
             targetListView?.ResetView();
             levelProgressView?.ResetView();
+        }
+
+        public void SetDimmed(bool isDimmed, float duration = 0.25f)
+        {
+            if (canvasGroup != null)
+            {
+                canvasGroup.DOKill();
+                float targetAlpha = isDimmed ? 0.35f : 1f;
+                if (duration > 0f && Application.isPlaying)
+                {
+                    canvasGroup.DOFade(targetAlpha, duration).SetEase(Ease.OutQuad).SetUpdate(true);
+                }
+                else
+                {
+                    canvasGroup.alpha = targetAlpha;
+                }
+                canvasGroup.blocksRaycasts = !isDimmed;
+            }
         }
 
         private void HandleHudInitialized(GameplayHudSnapshot snapshot)
@@ -245,7 +278,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         private void HandleStarReachedFx(StarReachedPayload payload)
         {
-            var boardPresenter = FindFirstObjectByType<Match3BoardPresenter>(FindObjectsInactive.Include);
+            var boardPresenter = Match3BoardPresenter.Instance;
             if (boardPresenter != null && boardPresenter.IsVictoryOutroPlaying)
             {
                 return;
@@ -281,7 +314,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             _currentSnapshot.currentScore = payload.CurrentScore;
             _currentSnapshot.reachedStars = GameplayHudSnapshotBuilder.CountReachedStars(payload.CurrentScore, _currentSnapshot.starScoreThresholds);
 
-            var boardPresenter = FindFirstObjectByType<Match3BoardPresenter>(FindObjectsInactive.Include);
+            var boardPresenter = Match3BoardPresenter.Instance;
             if (boardPresenter != null && boardPresenter.IsVictoryOutroPlaying)
             {
                 return;

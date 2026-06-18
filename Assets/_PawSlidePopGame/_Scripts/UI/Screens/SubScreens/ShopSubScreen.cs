@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using _PawSlidePopGame._Scripts.Core.Audio;
+using _PawSlidePopGame._Scripts.Core.Vibration;
 using _PawSlidePopGame._Scripts.Feature.Meta.Shop;
 using _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager;
 using _PawSlidePopGame._Scripts.UI.Base;
@@ -182,12 +184,30 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
 
         private void HandlePurchaseSuccess(ShopItemSO item)
         {
+            if (AudioController.Instance != null)
+            {
+                AudioController.Instance.PlayUISound(UISoundType.PurchaseSuccess);
+            }
+            if (VibrationManager.Instance != null)
+            {
+                VibrationManager.Instance.PlayMediumImpact();
+            }
+
             UIManager.Instance?.ShowToast($"Successfully purchased: {item.DisplayName}!");
             RefreshAllAffordability();
         }
 
         private void HandlePurchaseFailed(ShopItemSO item, PurchaseFailReason reason)
         {
+            if (AudioController.Instance != null)
+            {
+                AudioController.Instance.PlayUISound(UISoundType.ToastError);
+            }
+            if (VibrationManager.Instance != null)
+            {
+                VibrationManager.Instance.PlayReject();
+            }
+
             string message = reason switch
             {
                 PurchaseFailReason.InsufficientCoins    => "Not enough Coins!",

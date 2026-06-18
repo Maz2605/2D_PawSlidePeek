@@ -99,7 +99,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         private Sequence _shakeSequence;
         private Sequence _transitionSequence;
         private Tween _idleTween;
-        private HeartManager _heartManager;
+        private string _lastStatusText;
 
         private Image ActiveHeartIcon => 
             (GetHeartManager() != null && GetHeartManager().IsInfiniteHeartsActive && infiniteHeartIcon != null)
@@ -143,9 +143,10 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         private void OnDisable()
         {
-            if (_heartManager != null)
+            HeartManager manager = GetHeartManager();
+            if (manager != null)
             {
-                _heartManager.OnHeartsChanged -= HandleHeartsChanged;
+                manager.OnHeartsChanged -= HandleHeartsChanged;
             }
 
             if (addButton != null)
@@ -154,7 +155,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             }
 
             _lastButtonInteractableState = null;
-            _heartManager = null;
+            _lastStatusText = null;
             KillAllTweens();
             RestoreBaseState();
             _isAnimating = false;
@@ -242,9 +243,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         private HeartManager GetHeartManager()
         {
-            if (_heartManager != null) return _heartManager;
-            _heartManager = FindFirstObjectByType<HeartManager>(FindObjectsInactive.Include);
-            return _heartManager;
+            return HeartManager.Instance;
         }
 
         private IconState GetIconBaseState(Image icon)
@@ -283,24 +282,31 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         {
             if (statusText == null) return;
 
+            string targetText = string.Empty;
             if (isInfinite)
             {
                 double infiniteSeconds = manager.RemainingInfiniteHeartsSeconds;
                 int hours = (int)(infiniteSeconds / 3600);
                 int minutes = (int)((infiniteSeconds % 3600) / 60);
                 int seconds = (int)(infiniteSeconds % 60);
-                statusText.text = hours > 0 ? $"{hours}:{minutes:00}:{seconds:00}" : $"{minutes:00}:{seconds:00}";
+                targetText = hours > 0 ? $"{hours}:{minutes:00}:{seconds:00}" : $"{minutes:00}:{seconds:00}";
             }
             else if (manager.Hearts >= HeartManager.MaxHearts)
             {
-                statusText.text = fullText;
+                targetText = fullText;
             }
             else
             {
                 double secondsRemaining = manager.SecondsUntilNextHeart;
                 int minutes = (int)(secondsRemaining / 60);
                 int seconds = (int)(secondsRemaining % 60);
-                statusText.text = $"{minutes:00}:{seconds:00}";
+                targetText = $"{minutes:00}:{seconds:00}";
+            }
+
+            if (_lastStatusText != targetText)
+            {
+                _lastStatusText = targetText;
+                statusText.text = targetText;
             }
         }
 

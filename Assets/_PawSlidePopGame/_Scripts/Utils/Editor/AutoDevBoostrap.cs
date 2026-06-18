@@ -42,6 +42,15 @@ namespace _PawSlidePopGame._Scripts.Utils.Editor
 
         private static void ResetSingletonStateForPlayMode()
         {
+            var objects = UnityEngine.Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var go in objects)
+            {
+                if (go.name.StartsWith("[Singleton]"))
+                {
+                    UnityEngine.Object.DestroyImmediate(go);
+                }
+            }
+
             Type singletonBaseDefinition = typeof(Singleton<>);
             foreach (Type type in TypeCache.GetTypesDerivedFrom<MonoBehaviour>())
             {

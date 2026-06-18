@@ -164,12 +164,10 @@ MonoBehaviour:
   screenRoot: {fileID: 5764979207321414631}
   popupRoot: {fileID: 4048844462541017518}
   topRoot: {fileID: 7065146328090213434}
-  screenConfigs: []
-  popupConfigs:
-  - id: 1
-    prefab: {fileID: 628111961902932370, guid: 50a029920857a3f4db2dcda112f50a82, type: 3}
-  toastPrefab: {fileID: 0}
-  loadingScreenPrefab: {fileID: 0}
+  screenPrefabs: []
+  popupPrefabs: []
+  toastPrefab: {fileID: 4050699964412200266, guid: 6143d6cc7aa3ccf4fb17147856228103, type: 3}
+  loadingScreenPrefab: {fileID: 3509697570447719135, guid: 1f019e54f125d4546a059e4864d821c8, type: 3}
 --- !u!1 &5201522337805206167
 GameObject:
   m_ObjectHideFlags: 0

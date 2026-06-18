@@ -41,11 +41,22 @@ namespace _PawSlidePopGame._Scripts.UI.Manager
         private ToastNotification _toastInstance;
         private LoadingScreen _loadingInstance;
 
-        // protected override void Awake()
-        // {
-        //     base.Awake();
-        //     InitPrefabDictionaries();
-        // }
+        protected override void Awake()
+        {
+            base.Awake();
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        protected override void OnDestroy()
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+            base.OnDestroy();
+        }
+
+        private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            AssignUICameraToRoots();
+        }
 
         public void Init()
         {
@@ -53,6 +64,84 @@ namespace _PawSlidePopGame._Scripts.UI.Manager
             AssignUICameraToRoots();
             InitPrefabDictionaries();
             InitTopUI();
+            PrewarmUI();
+        }
+
+        private void PrewarmUI()
+        {
+            // 1. Scan and cache already existing UI components under root objects to prevent double instantiations
+            if (screenRoot != null)
+            {
+                var existingScreens = screenRoot.GetComponentsInChildren<BaseScreen>(true);
+                foreach (var screen in existingScreens)
+                {
+                    if (screen != null)
+                    {
+                        Type type = screen.GetType();
+                        if (!_screenCache.ContainsKey(type))
+                        {
+                            _screenCache[type] = screen;
+                        }
+                    }
+                }
+            }
+
+            if (popupRoot != null)
+            {
+                var existingPopups = popupRoot.GetComponentsInChildren<BasePopup>(true);
+                foreach (var popup in existingPopups)
+                {
+                    if (popup != null)
+                    {
+                        Type type = popup.GetType();
+                        if (!_popupCache.ContainsKey(type))
+                        {
+                            _popupCache[type] = popup;
+                        }
+                    }
+                }
+            }
+
+            // 2. Instantiate and prewarm only the missing configurations
+            if (screenPrefabs != null)
+            {
+                foreach (var prefab in screenPrefabs)
+                {
+                    if (prefab != null)
+                    {
+                        Type type = prefab.GetType();
+                        if (!_screenCache.ContainsKey(type))
+                        {
+                            BaseScreen instance = Instantiate(prefab, screenRoot);
+                            if (instance != null)
+                            {
+                                instance.gameObject.SetActive(false);
+                                _screenCache[type] = instance;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (popupPrefabs != null)
+            {
+                foreach (var prefab in popupPrefabs)
+                {
+                    if (prefab != null)
+                    {
+                        Type type = prefab.GetType();
+                        if (!_popupCache.ContainsKey(type))
+                        {
+                            BasePopup instance = Instantiate(prefab, popupRoot);
+                            if (instance != null)
+                            {
+                                instance.gameObject.SetActive(false);
+                                _popupCache[type] = instance;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         // private void Start()

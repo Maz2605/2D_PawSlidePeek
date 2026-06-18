@@ -1,4 +1,4 @@
-﻿using _PawSlidePopGame._Scripts.Core.Boostrap;
+using _PawSlidePopGame._Scripts.Core.Boostrap;
 using DG.Tweening;
 using UnityEngine;
 
@@ -12,6 +12,12 @@ namespace _PawSlidePopGame._Scripts.Core.System
 
         [Header("Screen Settings")]
         [SerializeField] private bool keepScreenAwake = true;
+
+        private void Awake()
+        {
+            DOTween.SetTweensCapacity(2000, 500);
+            Debug.Log("[DeviceSettingService] Awake: DOTween Capacity set to 2000/500");
+        }
 
         public void Init()
         {
@@ -40,18 +46,12 @@ namespace _PawSlidePopGame._Scripts.Core.System
         
         private void InitDOTween()
         {
-            // Kiểm tra tránh Init nhiều lần
-            if (!DOTween.instance)
-            {
-                DOTween.logBehaviour = LogBehaviour.ErrorsOnly; 
-
-                DOTween.Init(true, true, LogBehaviour.ErrorsOnly).SetCapacity(2000, 500);
-
-                DOTween.defaultAutoKill = true; 
-                DOTween.defaultRecyclable = false; 
-                
-                Debug.Log($"[DeviceSettingService] DOTween Initialized. Capacity: 2000/500");
-            }
+            DOTween.SetTweensCapacity(2000, 500);
+            DOTween.logBehaviour = LogBehaviour.ErrorsOnly; 
+            DOTween.defaultAutoKill = true; 
+            DOTween.defaultRecyclable = false; 
+            
+            Debug.Log($"[DeviceSettingService] DOTween Initialized. Capacity: 2000/500");
         }
     }
 }

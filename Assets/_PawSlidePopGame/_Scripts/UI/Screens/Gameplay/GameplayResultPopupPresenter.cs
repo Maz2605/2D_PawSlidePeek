@@ -34,7 +34,7 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.Gameplay
 
         private System.Collections.IEnumerator ShowWinPopupDelayed(GameplayHudSnapshot snapshot)
         {
-            var boardPresenter = FindFirstObjectByType<Match3BoardPresenter>(FindObjectsInactive.Include);
+            var boardPresenter = Match3BoardPresenter.Instance;
             if (boardPresenter != null)
             {
                 yield return new WaitUntil(() => !boardPresenter.IsVictoryOutroPlaying);
@@ -62,7 +62,7 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.Gameplay
             }
 
             float delay = 1.8f;
-            var boardView = FindFirstObjectByType<Match3BoardView>(FindObjectsInactive.Include);
+            var boardView = Match3BoardView.Instance;
             if (boardView != null)
             {
                 delay = boardView.LoseOutroDelayBeforePopup;

@@ -149,6 +149,7 @@ GameObject:
   - component: {fileID: 7959588473251290888}
   - component: {fileID: -6953610961533518124}
   - component: {fileID: 3900624257975223307}
+  - component: {fileID: 7389870949470361836}
   m_Layer: 0
   m_Name: AppBootstrap
   m_TagString: Untagged
@@ -359,3 +360,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2c720e33b60a9c74483da8949e4de736, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Services.Save.FirebaseSaveManager
+--- !u!114 &7389870949470361836
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6391f0d2bd4e4ce69103eb1c7e25c0a1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Core.Audio.AudioController
+  audioConfig: {fileID: 11400000, guid: 829e63a358754a542962f7a8e9027ba3, type: 2}
+  playMusicOnEnable: 1
+  dontDestroyOnLoad: 1
+  matchSfxCooldown: 0.06
+  bigMatchScoreThreshold: 50
+  comboScoreThreshold: 90

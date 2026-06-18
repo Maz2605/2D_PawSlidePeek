@@ -12,6 +12,7 @@ using _PawSlidePopGame._Scripts.UI.Manager;
 using _PawSlidePopGame._Scripts.Data.Events;
 using _PawSlidePopGame._Scripts.Data.Events.Payloads;
 using _PawSlidePopGame._Scripts.Services.Ads;
+using _PawSlidePopGame._Scripts.Services.Analytics;
 using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
 using DG.Tweening;
 using TMPro;
@@ -216,7 +217,7 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
             _targetFinalCounts.Clear();
 
             var validTargets = _levelData.GetValidTargets();
-            var levelManager = FindFirstObjectByType<Match3LevelManager>(FindObjectsInactive.Include);
+            var levelManager = Match3LevelManager.Instance;
             var tileDb = levelManager != null ? levelManager.TileDatabase : null;
 
             for (int i = 0; i < targetItemViews.Count; i++)
@@ -561,7 +562,13 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
 
             for (int i = 0; i < selectedBoosters.Count; i++)
             {
-                BoosterInventory.Instance.TryConsumeBooster(selectedBoosters[i], "pre_level_booster_selected");
+                BoosterDefinitionSO booster = selectedBoosters[i];
+                BoosterInventory.Instance.TryConsumeBooster(booster, "pre_level_booster_selected");
+
+                if (booster != null)
+                {
+                    FirebaseService.LogBoosterUsed(booster.BoosterId, "pre_level", _levelId);
+                }
             }
 
             Hide();
@@ -583,7 +590,8 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
                 return;
             }
 
-            if (!definition.IsUnlocked)
+            int currentLevelNumber = _levelData != null ? _levelData.DisplayLevelNumber : 1;
+            if (!definition.IsUnlockedAtLevel(currentLevelNumber))
             {
                 UIManager.Instance?.ShowToast("Booster is locked!");
                 return;
@@ -631,7 +639,8 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
             {
                 if (view != null && view.Definition != null)
                 {
-                    bool isUnlocked = view.Definition.IsUnlocked && view.Definition.UsagePhase == BoosterUsagePhase.PreLevel;
+                    int currentLevelNumber = _levelData != null ? _levelData.DisplayLevelNumber : 1;
+                    bool isUnlocked = view.Definition.IsUnlockedAtLevel(currentLevelNumber) && view.Definition.UsagePhase == BoosterUsagePhase.PreLevel;
                     int count = BoosterInventory.Instance != null ? BoosterInventory.Instance.GetCount(view.Definition) : 0;
                     bool showCheckbox = isUnlocked && (count > 0 || view.Definition.IsUnlimitedForDev);
                     bool isSelected = _selectedBoosterIds.Contains(view.Definition.BoosterId);
@@ -697,7 +706,8 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
                     continue;
                 }
 
-                if (!definition.IsUnlocked)
+                int currentLevelNumber = _levelData != null ? _levelData.DisplayLevelNumber : 1;
+                if (!definition.IsUnlockedAtLevel(currentLevelNumber))
                 {
                     UIManager.Instance?.ShowToast("Booster is locked!");
                     return false;

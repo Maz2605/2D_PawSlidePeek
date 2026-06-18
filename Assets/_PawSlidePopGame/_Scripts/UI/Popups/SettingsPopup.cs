@@ -1,4 +1,5 @@
 using System;
+using _PawSlidePopGame._Scripts.Core.Audio;
 using _PawSlidePopGame._Scripts.Core.System;
 using _PawSlidePopGame._Scripts.UI.Base;
 using DG.Tweening;
@@ -513,6 +514,11 @@ namespace _PawSlidePopGame._Scripts.UI.Popups
                 _isSliderPressed[slider] = false;
                 handle.DOKill();
                 handle.DOScale(1.0f, 0.25f).SetEase(Ease.OutBack).SetUpdate(true);
+
+                if (slider == sfxSlider && AudioController.Instance != null)
+                {
+                    AudioController.Instance.PlayUISound(UISoundType.ClickNormal);
+                }
             });
             trigger.triggers.Add(pointerUp);
         }

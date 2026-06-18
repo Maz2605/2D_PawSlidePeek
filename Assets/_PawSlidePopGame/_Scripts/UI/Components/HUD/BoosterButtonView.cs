@@ -42,6 +42,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
         private Vector3 _checkboxBaseScale = Vector3.one;
         private bool _hasCheckboxBaseState;
         private Tween _checkboxTween;
+        private Tween _lockTween;
 
         public BoosterDefinitionSO Definition => _definition;
 
@@ -72,6 +73,12 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
                 _checkboxTween.Kill();
                 _checkboxTween = null;
             }
+
+            if (_lockTween != null)
+            {
+                _lockTween.Kill();
+                _lockTween = null;
+            }
         }
 
         public void Bind(BoosterDefinitionSO definition, int count, bool isSelected, Action<BoosterDefinitionSO> onClicked)
@@ -99,7 +106,18 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
         public void SetState(int count, bool isSelected)
         {
-            bool isUnlocked = _definition != null && _definition.IsUnlocked;
+            int currentLevelNumber = 1;
+            if (_PawSlidePopGame._Scripts.Feature.Match3.Flow.Match3LevelManager.Instance != null && 
+                _PawSlidePopGame._Scripts.Feature.Match3.Flow.Match3LevelManager.Instance.CurrentLevelData != null)
+            {
+                currentLevelNumber = _PawSlidePopGame._Scripts.Feature.Match3.Flow.Match3LevelManager.Instance.CurrentLevelData.DisplayLevelNumber;
+            }
+            else if (_PawSlidePopGame._Scripts.Gameplay.Meta.MapManager.LevelProgressRepository.Instance != null)
+            {
+                currentLevelNumber = _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager.LevelProgressRepository.Instance.GetHighestUnlockedLevelNumber();
+            }
+
+            bool isUnlocked = _definition != null && _definition.IsUnlockedAtLevel(currentLevelNumber);
 
             if (backgroundImage != null)
             {
@@ -115,6 +133,26 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
             if (lockRoot != null)
             {
                 lockRoot.SetActive(!isUnlocked);
+                if (!isUnlocked)
+                {
+                    if (_lockTween == null && Application.isPlaying)
+                    {
+                        lockRoot.transform.localRotation = Quaternion.Euler(0f, 0f, -8f);
+                        _lockTween = lockRoot.transform.DOLocalRotate(new Vector3(0f, 0f, 8f), 0.6f)
+                            .SetEase(Ease.InOutSine)
+                            .SetLoops(-1, LoopType.Yoyo)
+                            .SetUpdate(true);
+                    }
+                }
+                else
+                {
+                    if (_lockTween != null)
+                    {
+                        _lockTween.Kill();
+                        _lockTween = null;
+                    }
+                    lockRoot.transform.localRotation = Quaternion.identity;
+                }
             }
 
             if (lockBubbleRoot != null)
@@ -124,7 +162,7 @@ namespace _PawSlidePopGame._Scripts.UI.Components.HUD
 
             ApplySelectedIconState(isSelected);
 
-            bool showCount = count > 0 || (_definition != null && _definition.IsUnlimitedForDev);
+            bool showCount = isUnlocked && (count > 0 || (_definition != null && _definition.IsUnlimitedForDev));
             bool showPrice = isUnlocked && !showCount;
             bool showAd = false;
 

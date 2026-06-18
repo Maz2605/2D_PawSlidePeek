@@ -748,6 +748,24 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.SubScreens
             }
         }
 
+        private void OnEnable()
+        {
+            LevelProgressRepository.OnDataChanged += HandleLevelProgressChanged;
+        }
+
+        private void OnDisable()
+        {
+            LevelProgressRepository.OnDataChanged -= HandleLevelProgressChanged;
+        }
+
+        private void HandleLevelProgressChanged()
+        {
+            if (isInitialized && HasScenicMapBinding())
+            {
+                TryRenderScenicMap();
+            }
+        }
+
         private void OnDestroy()
         {
             if (_isScrollSubscribed && scrollRect != null)

@@ -6,6 +6,7 @@ using _PawSlidePopGame._Scripts.Feature.Match3.Presenter;
 using _PawSlidePopGame._Scripts.UI.Base;
 using _PawSlidePopGame._Scripts.UI.Components.HUD;
 using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
+using _PawSlidePopGame._Scripts.Feature.Match3.Boosters;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,10 +26,23 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.Gameplay
 
         private GameplayPausePopupPresenter _pausePopupPresenter;
 
+        public static GameplayScreen Instance { get; private set; }
+
+        private System.Collections.Generic.List<SpriteRenderer> _backgroundRenderers;
+
         protected override void Awake()
         {
+            Instance = this;
             base.Awake();
             EnsurePausePopupPresenter();
+        }
+
+        protected virtual void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
         }
 
         private void OnEnable()
@@ -40,6 +54,14 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.Gameplay
             RefreshPauseButtonState(GameFlowManager.Instance != null
                 ? GameFlowManager.Instance.CurrentInGameSubState
                 : InGameSubState.None);
+
+            var boosterController = BoosterController.Instance;
+            if (boosterController != null)
+            {
+                boosterController.OnActiveBoosterChanged -= HandleActiveBoosterChanged;
+                boosterController.OnActiveBoosterChanged += HandleActiveBoosterChanged;
+                HandleActiveBoosterChanged(boosterController.ActiveBooster);
+            }
         }
 
         private void OnDisable()
@@ -47,12 +69,22 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.Gameplay
             EventManager<LogicGameEvent>.RemoveListener<InGameSubStateChangedPayload>(
                 LogicGameEvent.InGameSubStateChanged,
                 HandleSubStateChanged);
+
+            var boosterController = BoosterController.Instance;
+            if (boosterController != null)
+            {
+                boosterController.OnActiveBoosterChanged -= HandleActiveBoosterChanged;
+            }
         }
 
         protected override void OnBeforeShow()
         {
             topHUDPresenter?.ResetView();
             bottomHUDPresenter?.ResetView();
+            SetBackgroundDimmed(false, 0f);
+            SetButtonDimmed(pauseButton, false, 0f);
+            SetButtonDimmed(skipSugarCrushButton, false, 0f);
+
             BindButton(pauseButton, HandlePausePressed);
             BindButton(skipSugarCrushButton, HandleSkipSugarCrushPressed);
             if (skipSugarCrushButton != null)
@@ -68,6 +100,10 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.Gameplay
         {
             topHUDPresenter?.ResetView();
             bottomHUDPresenter?.ResetView();
+            SetBackgroundDimmed(false, 0f);
+            SetButtonDimmed(pauseButton, false, 0f);
+            SetButtonDimmed(skipSugarCrushButton, false, 0f);
+
             if (skipSugarCrushButton != null)
             {
                 skipSugarCrushButton.transform.DOKill();
@@ -85,7 +121,7 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.Gameplay
 
         private void HandleSkipSugarCrushPressed()
         {
-            var boardPresenter = FindFirstObjectByType<Match3BoardPresenter>(FindObjectsInactive.Include);
+            var boardPresenter = Match3BoardPresenter.Instance;
             if (boardPresenter != null)
             {
                 boardPresenter.SkipSugarCrush();
@@ -183,6 +219,89 @@ namespace _PawSlidePopGame._Scripts.UI.Screens.Gameplay
             {
                 bottomHUDPresenter = GetComponentInChildren<BottomHUDPresenter>(true);
             }
+        }
+
+        private void HandleActiveBoosterChanged(BoosterDefinitionSO activeBooster)
+        {
+            bool isBoosterActive = activeBooster != null;
+
+            // 1. Darken the background
+            SetBackgroundDimmed(isBoosterActive);
+
+            // 2. Darken HUD presenters
+            topHUDPresenter?.SetDimmed(isBoosterActive);
+            bottomHUDPresenter?.SetDimmed(isBoosterActive, activeBooster);
+
+            // 3. Darken other screen buttons
+            SetButtonDimmed(pauseButton, isBoosterActive);
+            SetButtonDimmed(skipSugarCrushButton, isBoosterActive);
+        }
+
+        private void CacheBackgroundRenderers()
+        {
+            if (_backgroundRenderers != null) return;
+            _backgroundRenderers = new System.Collections.Generic.List<SpriteRenderer>();
+
+            var fitters = FindObjectsByType<SmartBackgroundFitter>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var fitter in fitters)
+            {
+                if (fitter != null && fitter.TryGetComponent<SpriteRenderer>(out var sr))
+                {
+                    if (!_backgroundRenderers.Contains(sr))
+                        _backgroundRenderers.Add(sr);
+                }
+            }
+
+            var allSpriteRenderers = FindObjectsByType<SpriteRenderer>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var sr in allSpriteRenderers)
+            {
+                if (sr == null || sr.GetComponent<SmartBackgroundFitter>() != null) continue;
+
+                string lowerName = sr.name.ToLower();
+                if (lowerName.Contains("background") || lowerName.Contains("bg"))
+                {
+                    if (!_backgroundRenderers.Contains(sr))
+                        _backgroundRenderers.Add(sr);
+                }
+            }
+        }
+
+        private void SetBackgroundDimmed(bool isDimmed, float duration = 0.25f)
+        {
+            CacheBackgroundRenderers();
+            Color targetColor = isDimmed ? new Color(0.35f, 0.35f, 0.35f, 1f) : Color.white;
+
+            foreach (var sr in _backgroundRenderers)
+            {
+                if (sr != null)
+                {
+                    sr.DOKill();
+                    sr.DOColor(targetColor, duration).SetEase(Ease.OutQuad).SetUpdate(true);
+                }
+            }
+        }
+
+        private void SetButtonDimmed(Button button, bool isDimmed, float duration = 0.25f)
+        {
+            if (button == null) return;
+
+            var cg = button.GetComponent<CanvasGroup>();
+            if (cg == null)
+            {
+                cg = button.gameObject.AddComponent<CanvasGroup>();
+            }
+
+            cg.DOKill();
+            float targetAlpha = isDimmed ? 0.35f : 1f;
+            if (duration > 0f && Application.isPlaying)
+            {
+                cg.DOFade(targetAlpha, duration).SetEase(Ease.OutQuad).SetUpdate(true);
+            }
+            else
+            {
+                cg.alpha = targetAlpha;
+            }
+            cg.blocksRaycasts = !isDimmed;
         }
     }
 }

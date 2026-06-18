@@ -927,6 +927,7 @@ GameObject:
   m_Component:
   - component: {fileID: 9160810622378459424}
   - component: {fileID: 7032246422792360516}
+  - component: {fileID: 1312690624354423609}
   m_Layer: 5
   m_Name: Settings Button
   m_TagString: Untagged
@@ -999,6 +1000,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1312690624354423609
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1548602333733474787}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 1
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &1549633994401241997
 GameObject:
   m_ObjectHideFlags: 0
@@ -3114,6 +3131,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5582977364925396689}
   - component: {fileID: 1563522770637477778}
+  - component: {fileID: 5415202913997487932}
   m_Layer: 5
   m_Name: Play Button
   m_TagString: Untagged
@@ -3187,6 +3205,22 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &5415202913997487932
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5765898042131752012}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e962dde321c24987b2e63bd8aae3fa44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Data.Audio.UIButtonSound
+  soundType: 3
+  customClip: {fileID: 0}
+  volumeScale: 1
+  playVibration: 1
 --- !u!1 &5834053163976439389
 GameObject:
   m_ObjectHideFlags: 0
