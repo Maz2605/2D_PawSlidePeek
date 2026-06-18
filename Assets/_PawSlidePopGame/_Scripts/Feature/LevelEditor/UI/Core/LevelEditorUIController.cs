@@ -642,6 +642,67 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI
             NotifyChanged();
         }
 
+        public void UpdateSpawnTileConfig(int tileId, bool enabled, int weight)
+        {
+            if (Session == null)
+            {
+                return;
+            }
+
+            bool updated = false;
+            if (Session.spawnableTileConfigs == null)
+            {
+                Session.spawnableTileConfigs = new List<LevelSpawnableTileConfig>();
+            }
+
+            for (int i = 0; i < Session.spawnableTileConfigs.Count; i++)
+            {
+                if (Session.spawnableTileConfigs[i].tileId == tileId)
+                {
+                    Session.spawnableTileConfigs[i] = new LevelSpawnableTileConfig(tileId, weight, enabled);
+                    updated = true;
+                    break;
+                }
+            }
+
+            if (!updated)
+            {
+                Session.spawnableTileConfigs.Add(new LevelSpawnableTileConfig(tileId, weight, enabled));
+            }
+
+            // Keep spawnableTileIds in sync for compatibility
+            if (enabled)
+            {
+                if (!Session.spawnableTileIds.Contains(tileId))
+                {
+                    Session.spawnableTileIds.Add(tileId);
+                }
+            }
+            else
+            {
+                Session.spawnableTileIds.Remove(tileId);
+            }
+
+            sessionStateHolder?.MarkDirty("Updated spawn tile config.");
+            RevalidateSession();
+            NotifyChanged();
+        }
+
+        public void UpdateBalancingSettings(bool enableDynamic, float bias)
+        {
+            if (Session == null)
+            {
+                return;
+            }
+
+            Session.enableDynamicBalancing = enableDynamic;
+            Session.targetSpawnBias = Mathf.Max(1f, bias);
+
+            sessionStateHolder?.MarkDirty("Updated dynamic balancing settings.");
+            RevalidateSession();
+            NotifyChanged();
+        }
+
         public Match3LevelDataValidationResult ValidateCurrentLevel()
         {
             if (Session == null)

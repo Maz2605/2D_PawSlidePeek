@@ -11,7 +11,14 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Mapping
 {
     public static class LevelEditorDocumentMapper
     {
-        public static LevelEditorSessionContext CreateNew(string levelId, int displayLevelNumber, int width, int height, int movesLimit, IReadOnlyList<int> spawnableTileIds = null)
+        public static LevelEditorSessionContext CreateNew(
+            string levelId, 
+            int displayLevelNumber, 
+            int width, 
+            int height, 
+            int movesLimit, 
+            IReadOnlyList<int> spawnableTileIds = null,
+            IReadOnlyList<LevelSpawnableTileConfig> spawnableTileConfigs = null)
         {
             LevelEditorBoardState board = new LevelEditorBoardState();
             board.Initialize(width, height);
@@ -24,6 +31,9 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Mapping
                 board = board,
                 cellArtLayout = new int[board.CellCount],
                 spawnableTileIds = spawnableTileIds != null ? new List<int>(spawnableTileIds) : new List<int>(),
+                spawnableTileConfigs = spawnableTileConfigs != null ? new List<LevelSpawnableTileConfig>(spawnableTileConfigs) : new List<LevelSpawnableTileConfig>(),
+                targetSpawnBias = 1.25f,
+                enableDynamicBalancing = true,
                 isDirty = false
             };
         }
@@ -53,6 +63,9 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Mapping
                 board = board,
                 cellArtLayout = cellArtLayout,
                 spawnableTileIds = levelData.spawnableTileIds != null ? new List<int>(levelData.spawnableTileIds) : new List<int>(),
+                spawnableTileConfigs = levelData.spawnableTileConfigs != null ? new List<LevelSpawnableTileConfig>(levelData.spawnableTileConfigs) : new List<LevelSpawnableTileConfig>(),
+                targetSpawnBias = levelData.targetSpawnBias,
+                enableDynamicBalancing = levelData.enableDynamicBalancing,
                 isDirty = false
             };
         }
@@ -65,6 +78,7 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Mapping
         {
             // Sync session context spawnables with resolved spawnables from board
             context.spawnableTileIds = ResolveSpawnableTileIds(context, database);
+            context.spawnableTileConfigs = SyncSpawnableTileConfigs(context.spawnableTileConfigs, context.spawnableTileIds);
 
             Match3LevelData levelData = new Match3LevelData
             {
@@ -79,10 +93,46 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Mapping
                 playableMask = (bool[])context.board.playableMask.Clone(),
                 cellArtLayout = context.cellArtLayout != null ? (int[])context.cellArtLayout.Clone() : new int[context.board.CellCount],
                 spawnableTileIds = new List<int>(context.spawnableTileIds),
+                spawnableTileConfigs = new List<LevelSpawnableTileConfig>(context.spawnableTileConfigs),
+                targetSpawnBias = context.targetSpawnBias,
+                enableDynamicBalancing = context.enableDynamicBalancing,
                 targets = BuildTargets(targets)
             };
 
             return LevelEditorDocumentFactory.Create(levelData, schemaVersion);
+        }
+
+        private static List<LevelSpawnableTileConfig> SyncSpawnableTileConfigs(List<LevelSpawnableTileConfig> existingConfigs, List<int> activeIds)
+        {
+            List<LevelSpawnableTileConfig> result = new List<LevelSpawnableTileConfig>();
+            if (activeIds == null)
+            {
+                return result;
+            }
+
+            Dictionary<int, LevelSpawnableTileConfig> existingLookup = new Dictionary<int, LevelSpawnableTileConfig>();
+            if (existingConfigs != null)
+            {
+                for (int i = 0; i < existingConfigs.Count; i++)
+                {
+                    existingLookup[existingConfigs[i].tileId] = existingConfigs[i];
+                }
+            }
+
+            for (int i = 0; i < activeIds.Count; i++)
+            {
+                int id = activeIds[i];
+                if (existingLookup.TryGetValue(id, out LevelSpawnableTileConfig config))
+                {
+                    result.Add(config);
+                }
+                else
+                {
+                    result.Add(new LevelSpawnableTileConfig(id, 100, true));
+                }
+            }
+
+            return result;
         }
 
         private static List<int> ResolveSpawnableTileIds(LevelEditorSessionContext context, Match3TileDatabaseSO database)

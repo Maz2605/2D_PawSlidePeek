@@ -21,6 +21,9 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI.Panels
         [SerializeField] private LevelEditorValidationStatusWidget validationStatusWidget;
         [SerializeField] private LevelEditorTargetWidget targetWidget;
         [SerializeField] private TMP_Dropdown viewModeDropdown;
+        [SerializeField] private Button spawnSettingsButton;
+        [SerializeField] private LevelEditorSpawnSettingsPopup spawnSettingsPopupPrefab;
+        [SerializeField] private EditorUIManager editorUIManager;
 
         private LevelEditorUIController _service;
         private string _lastSyncedSessionLevelId;
@@ -32,6 +35,11 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI.Panels
             BindButton(newButton, HandleNewClicked);
             BindButton(saveButton, HandleSaveClicked);
             BindButton(loadButton, HandleLoadClicked);
+            if (spawnSettingsButton != null)
+            {
+                spawnSettingsButton.onClick.RemoveAllListeners();
+                spawnSettingsButton.onClick.AddListener(HandleSpawnSettingsClicked);
+            }
             BindBoardSizeInput(widthInput);
             BindBoardSizeInput(heightInput);
             levelSelectorWidget?.Bind();
@@ -160,6 +168,22 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.UI.Panels
             }
 
             _service?.LoadLevel(levelId);
+        }
+
+        private void HandleSpawnSettingsClicked()
+        {
+            if (_service?.Session == null || editorUIManager == null || spawnSettingsPopupPrefab == null)
+            {
+                Debug.LogWarning("[LevelEditor] Spawn settings button ignored or missing references.");
+                return;
+            }
+
+            Debug.Log("[LevelEditor] Open Spawn Settings Popup.");
+            LevelEditorSpawnSettingsPopup popup = editorUIManager.ShowPopup(spawnSettingsPopupPrefab);
+            if (popup != null)
+            {
+                popup.Show(_service, () => editorUIManager.ClosePopup(popup));
+            }
         }
 
         private string ReadLevelId()
