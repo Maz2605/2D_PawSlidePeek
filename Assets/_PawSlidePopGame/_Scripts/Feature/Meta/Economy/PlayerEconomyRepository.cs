@@ -48,8 +48,14 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager
         }
         private PlayerEconomySaveData Load()
         {
+            string filePath = SaveSystem.GetPath(_saveKey);
+            bool fileExists = System.IO.File.Exists(filePath);
             PlayerEconomySaveData loaded = SaveSystem.Load<PlayerEconomySaveData>(_saveKey) ?? new PlayerEconomySaveData();
             loaded.Sanitize();
+            if (!fileExists)
+            {
+                SaveSystem.Save(_saveKey, loaded);
+            }
             return loaded;
         }
 

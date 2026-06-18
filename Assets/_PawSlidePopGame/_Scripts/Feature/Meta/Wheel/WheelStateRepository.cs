@@ -10,6 +10,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Meta.Wheel
         private readonly string _saveKey;
         private WheelStateSaveData _data;
 
+        public static event Action OnDataChanged;
+
         public WheelStateRepository(string saveKey = DefaultSaveKey)
         {
             _saveKey = string.IsNullOrWhiteSpace(saveKey) ? DefaultSaveKey : saveKey;
@@ -70,6 +72,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Meta.Wheel
         public void Reload()
         {
             _data = Load();
+            OnDataChanged?.Invoke();
         }
 
         public void DeleteSave()
@@ -93,8 +96,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Meta.Wheel
 
         private WheelStateSaveData Load()
         {
+            string filePath = SaveSystem.GetPath(_saveKey);
+            bool fileExists = System.IO.File.Exists(filePath);
             WheelStateSaveData loaded = SaveSystem.Load<WheelStateSaveData>(_saveKey) ?? new WheelStateSaveData();
             loaded.Sanitize();
+            if (!fileExists)
+            {
+                SaveSystem.Save(_saveKey, loaded);
+            }
             return loaded;
         }
 
@@ -102,6 +111,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Meta.Wheel
         {
             Data.Sanitize();
             SaveSystem.Save(_saveKey, Data);
+            OnDataChanged?.Invoke();
         }
     }
 

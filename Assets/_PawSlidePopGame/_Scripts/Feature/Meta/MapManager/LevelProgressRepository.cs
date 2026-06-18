@@ -14,6 +14,8 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager
         private readonly string _saveKey;
         private LevelProgressSaveData _data;
 
+        public static event Action OnDataChanged;
+
         public static LevelProgressRepository Instance => LazyInstance.Value;
         public LevelProgressSaveData Data => _data ??= Load();
 
@@ -34,6 +36,7 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager
         public void Reload()
         {
             _data = Load();
+            OnDataChanged?.Invoke();
         }
 
         public string GetCurrentLevelId(string fallbackLevelId = "Level_001")
@@ -211,6 +214,7 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager
         {
             Data.Sanitize();
             SaveSystem.Save(_saveKey, Data);
+            OnDataChanged?.Invoke();
         }
 
         public void DeleteSave()
@@ -237,8 +241,14 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.MapManager
 
         private LevelProgressSaveData Load()
         {
+            string filePath = SaveSystem.GetPath(_saveKey);
+            bool fileExists = System.IO.File.Exists(filePath);
             LevelProgressSaveData loaded = SaveSystem.Load<LevelProgressSaveData>(_saveKey) ?? new LevelProgressSaveData();
             loaded.Sanitize();
+            if (!fileExists)
+            {
+                SaveSystem.Save(_saveKey, loaded);
+            }
             return loaded;
         }
 

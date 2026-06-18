@@ -1,6 +1,7 @@
 using System;
 using _PawSlidePopGame._Scripts.Feature.Meta.Reward;
 using _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager;
+using _PawSlidePopGame._Scripts.Services.Analytics;
 using UnityEngine;
 
 namespace _PawSlidePopGame._Scripts.Feature.Meta.Shop
@@ -67,6 +68,23 @@ namespace _PawSlidePopGame._Scripts.Feature.Meta.Shop
             }
 
             Debug.Log($"[ShopService] Mua thành công: '{item.ItemId}', giá {item.PriceCoins} Coin.");
+
+            // ── Log Firebase for Booster Purchases ──
+            if (item.Rewards != null)
+            {
+                for (int i = 0; i < item.Rewards.Count; i++)
+                {
+                    RewardEntrySO reward = item.Rewards[i];
+                    if (reward != null && reward.RewardKind == RewardKind.Booster && reward.BoosterDefinition != null)
+                    {
+                        FirebaseService.LogBoosterPurchased(
+                            reward.BoosterDefinition.BoosterId,
+                            item.PriceCoins,
+                            reward.Amount);
+                    }
+                }
+            }
+
             OnItemPurchased?.Invoke(item);
             return true;
         }

@@ -11,6 +11,70 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.Inventory
 
         public event Action<string, int, int, string> OnBoosterCountChanged;
 
+        private readonly System.Collections.Generic.Dictionary<string, int> _lastBoosterCounts = new System.Collections.Generic.Dictionary<string, int>();
+
+        protected override void Awake()
+        {
+            base.Awake();
+            PlayerEconomyRepository.OnDataChanged += HandleRepositoryDataChanged;
+        }
+
+        private void Start()
+        {
+            CacheCurrentBoosterCounts();
+        }
+
+        protected override void OnDestroy()
+        {
+            PlayerEconomyRepository.OnDataChanged -= HandleRepositoryDataChanged;
+            base.OnDestroy();
+        }
+
+        private void CacheCurrentBoosterCounts()
+        {
+            _lastBoosterCounts.Clear();
+            if (Repository != null && Repository.Data != null && Repository.Data.boosterCounts != null)
+            {
+                foreach (var pair in Repository.Data.boosterCounts)
+                {
+                    _lastBoosterCounts[pair.Key] = pair.Value;
+                }
+            }
+        }
+
+        private void HandleRepositoryDataChanged()
+        {
+            if (Repository == null || Repository.Data == null || Repository.Data.boosterCounts == null) return;
+
+            foreach (var pair in Repository.Data.boosterCounts)
+            {
+                string boosterId = pair.Key;
+                int currentVal = pair.Value;
+                _lastBoosterCounts.TryGetValue(boosterId, out int oldVal);
+                if (currentVal != oldVal)
+                {
+                    _lastBoosterCounts[boosterId] = currentVal;
+                    OnBoosterCountChanged?.Invoke(boosterId, oldVal, currentVal, "repository_sync");
+                }
+            }
+
+            System.Collections.Generic.List<string> removedKeys = new System.Collections.Generic.List<string>();
+            foreach (var key in _lastBoosterCounts.Keys)
+            {
+                if (!Repository.Data.boosterCounts.ContainsKey(key))
+                {
+                    removedKeys.Add(key);
+                }
+            }
+
+            foreach (var key in removedKeys)
+            {
+                int oldVal = _lastBoosterCounts[key];
+                _lastBoosterCounts.Remove(key);
+                OnBoosterCountChanged?.Invoke(key, oldVal, 0, "repository_sync");
+            }
+        }
+
         public int GetCount(string boosterId)
         {
             if (string.IsNullOrWhiteSpace(boosterId))
@@ -87,6 +151,7 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.Inventory
             int previous = GetCount(boosterId);
             int current = Math.Max(0, previous + amount);
             Repository.Data.boosterCounts[boosterId] = current;
+            _lastBoosterCounts[boosterId] = current;
             Repository.Save();
             OnBoosterCountChanged?.Invoke(boosterId, previous, current, reason);
         }
@@ -122,6 +187,7 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.Inventory
 
             int current = previous - 1;
             Repository.Data.boosterCounts[boosterId] = current;
+            _lastBoosterCounts[boosterId] = current;
             Repository.Save();
             OnBoosterCountChanged?.Invoke(boosterId, previous, current, reason);
             return true;
@@ -130,6 +196,7 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.Inventory
         public void Reload()
         {
             Repository.Reload();
+            CacheCurrentBoosterCounts();
         }
     }
 }

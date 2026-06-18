@@ -13,6 +13,37 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager
 
         public event Action<int, int> OnHeartsChanged;
 
+        private int _lastHearts;
+
+        protected override void Awake()
+        {
+            base.Awake();
+            PlayerEconomyRepository.OnDataChanged += HandleRepositoryDataChanged;
+        }
+
+        private void Start()
+        {
+            _lastHearts = Hearts;
+        }
+
+        protected override void OnDestroy()
+        {
+            PlayerEconomyRepository.OnDataChanged -= HandleRepositoryDataChanged;
+            base.OnDestroy();
+        }
+
+        private void HandleRepositoryDataChanged()
+        {
+            int previous = _lastHearts;
+            UpdateHeartRegeneration();
+            int current = Hearts;
+            if (previous != current)
+            {
+                _lastHearts = current;
+                OnHeartsChanged?.Invoke(previous, current);
+            }
+        }
+
         public bool IsInfiniteHeartsActive => !string.IsNullOrEmpty(Repository.Data.infiniteHeartsEndUtc)
             && DateTime.TryParse(Repository.Data.infiniteHeartsEndUtc, out DateTime endUtc)
             && DateTime.UtcNow < endUtc.ToUniversalTime();
@@ -90,9 +121,14 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager
                         Repository.Data.lastHeartRegenTime = DateTime.UtcNow.ToString("o");
                     }
                     Repository.Data.hearts--;
+                    _lastHearts = Repository.Data.hearts;
                     OnHeartsChanged?.Invoke(previous, Repository.Data.hearts);
                 }
                 Repository.Save();
+            }
+            else
+            {
+                _lastHearts = Hearts;
             }
         }
 
@@ -121,6 +157,7 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager
             }
 
             Repository.Data.hearts = Mathf.Max(0, previous - 1);
+            _lastHearts = Repository.Data.hearts;
             Repository.Save();
 
             OnHeartsChanged?.Invoke(previous, Repository.Data.hearts);
@@ -142,6 +179,7 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager
 
             DateTime newEnd = baseTime.AddSeconds(durationSeconds);
             Repository.Data.infiniteHeartsEndUtc = newEnd.ToString("o");
+            _lastHearts = Hearts;
             Repository.Save();
 
             OnHeartsChanged?.Invoke(Hearts, Hearts);
@@ -150,6 +188,7 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager
         public void ClearInfiniteHearts()
         {
             Repository.Data.infiniteHeartsEndUtc = string.Empty;
+            _lastHearts = Hearts;
             Repository.Save();
             OnHeartsChanged?.Invoke(Hearts, Hearts);
         }
@@ -173,6 +212,7 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager
             {
                 Repository.Data.lastHeartRegenTime = string.Empty;
             }
+            _lastHearts = Repository.Data.hearts;
 
             Repository.Save();
             OnHeartsChanged?.Invoke(previous, Repository.Data.hearts);
@@ -236,6 +276,7 @@ namespace _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager
                     DateTime nextRegenBase = lastRegen.AddSeconds(heartsToAdd * RegenTimeSeconds);
                     Repository.Data.lastHeartRegenTime = nextRegenBase.ToString("o");
                 }
+                _lastHearts = Repository.Data.hearts;
 
                 Repository.Save();
                 OnHeartsChanged?.Invoke(previous, newHeartsCount);
