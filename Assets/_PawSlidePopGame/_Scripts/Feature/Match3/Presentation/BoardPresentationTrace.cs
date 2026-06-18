@@ -53,6 +53,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presentation
         public bool IsAccepted { get; set; }
         public BoardResolutionResult ResolutionResult { get; set; } = new BoardResolutionResult();
         public BoardPresentationTrace PresentationTrace { get; set; } = new BoardPresentationTrace();
+        public Boosters.BoosterType BoosterType { get; set; } = Boosters.BoosterType.None;
+        public Boosters.BoosterDefinitionSO BoosterDefinition { get; set; }
     }
 
     public enum BoardExecutionKind

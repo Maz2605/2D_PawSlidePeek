@@ -102,9 +102,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1790656840303837518}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 332fb85b9924ce64e8dd9c60fdd2fc4c, type: 3}
+  m_Script: {fileID: 11500000, guid: b55dfc477a647cf4bb35950f03fc31e9, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Match3.View.SpecialTileView
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Match3.View.CrossBombTileView
   bodyRenderer: {fileID: 3360157527475764380}
   shadowRenderer: {fileID: 5732058638235288507}
   openSprite: {fileID: 0}
