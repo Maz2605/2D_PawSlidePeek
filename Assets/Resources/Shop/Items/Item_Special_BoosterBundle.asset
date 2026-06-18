@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 021deb72aa589ad47bb2a66874371cda, type: 3}
+  m_Name: Item_Special_BoosterBundle
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Meta.Shop.ShopItemSO
+  displayName: Booster Bundle
+  description: Double up! Contains 2 Hammers, 2 Shuffles, and 1 Lightning Strike.
+  icon: {fileID: 0}
+  priceCoins: 500
+  originalPriceCoins: 750
+  rewards:
+  - {fileID: 11400000, guid: 2fb99985a1561b0489aebaddd8cef60c, type: 2}
+  - {fileID: 11400000, guid: 596c275c932f88e4c8932f41d3978996, type: 2}
+  - {fileID: 11400000, guid: f901bfed18295c340b21e8e30c67d55a, type: 2}
+  sortOrder: 100
+  isSpecial: 1
+  tagText: HOT

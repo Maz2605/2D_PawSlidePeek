@@ -1,0 +1,380 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6129140989867080860
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 130451522394866273}
+  - component: {fileID: 4740574780641216476}
+  m_Layer: 0
+  m_Name: MusicSource
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &130451522394866273
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6129140989867080860}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5460611236376780927}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!82 &4740574780641216476
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6129140989867080860}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 1
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!1 &8201405588717906768
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5460611236376780927}
+  - component: {fileID: 1180178159475771711}
+  - component: {fileID: 823730163174776434}
+  - component: {fileID: 1462053929463590512}
+  - component: {fileID: 4990262461949793357}
+  - component: {fileID: 6412311779083642}
+  - component: {fileID: 6138519104609171712}
+  - component: {fileID: 680991663035619336}
+  - component: {fileID: 5077149861647906391}
+  - component: {fileID: 7959588473251290888}
+  - component: {fileID: -6953610961533518124}
+  - component: {fileID: 3900624257975223307}
+  - component: {fileID: 7389870949470361836}
+  m_Layer: 0
+  m_Name: AppBootstrap
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5460611236376780927
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 130451522394866273}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1180178159475771711
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d18a01514ea447bb8716255055c4f0d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Core.Managers.AppBootstrap
+  nameInitScene: LoadingScene
+  nameMainScene: GameplayScene
+  uiManagerPrefab: {fileID: 5056079412890078848, guid: 34b095bb18c706148b276ebb2c73bc9d, type: 3}
+  coreServices:
+  - {fileID: 6138519104609171712}
+  - {fileID: 823730163174776434}
+  - {fileID: 1462053929463590512}
+  - {fileID: 4990262461949793357}
+  - {fileID: 680991663035619336}
+  - {fileID: 5077149861647906391}
+  - {fileID: 6412311779083642}
+  - {fileID: 7959588473251290888}
+  - {fileID: -6953610961533518124}
+  - {fileID: 3900624257975223307}
+--- !u!114 &823730163174776434
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c527da5f7bee47cfb2ba106d13050e74, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Core.Managers.AudioManager
+  uiAudioConfig: {fileID: 11400000, guid: 833ceea1341d0134794c409d90ee330b, type: 2}
+  musicSource: {fileID: 4740574780641216476}
+  sfxSourcePrefab: {fileID: 8137346615327625935, guid: d0ac3ca8a4619684ca0d7a63a9db39d6, type: 3}
+  initialSfxPoolSize: 15
+  maxPoolSize: 30
+  masterVolume: 1
+  musicVolume: 1
+  sfxVolume: 1
+--- !u!114 &1462053929463590512
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5b42c23f7b84b94bbf49d1c3fd7dd2a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Core.Vibration.VibrationManager
+  defaultEnabled: 1
+  vibrationEnabled: 1
+  hasVibrator: 1
+--- !u!114 &4990262461949793357
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c19cc2da57db4f28a3832d8d0fa27308, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Core.System.SettingsManager
+  defaultMusicVolume: 1
+  defaultSfxVolume: 1
+  defaultMusicEnabled: 1
+  defaultSfxEnabled: 1
+  defaultVibrationEnabled: 1
+  musicVolume: 1
+  sfxVolume: 1
+  musicEnabled: 1
+  sfxEnabled: 1
+  vibrationEnabled: 1
+  previewMusicVolume: 1
+  previewSfxVolume: 1
+  previewMusicEnabled: 1
+  previewSfxEnabled: 1
+  previewVibrationEnabled: 1
+--- !u!114 &6412311779083642
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff4ace7f6868cd84e87536d7cf8d7cee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame.Input.InputManager
+--- !u!114 &6138519104609171712
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87d65054c2db4ccb95f0abca01bdbd84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Core.System.DeviceSettingService
+  targetFPS: 60
+  disableVSync: 1
+  keepScreenAwake: 1
+--- !u!114 &680991663035619336
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d332a8f1e6a8014f9da0d1ca2bcbb06, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Services.Analytics.FirebaseService
+  analyticsEnabled: 1
+  crashlyticsEnabled: 1
+  logLifecycleEvents: 1
+--- !u!114 &5077149861647906391
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfd2a3c2e16c90f44bc83594b6e96962, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Services.Ads.AdsService
+  useGoogleTestAdUnits: 1
+  androidRewardedAdUnitId: ca-app-pub-9449221549788378/3393389056
+  androidInterstitialAdUnitId: 
+  iosRewardedAdUnitId: 
+  iosInterstitialAdUnitId: 
+  loadRewardedOnInit: 1
+  loadInterstitialOnInit: 0
+--- !u!114 &7959588473251290888
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 252df52cf140297478459416c0622536, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Services.Ads.RewardedAdRewardService
+  placementCatalog: {fileID: 11400000, guid: 39032d454048a5b43ae9d45ac931f8fb, type: 2}
+  logRewardGrants: 1
+--- !u!114 &-6953610961533518124
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10f2cb91a49351b429058fefc7c584dc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Services.Auth.FirebaseAuthService
+--- !u!114 &3900624257975223307
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c720e33b60a9c74483da8949e4de736, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Services.Save.FirebaseSaveManager
+--- !u!114 &7389870949470361836
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8201405588717906768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6391f0d2bd4e4ce69103eb1c7e25c0a1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Core.Audio.AudioController
+  audioConfig: {fileID: 11400000, guid: 829e63a358754a542962f7a8e9027ba3, type: 2}
+  playMusicOnEnable: 1
+  dontDestroyOnLoad: 1
+  matchSfxCooldown: 0.06
+  bigMatchScoreThreshold: 50
+  comboScoreThreshold: 90

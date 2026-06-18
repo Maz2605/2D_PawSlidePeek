@@ -1,5 +1,32 @@
 {
   "dependencies": {
+    "com.benoitfreslon.vibration": {
+      "version": "https://github.com/BenoitFreslon/Vibration.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "91bb0b64274699bf7befc0d4f8f49243164aad9d"
+    },
+    "com.coffee.ui-particle": {
+      "version": "https://github.com/mob-sakai/ParticleEffectForUGUI.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.ugui": "1.0.0",
+        "com.unity.modules.particlesystem": "1.0.0"
+      },
+      "hash": "92fb173507ece2c135c38733deeca82a6d49cacd"
+    },
+    "com.coplaydev.unity-mcp": {
+      "version": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#main",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.nuget.newtonsoft-json": "3.0.2",
+        "com.unity.test-framework": "1.1.31"
+      },
+      "hash": "78ee5418415953b79c358bfe6355fcc3fde7912b"
+    },
     "com.unity.2d.animation": {
       "version": "13.0.4",
       "depth": 0,
@@ -129,6 +156,13 @@
       },
       "url": "https://packages.unity.com"
     },
+    "com.unity.device-simulator.devices": {
+      "version": "1.0.1",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
     "com.unity.ext.nunit": {
       "version": "2.0.5",
       "depth": 1,
@@ -184,6 +218,26 @@
       "dependencies": {},
       "url": "https://packages.unity.com"
     },
+    "com.unity.nuget.newtonsoft-json": {
+      "version": "3.2.2",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.purchasing": {
+      "version": "5.2.1",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.ugui": "1.0.0",
+        "com.unity.services.core": "1.14.0",
+        "com.unity.modules.androidjni": "1.0.0",
+        "com.unity.modules.jsonserialize": "1.0.0",
+        "com.unity.modules.unitywebrequest": "1.0.0"
+      },
+      "url": "https://packages.unity.com"
+    },
     "com.unity.render-pipelines.core": {
       "version": "17.3.0",
       "depth": 1,
@@ -221,6 +275,17 @@
       "depth": 2,
       "source": "registry",
       "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.services.core": {
+      "version": "1.16.0",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.modules.androidjni": "1.0.0",
+        "com.unity.nuget.newtonsoft-json": "3.2.1",
+        "com.unity.modules.unitywebrequest": "1.0.0"
+      },
       "url": "https://packages.unity.com"
     },
     "com.unity.shadergraph": {
@@ -271,6 +336,15 @@
       "dependencies": {
         "com.unity.modules.ui": "1.0.0",
         "com.unity.modules.imgui": "1.0.0"
+      }
+    },
+    "com.unity.visualeffectgraph": {
+      "version": "17.3.0",
+      "depth": 0,
+      "source": "builtin",
+      "dependencies": {
+        "com.unity.shadergraph": "17.3.0",
+        "com.unity.render-pipelines.core": "17.3.0"
       }
     },
     "com.unity.visualscripting": {

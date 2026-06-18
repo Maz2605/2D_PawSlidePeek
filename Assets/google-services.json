@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "398760079055",
+    "project_id": "pawslidepop",
+    "storage_bucket": "pawslidepop.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:398760079055:android:5d1615c2a0d0a0340a91ba",
+        "android_client_info": {
+          "package_name": "com.mazcompany.pawslidepop"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "398760079055-fseqnd0ooa5878e0d09rprgaa2da3nt8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mazcompany.pawslidepop",
+            "certificate_hash": "00d9bfbe9f2fac77756f8a972b979fd188a05aeb"
+          }
+        },
+        {
+          "client_id": "398760079055-cai9m31jk678m2nac03je2051s5b7ehh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDikGypzpW2iMvLzNAwQQdbFOYl8OIAwq0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "398760079055-cai9m31jk678m2nac03je2051s5b7ehh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

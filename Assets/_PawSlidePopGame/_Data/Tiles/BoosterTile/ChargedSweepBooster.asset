@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1eb9f5a1cb664c0fa694ef38b594486b, type: 3}
+  m_Name: ChargedSweepBooster
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Match3.Data.BoosterTileDefinitionSO
+  tileId: 155
+  canSpawnOnRefill: 0
+  spawnWeight: 0
+  legacyTileViewPrefab: {fileID: 8817304140315594100, guid: 1f2ed0de6d619b444878898a56a5cfd3, type: 3}
+  icon: {fileID: 21300000, guid: c4fb8a68119c84ae58af37d7e2dade58, type: 3}
+  tileViewPrefab: {fileID: 2354780766588358318, guid: 0759c171f91e23240ad297dc88a2896d, type: 3}
+  boosterLogicType: 12

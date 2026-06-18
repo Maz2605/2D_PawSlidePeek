@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a8a9d4f31b55ee43a21a96040bfa865, type: 3}
+  m_Name: CoinWidgetRewardedAdConfig
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Services.Ads.RewardedAdPlacementConfigSO
+  placement: 1
+  enabled: 1
+  rewardKind: 1
+  rewardAmount: 100
+  boosterReward: {fileID: 0}
+  analyticsPlacementName: coin_widget
+  rewardReason: rewarded_ad_coin_widget
+  unlockLevel: 1
+  cooldownSeconds: 0
+  dailyLimit: 0
