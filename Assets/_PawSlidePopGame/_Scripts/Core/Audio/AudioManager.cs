@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using _PawSlidePopGame._Scripts.Core.Boostrap;
 using _PawSlidePopGame._Scripts.Core.System.DesignPattern.Singleton;
 using _PawSlidePopGame._Scripts.Data.Audio;
@@ -10,9 +10,8 @@ namespace _PawSlidePopGame._Scripts.Core.Audio
 {
     public class AudioManager : Singleton<AudioManager>, IAppService
     {
-        // --- PHẦN MỚI THÊM VÀO ---
         [Header("Config Data")]
-        [SerializeField] private UIAudioConfigSO uiAudioConfig; // Kéo file SO vào đây
+        [SerializeField] private UIAudioConfigSO uiAudioConfig; 
 
         [Header("Setup")]
         [SerializeField] private AudioSource musicSource;
@@ -34,12 +33,6 @@ namespace _PawSlidePopGame._Scripts.Core.Audio
         private Transform _poolRoot;
         private bool _initialized;
 
-        // protected override void Awake()
-        // {
-        //     base.Awake();
-        //     InitializePool();
-        // }
-        
         public void Init()
         {
             if (_initialized)
@@ -77,13 +70,17 @@ namespace _PawSlidePopGame._Scripts.Core.Audio
 
         public void PlayUISound(UISoundType type)
         {
-            if (uiAudioConfig == null || !IsSfxEnabled) return;
-
-            AudioClip clip = uiAudioConfig.GetClip(type);
-            
-            if (clip != null)
+            if (AudioController.Instance != null)
             {
-                PlaySfx(clip, uiAudioConfig.uiVolume);
+                AudioController.Instance.PlayUISound(type);
+            }
+            else if (uiAudioConfig != null)
+            {
+                AudioClip clip = uiAudioConfig.GetClip(type);
+                if (clip != null)
+                {
+                    PlaySfx(clip, uiAudioConfig.uiVolume);
+                }
             }
         }
 
@@ -137,6 +134,7 @@ namespace _PawSlidePopGame._Scripts.Core.Audio
 
             musicSource.DOFade(0, fadeTime / 2).SetUpdate(true).OnComplete(() =>
             {
+                if (musicSource == null) return;
                 musicSource.clip = clip;
                 musicSource.loop = loop;
                 musicSource.Play();
@@ -157,9 +155,11 @@ namespace _PawSlidePopGame._Scripts.Core.Audio
 
         public void PlaySfx(AudioClip clip, float volScale = 1f, float pitchVar = 0f)
         {
+            Debug.Log($"[AudioManager] PlaySfx called. clip={(clip != null ? clip.name : "null")}, IsSfxEnabled={IsSfxEnabled}");
             if (clip == null || !IsSfxEnabled) return;
 
             AudioSource source = GetSfxSource();
+            Debug.Log($"[AudioManager] Got AudioSource: {source != null}");
             
             if (source == null) return;
 
@@ -170,6 +170,7 @@ namespace _PawSlidePopGame._Scripts.Core.Audio
             
             source.gameObject.SetActive(true);
             source.Play();
+            Debug.Log($"[AudioManager] AudioSource playing. Volume={source.volume}, ClipLength={clip.length}");
 
             DOVirtual.DelayedCall(clip.length + 0.1f, () =>
             {

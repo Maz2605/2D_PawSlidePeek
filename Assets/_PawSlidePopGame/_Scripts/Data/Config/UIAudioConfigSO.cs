@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using _PawSlidePopGame._Scripts.Core.Audio;
 using _PawSlidePopGame._Scripts.Data.Audio;
@@ -19,6 +19,12 @@ namespace _PawSlidePopGame._Scripts.Data.Config
     {
         [Header("General")]
         [Range(0f, 1f)] public float uiVolume = 1f;
+
+        [Header("Direct Button Clips (Easy Setup)")]
+        public AudioClip clickNormal;
+        public AudioClip clickBack;
+        public AudioClip clickConfirm;
+        public AudioClip clickCancel;
 
         [Header("Audio Database")]
         [SerializeField] private List<UIAudioItem> audioList = new List<UIAudioItem>();
@@ -54,6 +60,23 @@ namespace _PawSlidePopGame._Scripts.Data.Config
 
         public AudioClip GetClip(UISoundType type)
         {
+            // Check direct clips first for easy inspector configuration
+            switch (type)
+            {
+                case UISoundType.ClickNormal:
+                    if (clickNormal != null) return clickNormal;
+                    break;
+                case UISoundType.ClickBack:
+                    if (clickBack != null) return clickBack;
+                    break;
+                case UISoundType.ClickConfirm:
+                    if (clickConfirm != null) return clickConfirm;
+                    break;
+                case UISoundType.ClickCancel:
+                    if (clickCancel != null) return clickCancel;
+                    break;
+            }
+
             if (_audioDict == null) InitializeDictionary();
 
             if (_audioDict != null && _audioDict.TryGetValue(type, out AudioClip clip))

@@ -43,6 +43,31 @@ namespace _PawSlidePopGame._Scripts.Data.Config
         public AudioClip explosion;
     }
 
+    [System.Serializable]
+    public sealed class PawSlidePopUISfxLibrary
+    {
+        [Header("Button Clicks")]
+        public AudioClip clickNormal;
+        public AudioClip clickBack;
+        public AudioClip clickConfirm;
+        public AudioClip clickCancel;
+
+        [Header("Popup Open/Close")]
+        public AudioClip popupOpenStandard;
+        public AudioClip popupCloseStandard;
+        public AudioClip popupOpenWin;
+        public AudioClip popupOpenAlert;
+
+        [Header("Toasts")]
+        public AudioClip toastInfo;
+        public AudioClip toastSuccess;
+        public AudioClip toastError;
+
+        [Header("Events")]
+        public AudioClip levelStart;
+        public AudioClip purchaseSuccess;
+    }
+
     [CreateAssetMenu(fileName = "AudioConfig", menuName = "PawSlidePop/Core/Audio Config")]
     public sealed class PawSlidePopAudioConfig : ScriptableObject
     {
@@ -52,7 +77,11 @@ namespace _PawSlidePopGame._Scripts.Data.Config
         [Header("Match 3 SFX")]
         [SerializeField] private PawSlidePopMatch3SfxLibrary match3Sfx = new PawSlidePopMatch3SfxLibrary();
 
+        [Header("UI SFX")]
+        [SerializeField] private PawSlidePopUISfxLibrary uiSfx = new PawSlidePopUISfxLibrary();
+
         public PawSlidePopMusicLibrary Music => music;
         public PawSlidePopMatch3SfxLibrary Match3Sfx => match3Sfx;
+        public PawSlidePopUISfxLibrary UiSfx => uiSfx;
     }
 }

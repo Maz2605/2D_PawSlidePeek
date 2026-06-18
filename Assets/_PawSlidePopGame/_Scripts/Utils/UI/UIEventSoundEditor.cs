@@ -1,4 +1,4 @@
-﻿using _PawSlidePopGame._Scripts.Core.Audio;
+using _PawSlidePopGame._Scripts.Core.Audio;
 using _PawSlidePopGame._Scripts.Data.Audio;
 using UnityEngine;
 
@@ -27,17 +27,15 @@ namespace _PawSlidePopGame._Scripts.Utils.UI
 
         private void PlaySound(UISoundType type, AudioClip customClip)
         {
-            if (AudioManager.Instance == null) return;
-
             if (customClip != null)
             {
-                AudioManager.Instance.PlaySfx(customClip);
+                AudioManager.Instance?.PlaySfx(customClip);
                 return;
             }
 
             if (type != UISoundType.None)
             {
-                AudioManager.Instance.PlayUISound(type);
+                AudioController.Instance?.PlayUISound(type);
             }
         }
     }

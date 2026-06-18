@@ -1,4 +1,5 @@
-﻿using _PawSlidePopGame._Scripts.Core.Audio;
+using _PawSlidePopGame._Scripts.Core.Audio;
+using _PawSlidePopGame._Scripts.Core.Vibration;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -8,9 +9,11 @@ namespace _PawSlidePopGame._Scripts.Data.Audio
     {
         public UISoundType soundType = UISoundType.ClickNormal;
         
-
         public AudioClip customClip; 
         [Range(0f, 1f)] public float volumeScale = 1f;
+
+        [Header("Vibration")]
+        public bool playVibration = true;
 
         public void OnPointerClick(PointerEventData eventData)
         {
@@ -19,18 +22,26 @@ namespace _PawSlidePopGame._Scripts.Data.Audio
 
         public void PlaySound()
         {
-            if (AudioManager.Instance == null) return;
+            if (AudioManager.Instance == null)
+            {
+                return;
+            }
 
             if (soundType == UISoundType.Custom)
             {
-                // Logic Custom: Play file riêng
                 if (customClip != null) 
+                {
                     AudioManager.Instance.PlaySfx(customClip, volumeScale);
+                }
             }
             else
             {
-                // Logic Standard: Gọi qua Enum
                 AudioManager.Instance.PlayUISound(soundType);
+            }
+
+            if (playVibration && VibrationManager.Instance != null)
+            {
+                VibrationManager.Instance.PlayButtonTap();
             }
         }
     }

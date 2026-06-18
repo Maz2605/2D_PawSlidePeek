@@ -12,12 +12,14 @@ namespace _PawSlidePopGame._Scripts.Utils.UI
         private SerializedProperty _soundTypeProp;
         private SerializedProperty _customClipProp;
         private SerializedProperty _volumeProp;
+        private SerializedProperty _playVibrationProp;
 
         private void OnEnable()
         {
             _soundTypeProp = serializedObject.FindProperty("soundType");
             _customClipProp = serializedObject.FindProperty("customClip");
             _volumeProp = serializedObject.FindProperty("volumeScale");
+            _playVibrationProp = serializedObject.FindProperty("playVibration");
         }
 
         public override void OnInspectorGUI()
@@ -38,6 +40,9 @@ namespace _PawSlidePopGame._Scripts.Utils.UI
                 EditorGUILayout.PropertyField(_volumeProp);
                 EditorGUILayout.EndVertical();
             }
+
+            EditorGUILayout.Space(5);
+            EditorGUILayout.PropertyField(_playVibrationProp);
 
             serializedObject.ApplyModifiedProperties();
         }

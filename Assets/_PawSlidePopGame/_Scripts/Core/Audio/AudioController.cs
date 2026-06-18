@@ -27,12 +27,26 @@ namespace _PawSlidePopGame._Scripts.Core.Audio
 
         private bool _eventsBound;
         private float _lastMatchSfxTime = -999f;
+        private float _lastTileSlideTime = -999f;
+        private float _lastTileDropTime = -999f;
+        private const float TileSlideCooldown = 0.08f;
+        private const float TileDropCooldown = 0.08f;
+
+        public static AudioController Instance { get; private set; }
 
         private void Awake()
         {
-            if (dontDestroyOnLoad)
+            if (Instance == null)
             {
-                DontDestroyOnLoad(gameObject);
+                Instance = this;
+                if (dontDestroyOnLoad)
+                {
+                    DontDestroyOnLoad(gameObject);
+                }
+            }
+            else
+            {
+                Destroy(gameObject);
             }
         }
 
@@ -46,12 +60,7 @@ namespace _PawSlidePopGame._Scripts.Core.Audio
             EventManager<LogicGameEvent>.AddListener<GameAppStateChangedPayload>(
                 LogicGameEvent.GameAppStateChanged,
                 HandleGameAppStateChanged);
-            EventManager<LogicGameEvent>.AddListener<GameplayHudSnapshot>(
-                LogicGameEvent.GameplayWon,
-                HandleGameplayWon);
-            EventManager<LogicGameEvent>.AddListener<GameplayHudSnapshot>(
-                LogicGameEvent.GameplayLost,
-                HandleGameplayLost);
+
             EventManager<LogicGameEvent>.AddListener<ScoreChangedPayload>(
                 LogicGameEvent.GameplayScoreChanged,
                 HandleGameplayScoreChanged);
@@ -104,12 +113,7 @@ namespace _PawSlidePopGame._Scripts.Core.Audio
             EventManager<LogicGameEvent>.RemoveListener<GameAppStateChangedPayload>(
                 LogicGameEvent.GameAppStateChanged,
                 HandleGameAppStateChanged);
-            EventManager<LogicGameEvent>.RemoveListener<GameplayHudSnapshot>(
-                LogicGameEvent.GameplayWon,
-                HandleGameplayWon);
-            EventManager<LogicGameEvent>.RemoveListener<GameplayHudSnapshot>(
-                LogicGameEvent.GameplayLost,
-                HandleGameplayLost);
+
             EventManager<LogicGameEvent>.RemoveListener<ScoreChangedPayload>(
                 LogicGameEvent.GameplayScoreChanged,
                 HandleGameplayScoreChanged);
@@ -148,22 +152,76 @@ namespace _PawSlidePopGame._Scripts.Core.Audio
 
         public void PlayButtonTap()
         {
-            AudioManager.Instance?.PlayUISound(UISoundType.ClickNormal);
+            PlaySfx(audioConfig != null ? audioConfig.UiSfx.clickNormal : null);
         }
 
         public void PlayBackButton()
         {
-            AudioManager.Instance?.PlayUISound(UISoundType.ClickBack);
+            PlaySfx(audioConfig != null ? audioConfig.UiSfx.clickBack : null);
         }
 
         public void PlayConfirmButton()
         {
-            AudioManager.Instance?.PlayUISound(UISoundType.ClickConfirm);
+            PlaySfx(audioConfig != null ? audioConfig.UiSfx.clickConfirm : null);
         }
 
         public void PlayCancelButton()
         {
-            AudioManager.Instance?.PlayUISound(UISoundType.ClickCancel);
+            PlaySfx(audioConfig != null ? audioConfig.UiSfx.clickCancel : null);
+        }
+
+        public void PlayUISound(UISoundType type)
+        {
+            if (audioConfig == null) return;
+
+            AudioClip clip = null;
+            switch (type)
+            {
+                case UISoundType.ClickNormal:
+                    clip = audioConfig.UiSfx.clickNormal;
+                    break;
+                case UISoundType.ClickBack:
+                    clip = audioConfig.UiSfx.clickBack;
+                    break;
+                case UISoundType.ClickConfirm:
+                    clip = audioConfig.UiSfx.clickConfirm;
+                    break;
+                case UISoundType.ClickCancel:
+                    clip = audioConfig.UiSfx.clickCancel;
+                    break;
+                case UISoundType.PopupOpenStandard:
+                    clip = audioConfig.UiSfx.popupOpenStandard;
+                    break;
+                case UISoundType.PopupCloseStandard:
+                    clip = audioConfig.UiSfx.popupCloseStandard;
+                    break;
+                case UISoundType.PopupOpenWin:
+                    clip = audioConfig.UiSfx.popupOpenWin;
+                    break;
+                case UISoundType.PopupOpenAlert:
+                    clip = audioConfig.UiSfx.popupOpenAlert;
+                    break;
+                case UISoundType.ToastInfo:
+                    clip = audioConfig.UiSfx.toastInfo;
+                    break;
+                case UISoundType.ToastSuccess:
+                    clip = audioConfig.UiSfx.toastSuccess;
+                    break;
+                case UISoundType.ToastError:
+                    clip = audioConfig.UiSfx.toastError;
+                    break;
+                case UISoundType.LevelStart:
+                    clip = audioConfig.UiSfx.levelStart;
+                    break;
+                case UISoundType.PurchaseSuccess:
+                    clip = audioConfig.UiSfx.purchaseSuccess;
+                    break;
+            }
+
+            if (clip != null)
+            {
+                PlaySfx(clip);
+            }
         }
 
         public void PlayMainMenuMusic()
@@ -203,11 +261,17 @@ namespace _PawSlidePopGame._Scripts.Core.Audio
 
         public void PlayTileSlide()
         {
+            float now = Time.unscaledTime;
+            if (now - _lastTileSlideTime < TileSlideCooldown) return;
+            _lastTileSlideTime = now;
             PlaySfx(audioConfig != null ? audioConfig.Match3Sfx.tileSlide : null);
         }
 
         public void PlayTileDrop()
         {
+            float now = Time.unscaledTime;
+            if (now - _lastTileDropTime < TileDropCooldown) return;
+            _lastTileDropTime = now;
             PlaySfx(audioConfig != null ? audioConfig.Match3Sfx.tileDrop : null);
         }
 
@@ -330,17 +394,6 @@ namespace _PawSlidePopGame._Scripts.Core.Audio
             }
         }
 
-        private void HandleGameplayWon(GameplayHudSnapshot _)
-        {
-            PlayWinMusic();
-            PlayLevelWin();
-        }
-
-        private void HandleGameplayLost(GameplayHudSnapshot _)
-        {
-            PlayLoseMusic();
-            PlayLevelLose();
-        }
 
         private void HandleUiButtonTap()
         {
@@ -469,7 +522,7 @@ namespace _PawSlidePopGame._Scripts.Core.Audio
 
         private void SyncCurrentMusicState()
         {
-            GameAppFlowManager flowManager = FindFirstObjectByType<GameAppFlowManager>(FindObjectsInactive.Include);
+            GameAppFlowManager flowManager = GameAppFlowManager.Instance;
             if (flowManager == null)
             {
                 PlayMainMenuMusic();
