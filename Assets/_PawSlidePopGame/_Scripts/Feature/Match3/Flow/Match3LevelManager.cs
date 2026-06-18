@@ -8,6 +8,21 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
     [DisallowMultipleComponent]
     public sealed class Match3LevelManager : MonoBehaviour
     {
+        public static Match3LevelManager Instance { get; private set; }
+
+        private void Awake()
+        {
+            Instance = this;
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+        }
+
         [SerializeField] private string defaultLevelId = "Level_001";
         [SerializeField] private Match3TileDatabaseSO tileDatabase;
 

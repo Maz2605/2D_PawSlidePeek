@@ -14,13 +14,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Feature.Match3.Boosters.BoosterDefinitionSO
   boosterId: shuffle
   displayName: Shuffle
-  icon: {fileID: 21300000, guid: 4c279ca6f578e4002a0b02af7c32b8a4, type: 3}
+  icon: {fileID: 21300000, guid: 4ee0991df726b421a97f2028a2c428ef, type: 3}
+  usagePhase: 0
   boosterType: 4
   targetingMode: 3
   isUnlocked: 1
-  unlockLevel: 1
+  unlockLevel: 4
   consumesMove: 0
   isUnlimitedForDev: 0
   createdTileId: 0
   initialCount: 3
   coinPrice: 500
+  preLevelEffectType: 0
+  extraMovesAmount: 0
+  startingTileId: 0

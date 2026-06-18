@@ -47,8 +47,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
         private bool _isTrackingIdle = false;
         private bool _hintShown = false;
 
+        public static Match3BoardPresenter Instance { get; private set; }
+
         private void Awake()
         {
+            Instance = this;
             if (gameManager == null)
             {
                 gameManager = GetComponent<Match3GameManager>();
@@ -66,7 +69,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 
             if (boosterController == null)
             {
-                boosterController = FindFirstObjectByType<BoosterController>(FindObjectsInactive.Include);
+                boosterController = BoosterController.Instance;
             }
         }
 
@@ -211,7 +214,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 yield break;
             }
 
-            TopHUDPresenter topHud = FindFirstObjectByType<TopHUDPresenter>(FindObjectsInactive.Include);
+            TopHUDPresenter topHud = TopHUDPresenter.Instance;
             if (topHud == null)
             {
                 yield break;
@@ -224,7 +227,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                 yield break;
             }
 
-            MovesCounterView movesCounter = FindFirstObjectByType<MovesCounterView>(FindObjectsInactive.Include);
+            MovesCounterView movesCounter = TopHUDPresenter.Instance != null ? TopHUDPresenter.Instance.MovesCounterView : null;
             Vector3 movesTargetPosWorld = movesCounter != null ? movesCounter.transform.position : Vector3.zero;
             Vector3 movesTargetPosLocal = Vector3.zero;
             if (movesCounter != null)
@@ -543,6 +546,13 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             }
 
             boardView?.ClearPreview();
+
+            if (boosterDefinition != null && boardView != null)
+            {
+                boardView.transform.DOKill();
+                boardView.transform.localScale = Vector3.one;
+                boardView.transform.DOPunchScale(Vector3.one * 0.02f, 0.25f, 5, 0.5f);
+            }
         }
 
         private System.Collections.IEnumerator PlayExecutionRoutine(System.Func<BoardMoveExecutionResult> executeAction)
@@ -985,7 +995,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             if (mainCanvas == null) return;
 
             FloatingScoreText targetPrefab = null;
-            var gameplayScreen = FindFirstObjectByType<GameplayScreen>(FindObjectsInactive.Include);
+            var gameplayScreen = GameplayScreen.Instance;
             if (gameplayScreen != null)
             {
                 targetPrefab = gameplayScreen.FloatingScoreTextPrefab;
@@ -999,7 +1009,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
                     Vector3 targetPos = startWorldPos + new Vector3(0f, 4f, 0f);
                     bool isTargetUI = false;
 
-                    var progressView = FindFirstObjectByType<LevelProgressView>(FindObjectsInactive.Include);
+                    var progressView = TopHUDPresenter.Instance != null ? TopHUDPresenter.Instance.LevelProgressView : null;
                     if (progressView != null)
                     {
                         targetPos = (progressView.ProgressSlider != null) 
@@ -1045,7 +1055,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
             rect.anchoredPosition = localPos;
 
             Vector2 targetScreenPos = screenPos + new Vector2(0f, 500f);
-            var progressViewForFallback = FindFirstObjectByType<LevelProgressView>(FindObjectsInactive.Include);
+            var progressViewForFallback = TopHUDPresenter.Instance != null ? TopHUDPresenter.Instance.LevelProgressView : null;
             if (progressViewForFallback != null)
             {
                 Vector3 fallbackTargetWorldPos = (progressViewForFallback.ProgressSlider != null)

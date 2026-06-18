@@ -598,6 +598,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Flow
                 gameManager.RuleSet);
 
             executionResult.Kind = BoardExecutionKind.Booster;
+            executionResult.BoosterType = BoosterType.Shuffle;
 
             if (!executionResult.IsAccepted)
             {

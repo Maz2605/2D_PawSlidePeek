@@ -37,7 +37,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: e1a9a4c625da4d79a2658f1c4795d201, type: 2}
   - {fileID: 11400000, guid: 398974eb667d482db1ee3faf4bbd3031, type: 2}
   - {fileID: 11400000, guid: 6c5384a80166457aa7f8ef1bc85a8f9d, type: 2}
-  underlayDefinitions: []
+  underlayDefinitions:
+  - {fileID: 11400000, guid: 2c8fff8837144744097aa2a9ebe37cc0, type: 2}
+  - {fileID: 11400000, guid: 29199ae4d1e62bf4997099538b9fb011, type: 2}
   tileDefinitions:
   - {fileID: 11400000, guid: 599f7ca9b87167f46bc1cb0d38c34f46, type: 2}
   - {fileID: 11400000, guid: 3b167e88a2a6b5044a3c940378303f3c, type: 2}

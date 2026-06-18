@@ -1,4 +1,6 @@
 using System.Collections;
+using _PawSlidePopGame._Scripts.Core.Audio;
+using _PawSlidePopGame._Scripts.Core.Vibration;
 using DG.Tweening;
 using _PawSlidePopGame._Scripts.Feature.Match3.Data;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities;
@@ -10,8 +12,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
     public class Match3TileView : MonoBehaviour, IPoolable
     {
         [Header("Renderers")]
-        [SerializeField] private SpriteRenderer bodyRenderer;
-        [SerializeField] private SpriteRenderer shadowRenderer;
+        [SerializeField] protected SpriteRenderer bodyRenderer;
+        [SerializeField] protected SpriteRenderer shadowRenderer;
 
         [Header("Sprites")]
         [SerializeField] private bool useDefinitionIconAsFallback = true;
@@ -78,8 +80,187 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         protected virtual Sprite OpenSprite => null;
         protected virtual Sprite ClosedSprite => null;
 
+        // Programmatic Sprites
+        private static Sprite _cachedCircleSprite;
+        private static Sprite _cachedRingSprite;
+        private static Sprite _cachedSquareSprite;
+
+        public static Sprite GetCircleSprite()
+        {
+            if (_cachedCircleSprite != null) return _cachedCircleSprite;
+            int size = 32;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            float center = size / 2.0f;
+            float radius = size / 2.0f - 0.5f;
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dist = Vector2.Distance(new Vector2(x, y), new Vector2(center, center));
+                    if (dist <= radius)
+                    {
+                        float alpha = Mathf.Clamp01(radius - dist + 0.5f);
+                        tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+                    }
+                    else
+                    {
+                        tex.SetPixel(x, y, Color.clear);
+                    }
+                }
+            }
+            tex.Apply();
+            _cachedCircleSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+            return _cachedCircleSprite;
+        }
+
+        public static Sprite GetRingSprite()
+        {
+            if (_cachedRingSprite != null) return _cachedRingSprite;
+            int size = 64;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            float center = size / 2.0f;
+            float outerRadius = size / 2.0f - 1.0f;
+            float innerRadius = outerRadius * 0.65f;
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dist = Vector2.Distance(new Vector2(x, y), new Vector2(center, center));
+                    if (dist <= outerRadius && dist >= innerRadius)
+                    {
+                        float alphaOuter = Mathf.Clamp01(outerRadius - dist);
+                        float alphaInner = Mathf.Clamp01(dist - innerRadius);
+                        float alpha = Mathf.Min(alphaOuter, alphaInner);
+                        tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+                    }
+                    else
+                    {
+                        tex.SetPixel(x, y, Color.clear);
+                    }
+                }
+            }
+            tex.Apply();
+            _cachedRingSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+            return _cachedRingSprite;
+        }
+
+        public static Sprite GetSquareSprite()
+        {
+            if (_cachedSquareSprite != null) return _cachedSquareSprite;
+            Texture2D tex = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+            tex.SetPixel(0, 0, Color.white);
+            tex.Apply();
+            _cachedSquareSprite = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 100f);
+            return _cachedSquareSprite;
+        }
+
+        public Color GetTileThemeColor()
+        {
+            int tileId = _definition != null ? _definition.TileId : 0;
+            switch (tileId)
+            {
+                case 1: return new Color(1f, 0.6f, 0.7f, 1f);       // Cat - pink
+                case 2: return new Color(0.95f, 0.75f, 0.3f, 1f);   // Dog - yellow/golden
+                case 3: return new Color(0.95f, 0.5f, 0.2f, 1f);    // Fox - orange
+                case 4: return new Color(0.65f, 0.45f, 0.3f, 1f);   // Bear - brown
+                case 5: return new Color(0.9f, 0.9f, 0.95f, 1f);    // Rabbit - white-grey
+                case 6: return new Color(0.85f, 0.85f, 0.85f, 1f);  // Panda - white
+                case 7: return new Color(0.35f, 0.75f, 0.4f, 1f);   // Alligator - green
+                case 8: return new Color(0.4f, 0.8f, 0.45f, 1f);    // Frog - green
+                case 9: return new Color(0.7f, 0.7f, 0.75f, 1f);    // Mouse - grey
+                case 10: return new Color(0.2f, 0.7f, 0.95f, 1f);   // Bird - blue
+                case 11: return new Color(0.9f, 0.9f, 0.85f, 1f);   // Cow - cream
+                case 12: return new Color(0.8f, 0.55f, 0.35f, 1f);  // Dear - light brown
+                case 13: return new Color(0.4f, 0.75f, 0.95f, 1f);  // Dolphin - blue
+                case 14: return new Color(0.6f, 0.7f, 0.8f, 1f);    // Elephant - grey-blue
+                case 15: return new Color(0.95f, 0.8f, 0.2f, 1f);   // Giraffe - yellow
+                case 16: return new Color(0.5f, 0.8f, 0.95f, 1f);   // Penguin - ice blue
+                case 17: return new Color(1f, 0.7f, 0.75f, 1f);     // Pig - pink
+                case 18: return new Color(0.95f, 0.95f, 0.9f, 1f);  // Sheep - creamy white
+                case 19: return new Color(0.7f, 0.75f, 0.8f, 1f);   // Koala - grey
+                case 20: return new Color(0.55f, 0.4f, 0.65f, 1f);  // Owl - purple
+                default: return new Color(1f, 0.85f, 0.4f, 1f);     // Sparkly gold
+            }
+        }
+
+        protected void TryShakeBoard(float duration, float strength)
+        {
+            Match3BoardView board = GetComponentInParent<Match3BoardView>();
+            if (board != null)
+            {
+                board.ShakeBoard(duration, strength);
+            }
+        }
+
+        protected void SpawnDebrisParticles(int count, float duration, Color color, Sprite customSprite = null, Vector3? customWorldPos = null, float spreadMultiplier = 1f)
+        {
+            Vector3 spawnPos = customWorldPos.HasValue ? customWorldPos.Value : transform.position;
+            Sprite spriteToUse = customSprite != null ? customSprite : (bodyRenderer != null ? bodyRenderer.sprite : null);
+            if (spriteToUse == null) spriteToUse = GetCircleSprite();
+
+            for (int i = 0; i < count; i++)
+            {
+                GameObject p = new GameObject("DebrisParticle");
+                p.transform.position = spawnPos;
+                SpriteRenderer sr = p.AddComponent<SpriteRenderer>();
+
+                if (i % 2 == 0)
+                {
+                    sr.sprite = spriteToUse;
+                    sr.color = Color.white;
+                }
+                else
+                {
+                    sr.sprite = GetCircleSprite();
+                    sr.color = new Color(color.r * 1.1f, color.g * 1.1f, color.b * 1.1f, color.a * 0.9f);
+                }
+                sr.sortingOrder = 105;
+
+                float targetShardScale = Random.Range(0.18f, 0.26f);
+                p.transform.localScale = _initialScale * targetShardScale;
+
+                float angle = Random.Range(0f, Mathf.PI * 2f);
+                float dist = Random.Range(0.6f, 1.4f) * spreadMultiplier;
+                Vector3 targetPos = spawnPos + new Vector3(Mathf.Cos(angle) * dist, Mathf.Sin(angle) * dist, 0);
+
+                p.transform.DOMove(targetPos, duration).SetEase(Ease.OutQuad);
+                p.transform.DORotate(new Vector3(0, 0, Random.Range(-270f, 270f)), duration);
+                p.transform.DOScale(Vector3.zero, duration).SetEase(Ease.InQuad);
+                sr.DOFade(0f, duration).SetEase(Ease.InQuad).OnComplete(() => Destroy(p));
+            }
+        }
+
+        protected void SpawnShockwaveRing(float maxScale, float duration, Color color, Vector3? customWorldPos = null)
+        {
+            Vector3 spawnPos = customWorldPos.HasValue ? customWorldPos.Value : transform.position;
+            GameObject ring = new GameObject("ShockwaveRing");
+            ring.transform.position = spawnPos;
+            ring.transform.localScale = Vector3.one * 0.1f;
+            
+            SpriteRenderer sr = ring.AddComponent<SpriteRenderer>();
+            sr.sprite = GetRingSprite();
+            sr.color = color;
+            sr.sortingOrder = 100;
+
+            ring.transform.DOScale(_initialScale * maxScale, duration).SetEase(Ease.OutQuad);
+            sr.DOFade(0f, duration).SetEase(Ease.OutQuad).OnComplete(() => Destroy(ring));
+        }
+
         protected virtual void Awake()
         {
+            if (bodyRenderer == null)
+            {
+                bodyRenderer = GetComponent<SpriteRenderer>();
+            }
+            if (shadowRenderer == null)
+            {
+                Transform shadowChild = transform.Find("Shadow");
+                if (shadowChild != null)
+                {
+                    shadowRenderer = shadowChild.GetComponent<SpriteRenderer>();
+                }
+            }
+
             CacheInitialTransformState();
             _initialScale = transform.localScale;
             if (bodyRenderer != null)
@@ -236,6 +417,10 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                         .SetEase(Ease.OutBack)
                         .SetLink(gameObject);
 
+                    // Snappy excited punch rotation (head wobble)
+                    transform.DOPunchRotation(new Vector3(0, 0, 15f), 0.25f, 6, 0.6f)
+                        .SetLink(gameObject);
+
                     // Scale up shadow to the same level/factor as the tile (1.12x of its initial scale)
                     if (shadowRenderer != null)
                     {
@@ -297,26 +482,80 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             }
         }
 
-        public virtual IEnumerator PlayClearAsync()
+        public virtual IEnumerator PlayClearAsync(bool isExplosion = false)
+        {
+            return ExecuteBaseClearAsync(isExplosion);
+        }
+
+        protected IEnumerator ExecuteBaseClearAsync(bool isExplosion = false)
         {
             StopIdle();
             SetShadowState(TileShadowState.Off);
             KillMotionTweens();
 
-            Sequence sequence = DOTween.Sequence().SetLink(gameObject);
-            sequence.Join(transform.DOScale(_initialScale * clearScale, Mathf.Max(0.05f, clearDuration)).SetEase(Ease.InBack));
+            float duration = Mathf.Max(0.05f, clearDuration);
 
-            if (bodyRenderer != null)
+            if (isExplosion)
             {
-                sequence.Join(bodyRenderer.DOFade(0f, Mathf.Max(0.05f, clearDuration)));
-            }
+                // Explosion reaction: blow away, fast spin, and burst with wider debris!
+                SpawnDebrisParticles(10, duration * 2f, GetTileThemeColor(), null, null, 1.6f);
 
-            if (shadowRenderer != null)
+                Sequence sequence = DOTween.Sequence().SetLink(gameObject);
+                
+                // Snappy scale pop
+                sequence.Append(transform.DOScale(_initialScale * 1.35f, duration * 0.25f).SetEase(Ease.OutBack));
+                sequence.Append(transform.DOScale(Vector3.zero, duration * 0.75f).SetEase(Ease.InQuad));
+
+                // Blow away diagonal movement
+                Vector2 blastDirection = Random.insideUnitCircle.normalized;
+                float blastDist = Random.Range(0.6f, 1.2f);
+                Vector3 blastTarget = transform.localPosition + new Vector3(blastDirection.x * blastDist, blastDirection.y * blastDist, 0);
+                sequence.Join(transform.DOLocalMove(blastTarget, duration).SetEase(Ease.OutQuad));
+
+                // Rapid rotation spin
+                float spinAngle = Random.Range(360f, 540f) * (Random.value > 0.5f ? 1f : -1f);
+                sequence.Join(transform.DORotate(new Vector3(0, 0, spinAngle), duration, RotateMode.FastBeyond360).SetEase(Ease.OutQuad));
+
+                // Flash white and fade
+                if (bodyRenderer != null)
+                {
+                    sequence.Join(bodyRenderer.DOColor(Color.white, duration * 0.2f).SetEase(Ease.OutQuad));
+                    sequence.Append(bodyRenderer.DOFade(0f, duration * 0.8f).SetEase(Ease.InQuad));
+                }
+
+                if (shadowRenderer != null)
+                {
+                    sequence.Join(shadowRenderer.DOFade(0f, duration * 0.6f));
+                }
+
+                yield return sequence.WaitForCompletion();
+            }
+            else
             {
-                sequence.Join(shadowRenderer.DOFade(0f, Mathf.Max(0.05f, clearDuration * 0.8f)));
-            }
+                // Standard match clear
+                SpawnDebrisParticles(5, duration * 1.6f, GetTileThemeColor());
 
-            yield return sequence.WaitForCompletion();
+                Sequence sequence = DOTween.Sequence().SetLink(gameObject);
+                
+                // Shrink from all sides directly (uniform scale down to zero)
+                sequence.Append(transform.DOScale(_initialScale * 1.1f, duration * 0.2f).SetEase(Ease.OutQuad));
+                sequence.Append(transform.DOScale(Vector3.zero, duration * 0.8f).SetEase(Ease.InBack));
+
+                // Spin as it shrinks!
+                sequence.Join(transform.DORotate(new Vector3(0, 0, Random.Range(-120f, 120f)), duration).SetEase(Ease.InQuad));
+
+                if (bodyRenderer != null)
+                {
+                    sequence.Join(bodyRenderer.DOFade(0f, duration));
+                }
+
+                if (shadowRenderer != null)
+                {
+                    sequence.Join(shadowRenderer.DOFade(0f, duration * 0.8f));
+                }
+
+                yield return sequence.WaitForCompletion();
+            }
         }
 
         public virtual IEnumerator PlayDamageAsync(int currentHp, int previousHp)
@@ -324,6 +563,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             Color flashColor = previousHp > currentHp
                 ? new Color(1f, 0.75f, 0.75f, 1f)
                 : new Color(1f, 1f, 1f, 1f);
+
+            // Squeeze Y, stretch X on damage
+            transform.DOComplete();
+            Sequence damageSeq = DOTween.Sequence().SetLink(gameObject);
+            damageSeq.Append(transform.DOScale(new Vector3(_initialScale.x * 1.15f, _initialScale.y * 0.85f, _initialScale.z), damageDuration * 0.4f).SetEase(Ease.OutQuad));
+            damageSeq.Append(transform.DOScale(_initialScale, damageDuration * 0.6f).SetEase(Ease.OutElastic));
 
             yield return PlayPulseTintAsync(
                 Mathf.Max(0.05f, damageDuration),
@@ -338,6 +583,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             StopIdle();
             SetShadowState(TileShadowState.Active);
             KillMotionTweens();
+
+            if (AudioController.Instance != null)
+            {
+                AudioController.Instance.PlayTileSlide();
+            }
 
             float safeDuration = Mathf.Max(0.05f, duration);
 
@@ -382,7 +632,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             StopIdle();
             KillMotionTweens();
             transform.localPosition = startLocalPosition;
-            transform.localScale = _initialScale * 0.94f;
+            transform.localScale = _initialScale * 0.2f;
             SetShadowState(TileShadowState.Active);
 
             if (bodyRenderer != null)
@@ -405,16 +655,35 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         public virtual IEnumerator PlayLandAsync(float intensity = 1f, float speedMultiplier = 1f)
         {
             StopIdle();
+
+            if (AudioController.Instance != null)
+            {
+                AudioController.Instance.PlayTileDrop();
+            }
+            if (VibrationManager.Instance != null)
+            {
+                VibrationManager.Instance.PlayLightImpact(requireEnabled: true);
+            }
+
             float duration = Mathf.Max(0.05f, landingDuration / speedMultiplier);
-            float clampedIntensity = Mathf.Max(0.25f, intensity);
-            Vector3 punch = new Vector3(landingPunchScale * clampedIntensity, -landingPunchScale * 0.6f * clampedIntensity, 0f);
+            float clampedIntensity = Mathf.Clamp(intensity, 0.4f, 2.0f);
 
-            Tween tween = transform
-                .DOPunchScale(punch, duration, 4, 0.75f)
-                .SetLink(gameObject);
+            // Sequential squash-and-stretch for organic cartoony jelly bounce
+            Sequence landSeq = DOTween.Sequence().SetLink(gameObject);
+            
+            // 1. Quick squash: expand horizontally, shrink vertically
+            Vector3 squashScale = new Vector3(_initialScale.x * (1f + landingPunchScale * 1.5f * clampedIntensity), _initialScale.y * (1f - landingPunchScale * 0.8f * clampedIntensity), _initialScale.z);
+            landSeq.Append(transform.DOScale(squashScale, duration * 0.35f).SetEase(Ease.OutQuad));
+            
+            // 2. Rebound stretch: shrink horizontally, expand vertically
+            Vector3 stretchScale = new Vector3(_initialScale.x * (1f - landingPunchScale * 0.8f * clampedIntensity), _initialScale.y * (1f + landingPunchScale * 1.2f * clampedIntensity), _initialScale.z);
+            landSeq.Append(transform.DOScale(stretchScale, duration * 0.35f).SetEase(Ease.InOutSine));
+            
+            // 3. Settle back to normal
+            landSeq.Append(transform.DOScale(_initialScale, duration * 0.3f).SetEase(Ease.OutQuad));
 
-            yield return tween.WaitForCompletion();
-            transform.localScale = _initialScale;
+            yield return landSeq.WaitForCompletion();
+            
             SetShadowState(_shadowState == TileShadowState.Preview ? TileShadowState.Preview : TileShadowState.Off);
         }
 
@@ -523,6 +792,16 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             _isScaledUp = false;
             RestoreBodyColor();
             RestoreShadowColor();
+            
+            if (bodyRenderer != null)
+            {
+                bodyRenderer.enabled = true;
+            }
+            if (shadowRenderer != null)
+            {
+                shadowRenderer.enabled = true;
+            }
+
             ApplyOpenSprite();
             transform.localRotation = _initialLocalRotation;
             transform.localScale = _initialScale;
@@ -571,8 +850,42 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             _pulseTween = null;
         }
 
+#if UNITY_EDITOR
         protected virtual void OnValidate()
         {
+            bool changed = false;
+            if (bodyRenderer == null)
+            {
+                bodyRenderer = GetComponent<SpriteRenderer>();
+                if (bodyRenderer != null)
+                {
+                    changed = true;
+                }
+            }
+            if (shadowRenderer == null)
+            {
+                Transform shadowChild = transform.Find("Shadow");
+                if (shadowChild != null)
+                {
+                    shadowRenderer = shadowChild.GetComponent<SpriteRenderer>();
+                    if (shadowRenderer != null)
+                    {
+                        changed = true;
+                    }
+                }
+            }
+
+            if (changed && !UnityEditor.EditorApplication.isPlaying)
+            {
+                UnityEditor.EditorUtility.SetDirty(this);
+                UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
+                var prefabStage = UnityEditor.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage();
+                if (prefabStage != null)
+                {
+                    UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(prefabStage.scene);
+                }
+            }
+
             if (pulseScale < 1f)
             {
                 pulseScale = 1f;
@@ -623,6 +936,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 shadowRenderer.enabled = false;
             }
         }
+#endif
 
         private void StopBlinkLoop()
         {

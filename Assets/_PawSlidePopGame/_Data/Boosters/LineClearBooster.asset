@@ -15,12 +15,16 @@ MonoBehaviour:
   boosterId: line_clear
   displayName: Line Clear
   icon: {fileID: 21300000, guid: 6523f7e3386b346cf982584dde88039d, type: 3}
+  usagePhase: 0
   boosterType: 2
   targetingMode: 2
   isUnlocked: 1
-  unlockLevel: 1
+  unlockLevel: 2
   consumesMove: 1
   isUnlimitedForDev: 0
   createdTileId: 0
   initialCount: 3
   coinPrice: 1000
+  preLevelEffectType: 0
+  extraMovesAmount: 0
+  startingTileId: 0

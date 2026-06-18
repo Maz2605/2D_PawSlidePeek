@@ -9,6 +9,9 @@ using _PawSlidePopGame._Scripts.Feature.Match3.Model.Board;
 using _PawSlidePopGame._Scripts.Feature.Match3.Model.Entities;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presentation;
 using _PawSlidePopGame._Scripts.Feature.Match3.View.Factory;
+using _PawSlidePopGame._Scripts.Feature.Match3.Boosters;
+using _PawSlidePopGame._Scripts.Core.Audio;
+using _PawSlidePopGame._Scripts.Core.Vibration;
 using _PawSlidePopGame.Scripts.DesignPattern.ObjectPooling;
 using UnityEngine;
 
@@ -16,6 +19,18 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 {
     public class Match3BoardView : MonoBehaviour
     {
+        public static Match3BoardView Instance { get; private set; }
+
+
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+        }
+
         [Header("Authoring")]
         [SerializeField] private Match3CellView cellPrefab;
         [SerializeField] private Transform cellRoot;
@@ -52,10 +67,38 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         private bool _isIdleEnabled = true;
         private _PawSlidePopGame._Scripts.Feature.LevelEditor.Core.Model.LevelEditorCellArtCatalogSO _cellArtCatalog;
 
+        private Vector3 _initialTileRootPos;
+        private Vector3 _initialCellRootPos;
+
         public event Action<TileActivateOp> OnTileActivatePlaybackStarted;
         public event Action<TileClearOp, Vector3> OnTileClearPlaybackStarted;
         public event Action<SpecialCreateOp> OnSpecialCreatePlaybackStarted;
         public event Action<ScoreGainOp> OnScoreGainPlaybackStarted;
+
+        private void Awake()
+        {
+            Instance = this;
+            if (tileRoot != null) _initialTileRootPos = tileRoot.localPosition;
+            if (cellRoot != null) _initialCellRootPos = cellRoot.localPosition;
+        }
+
+        public void ShakeBoard(float duration, float strength)
+        {
+            if (tileRoot != null)
+            {
+                tileRoot.DOComplete();
+                tileRoot.localPosition = _initialTileRootPos;
+                tileRoot.DOShakePosition(duration, strength, 14, 90f, false, true)
+                    .OnComplete(() => tileRoot.localPosition = _initialTileRootPos);
+            }
+            if (cellRoot != null)
+            {
+                cellRoot.DOComplete();
+                cellRoot.localPosition = _initialCellRootPos;
+                cellRoot.DOShakePosition(duration, strength * 0.7f, 14, 90f, false, true)
+                    .OnComplete(() => cellRoot.localPosition = _initialCellRootPos);
+            }
+        }
 
         public void Bind(BoardModel board, Match3LevelData levelData, Match3TileDatabaseSO tileDatabase)
         {
@@ -521,6 +564,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 yield break;
             }
 
+            // Play Booster Intro Visuals
+            if (executionResult.Kind == BoardExecutionKind.Booster && executionResult.BoosterType != BoosterType.None)
+            {
+                yield return StartCoroutine(PlayBoosterIntroVisuals(executionResult));
+            }
+
             BoardPresentationTrace trace = executionResult.PresentationTrace;
 
             if (trace.MoveAttempt != null && trace.MoveAttempt.TravelOps.Count > 0)
@@ -545,6 +594,307 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 yield return StartCoroutine(PlayGravityPhase(cascadeTrace.GravityPhase, speedMultiplier));
                 yield return StartCoroutine(PlayRefillPhase(cascadeTrace.RefillPhase, speedMultiplier));
             }
+        }
+
+        private IEnumerator PlayBoosterIntroVisuals(BoardMoveExecutionResult executionResult)
+        {
+            switch (executionResult.BoosterType)
+            {
+                case BoosterType.Hammer:
+                    yield return StartCoroutine(PlayHammerBoosterVisual(executionResult));
+                    break;
+                case BoosterType.LineClear:
+                    yield return StartCoroutine(PlayLineClearBoosterVisual(executionResult));
+                    break;
+                case BoosterType.RainbowPlacement:
+                    yield return StartCoroutine(PlayRainbowPlacementBoosterVisual(executionResult));
+                    break;
+                case BoosterType.Shuffle:
+                    yield return StartCoroutine(PlayShuffleBoosterVisual(executionResult));
+                    break;
+            }
+        }
+
+        private IEnumerator PlayHammerBoosterVisual(BoardMoveExecutionResult executionResult)
+        {
+            BoardPresentationTrace trace = executionResult.PresentationTrace;
+            BoardCellPosition targetCellPos = default;
+            bool hasTargetCell = false;
+
+            if (trace.Cascades.Count > 0 && trace.Cascades[0].ClearPhase != null)
+            {
+                var clearPhase = trace.Cascades[0].ClearPhase;
+                if (clearPhase.ClearOps.Count > 0)
+                {
+                    targetCellPos = clearPhase.ClearOps[0].Cell;
+                    hasTargetCell = true;
+                }
+                else if (clearPhase.DamageOps.Count > 0)
+                {
+                    targetCellPos = clearPhase.DamageOps[0].Cell;
+                    hasTargetCell = true;
+                }
+            }
+
+            if (!hasTargetCell)
+            {
+                yield break;
+            }
+
+            Vector3 targetWorldPos = GetCellWorldPosition(targetCellPos.X, targetCellPos.Y);
+
+            // Punch scale target tile directly
+            CellModel cell = _board != null ? _board.GetCell(targetCellPos.X, targetCellPos.Y) : null;
+            if (cell != null)
+            {
+                TileModel tile = cell.TopTile;
+                if (tile != null && _tileViews.TryGetValue(tile.InstanceId, out Match3TileView tileView) && tileView != null)
+                {
+                    tileView.transform.DOPunchScale(Vector3.one * 0.22f, 0.2f, 10, 1f).SetLink(tileView.gameObject);
+                }
+            }
+
+            if (Camera.main != null)
+            {
+                Camera.main.transform.DOComplete();
+                Camera.main.transform.DOShakePosition(0.15f, 0.15f, 20, 90f, false, true).SetLink(Camera.main.gameObject);
+            }
+
+            if (VibrationManager.Instance != null)
+            {
+                VibrationManager.Instance.PlayMediumImpact(true);
+            }
+
+            if (AudioController.Instance != null)
+            {
+                AudioController.Instance.PlayTileDrop();
+            }
+
+            SpawnShockwaveRing(1.5f, 0.25f, new Color(1f, 1f, 1.0f, 0.6f), targetWorldPos);
+            SpawnDebrisParticles(8, 0.3f, new Color(1f, 0.9f, 0.4f, 1f), null, targetWorldPos, 1f);
+
+            yield return new WaitForSeconds(0.1f);
+        }
+
+        private IEnumerator PlayLineClearBoosterVisual(BoardMoveExecutionResult executionResult)
+        {
+            BoardPresentationTrace trace = executionResult.PresentationTrace;
+            if (trace.MoveAttempt == null)
+            {
+                yield break;
+            }
+
+            MoveAxis axis = trace.MoveAttempt.Axis;
+            int lineIndex = trace.MoveAttempt.LineIndex;
+
+            if (_board == null)
+            {
+                yield break;
+            }
+
+            Vector3 centerPos = Vector3.zero;
+            Vector3 lineScale = Vector3.one;
+
+            if (axis == MoveAxis.Row)
+            {
+                Vector3 leftCellPos = GetCellWorldPosition(0, lineIndex);
+                Vector3 rightCellPos = GetCellWorldPosition(_board.Width - 1, lineIndex);
+                centerPos = Vector3.Lerp(leftCellPos, rightCellPos, 0.5f);
+                float lineLength = Vector3.Distance(leftCellPos, rightCellPos) + cellStepX;
+                lineScale = new Vector3(lineLength, 0.15f, 1f);
+            }
+            else
+            {
+                Vector3 bottomCellPos = GetCellWorldPosition(lineIndex, _board.Height - 1);
+                Vector3 topCellPos = GetCellWorldPosition(lineIndex, 0);
+                centerPos = Vector3.Lerp(bottomCellPos, topCellPos, 0.5f);
+                float lineLength = Vector3.Distance(bottomCellPos, topCellPos) + cellStepY;
+                lineScale = new Vector3(0.15f, lineLength, 1f);
+            }
+
+            GameObject laserObj = new GameObject("LineClearLaserVisual");
+            laserObj.transform.position = centerPos;
+            laserObj.transform.localScale = new Vector3(lineScale.x * 0.1f, lineScale.y * 0.1f, 1f);
+
+            SpriteRenderer sr = laserObj.AddComponent<SpriteRenderer>();
+            sr.sprite = Match3TileView.GetSquareSprite();
+            sr.color = new Color(0.2f, 0.8f, 1f, 0.9f);
+            sr.sortingOrder = 120;
+
+            if (Camera.main != null)
+            {
+                Camera.main.transform.DOComplete();
+                Camera.main.transform.DOShakePosition(0.15f, 0.15f, 20, 90f, false, true).SetLink(Camera.main.gameObject);
+            }
+
+            if (VibrationManager.Instance != null)
+            {
+                VibrationManager.Instance.PlayMediumImpact(true);
+            }
+
+            if (AudioController.Instance != null)
+            {
+                AudioController.Instance.PlayTileSlide();
+            }
+
+            bool animationDone = false;
+            Sequence seq = DOTween.Sequence().SetLink(laserObj);
+            seq.Append(laserObj.transform.DOScale(lineScale, 0.08f).SetEase(Ease.OutQuad))
+               .Append(laserObj.transform.DOScale(new Vector3(lineScale.x, 0f, 1f), 0.15f).SetEase(Ease.InQuad))
+               .Join(sr.DOFade(0f, 0.15f))
+               .OnComplete(() => animationDone = true);
+
+            int numCells = (axis == MoveAxis.Row) ? _board.Width : _board.Height;
+            for (int i = 0; i < numCells; i++)
+            {
+                int x = (axis == MoveAxis.Row) ? i : lineIndex;
+                int y = (axis == MoveAxis.Row) ? lineIndex : i;
+                Vector3 cellWorldPos = GetCellWorldPosition(x, y);
+                SpawnDebrisParticles(2, 0.22f, new Color(0.3f, 0.8f, 1.0f, 1f), null, cellWorldPos, 0.7f);
+            }
+
+            while (!animationDone)
+            {
+                yield return null;
+            }
+
+            Destroy(laserObj);
+        }
+
+        private IEnumerator PlayRainbowPlacementBoosterVisual(BoardMoveExecutionResult executionResult)
+        {
+            BoardPresentationTrace trace = executionResult.PresentationTrace;
+            BoardCellPosition targetCellPos = default;
+            bool hasTargetCell = false;
+
+            if (trace.Cascades.Count > 0 && trace.Cascades[0].ClearPhase != null)
+            {
+                var clearPhase = trace.Cascades[0].ClearPhase;
+                if (clearPhase.SpecialCreateOps.Count > 0)
+                {
+                    targetCellPos = clearPhase.SpecialCreateOps[0].Cell;
+                    hasTargetCell = true;
+                }
+            }
+
+            if (!hasTargetCell)
+            {
+                yield break;
+            }
+
+            Vector3 targetWorldPos = GetCellWorldPosition(targetCellPos.X, targetCellPos.Y);
+
+            GameObject circleObj = new GameObject("RainbowCircleVisual");
+            circleObj.transform.position = targetWorldPos;
+            circleObj.transform.localScale = Vector3.zero;
+
+            SpriteRenderer sr = circleObj.AddComponent<SpriteRenderer>();
+            sr.sprite = Match3TileView.GetRingSprite();
+            sr.color = new Color(0.9f, 0.2f, 0.9f, 0.9f);
+            sr.sortingOrder = 120;
+
+            if (Camera.main != null)
+            {
+                Camera.main.transform.DOComplete();
+                Camera.main.transform.DOShakePosition(0.12f, 0.12f, 20, 90f, false, true).SetLink(Camera.main.gameObject);
+            }
+
+            if (VibrationManager.Instance != null)
+            {
+                VibrationManager.Instance.PlayLightImpact(true);
+            }
+
+            if (AudioController.Instance != null)
+            {
+                AudioController.Instance.PlayTileDrop();
+            }
+
+            bool animationDone = false;
+            Sequence seq = DOTween.Sequence().SetLink(circleObj);
+            seq.Append(circleObj.transform.DOScale(Vector3.one * 1.8f, 0.18f).SetEase(Ease.OutQuad))
+               .Join(sr.DOFade(0f, 0.18f).SetEase(Ease.InQuad))
+               .OnComplete(() => animationDone = true);
+
+            Color[] colors = new Color[] { Color.red, Color.yellow, Color.green, Color.cyan, Color.magenta };
+            for (int i = 0; i < 10; i++)
+            {
+                SpawnDebrisParticles(1, 0.35f, colors[i % colors.Length], null, targetWorldPos, 1.2f);
+            }
+
+            while (!animationDone)
+            {
+                yield return null;
+            }
+
+            Destroy(circleObj);
+        }
+
+        private IEnumerator PlayShuffleBoosterVisual(BoardMoveExecutionResult executionResult)
+        {
+            if (Camera.main != null)
+            {
+                Camera.main.transform.DOComplete();
+                Camera.main.transform.DOShakePosition(0.3f, 0.18f, 25, 90f, false, true).SetLink(Camera.main.gameObject);
+            }
+            if (VibrationManager.Instance != null)
+            {
+                VibrationManager.Instance.PlayLightImpact(true);
+            }
+
+            yield return new WaitForSeconds(0.1f);
+        }
+
+        private void SpawnDebrisParticles(int count, float duration, Color color, Sprite customSprite = null, Vector3? customWorldPos = null, float spreadMultiplier = 1f)
+        {
+            Vector3 spawnPos = customWorldPos.HasValue ? customWorldPos.Value : transform.position;
+            Sprite spriteToUse = customSprite != null ? customSprite : Match3TileView.GetCircleSprite();
+
+            for (int i = 0; i < count; i++)
+            {
+                GameObject p = new GameObject("DebrisParticle");
+                p.transform.position = spawnPos;
+                SpriteRenderer sr = p.AddComponent<SpriteRenderer>();
+
+                if (i % 2 == 0)
+                {
+                    sr.sprite = spriteToUse;
+                    sr.color = Color.white;
+                }
+                else
+                {
+                    sr.sprite = Match3TileView.GetCircleSprite();
+                    sr.color = new Color(color.r * 1.1f, color.g * 1.1f, color.b * 1.1f, color.a * 0.9f);
+                }
+                sr.sortingOrder = 105;
+
+                float targetShardScale = UnityEngine.Random.Range(0.18f, 0.26f);
+                p.transform.localScale = Vector3.one * targetShardScale;
+
+                float angle = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
+                float dist = UnityEngine.Random.Range(0.6f, 1.4f) * spreadMultiplier;
+                Vector3 targetPos = spawnPos + new Vector3(Mathf.Cos(angle) * dist, Mathf.Sin(angle) * dist, 0);
+
+                p.transform.DOMove(targetPos, duration).SetEase(Ease.OutQuad);
+                p.transform.DORotate(new Vector3(0, 0, UnityEngine.Random.Range(-270f, 270f)), duration);
+                p.transform.DOScale(Vector3.zero, duration).SetEase(Ease.InQuad);
+                sr.DOFade(0f, duration).SetEase(Ease.InQuad).OnComplete(() => Destroy(p));
+            }
+        }
+
+        private void SpawnShockwaveRing(float maxScale, float duration, Color color, Vector3? customWorldPos = null)
+        {
+            Vector3 spawnPos = customWorldPos.HasValue ? customWorldPos.Value : transform.position;
+            GameObject ring = new GameObject("ShockwaveRing");
+            ring.transform.position = spawnPos;
+            ring.transform.localScale = Vector3.one * 0.1f;
+            
+            SpriteRenderer sr = ring.AddComponent<SpriteRenderer>();
+            sr.sprite = Match3TileView.GetRingSprite();
+            sr.color = color;
+            sr.sortingOrder = 100;
+
+            ring.transform.DOScale(Vector3.one * maxScale, duration).SetEase(Ease.OutQuad);
+            sr.DOFade(0f, duration).SetEase(Ease.OutQuad).OnComplete(() => Destroy(ring));
         }
 
         public void SyncToBoardState()
@@ -878,7 +1228,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             {
                 TileActivateOp op = clearPhase.ActivateOps[i];
                 OnTileActivatePlaybackStarted?.Invoke(op);
-                routines.Add(PlayActivateOp(op));
+                routines.Add(PlayActivateOp(op, clearPhase));
             }
 
             yield return StartCoroutine(RunParallel(routines));
@@ -916,7 +1266,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
                 if (_tileViews.TryGetValue(op.TileInstanceId, out Match3TileView tileView) && tileView != null)
                 {
-                    routines.Add(tileView.PlayClearAsync());
+                    routines.Add(tileView.PlayClearAsync(!op.WasMatched));
                 }
             }
 
@@ -1136,7 +1486,20 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
             }
         }
 
-        private IEnumerator PlayActivateOp(TileActivateOp activateOp)
+        private TargetSelectionOp FindTargetSelectionForSource(ClearPhaseTrace clearPhase, int sourceTileInstanceId)
+        {
+            if (clearPhase?.TargetSelectionOps == null) return null;
+            for (int i = 0; i < clearPhase.TargetSelectionOps.Count; i++)
+            {
+                if (clearPhase.TargetSelectionOps[i].SourceTileInstanceId == sourceTileInstanceId)
+                {
+                    return clearPhase.TargetSelectionOps[i];
+                }
+            }
+            return null;
+        }
+
+        private IEnumerator PlayActivateOp(TileActivateOp activateOp, ClearPhaseTrace clearPhase)
         {
             if (activateOp.LogicType == TileLogicType.CrossBomb)
             {
@@ -1145,6 +1508,17 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
             if (_tileViews.TryGetValue(activateOp.TileInstanceId, out Match3TileView tileView) && tileView != null)
             {
+                if (activateOp.LogicType == TileLogicType.SquareBomb && tileView is SquareBombTileView squareTile)
+                {
+                    TargetSelectionOp targetOp = FindTargetSelectionForSource(clearPhase, activateOp.TileInstanceId);
+                    if (targetOp != null)
+                    {
+                        Vector3 targetLocalPos = GetTileLocalPosition(targetOp.TargetCell.X, targetOp.TargetCell.Y, targetOp.TargetLayer);
+                        yield return StartCoroutine(squareTile.PlaySquareFlyAndExplodeAsync(targetLocalPos));
+                        yield break;
+                    }
+                }
+
                 yield return StartCoroutine(tileView.PlayActivateAsync());
             }
         }

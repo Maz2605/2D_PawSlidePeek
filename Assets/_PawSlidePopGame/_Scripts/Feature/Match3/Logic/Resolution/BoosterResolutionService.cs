@@ -195,6 +195,13 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             executionResult.IsAccepted = true;
 
             BoardPresentationTraceBuilder traceBuilder = new BoardPresentationTraceBuilder();
+            BoardPresentationTrace trace = traceBuilder.Build();
+            trace.MoveAttempt = new MoveAttemptTrace
+            {
+                Axis = axis,
+                LineIndex = lineIndex,
+                Direction = LineSlideDirection.Right
+            };
             BoardResolutionResult resolutionResult = new BoardResolutionResult { IsMoveAccepted = true };
             int scoreBefore = board.CurrentScore;
 

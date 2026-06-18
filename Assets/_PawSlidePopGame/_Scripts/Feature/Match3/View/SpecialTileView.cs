@@ -1,4 +1,5 @@
 using System.Collections;
+using DG.Tweening;
 using UnityEngine;
 
 namespace _PawSlidePopGame._Scripts.Feature.Match3.View
@@ -15,6 +16,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
 
         public override IEnumerator PlayActivateAsync()
         {
+            TryShakeBoard(0.25f, 0.14f);
             yield return PlayPulseTintAsync(
                 Mathf.Max(0.05f, DamageDuration),
                 DamagePunchScale * specialActivatePunchMultiplier,
@@ -41,6 +43,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 specialCreateColor,
                 TileShadowState.Active,
                 false);
+        }
+
+        public override IEnumerator PlayClearAsync(bool isExplosion = false)
+        {
+            TryShakeBoard(0.28f, 0.16f);
+            SpawnShockwaveRing(1.8f, 0.25f, specialActivateColor);
+            SpawnDebrisParticles(8, 0.35f, specialActivateColor);
+            yield return base.PlayClearAsync(isExplosion);
         }
     }
 }

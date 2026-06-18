@@ -1,4 +1,5 @@
 using System.Collections;
+using DG.Tweening;
 using UnityEngine;
 
 namespace _PawSlidePopGame._Scripts.Feature.Match3.View
@@ -21,8 +22,11 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 true);
         }
 
-        public override IEnumerator PlayClearAsync()
+        public override IEnumerator PlayClearAsync(bool isExplosion = false)
         {
+            // Spawn icy blue debris particles
+            SpawnDebrisParticles(6, ClearDuration * 1.5f, iceDamageColor);
+
             yield return PlayPulseTintAsync(
                 Mathf.Max(0.05f, ClearDuration * 0.85f),
                 DamagePunchScale * iceClearPunchMultiplier,
@@ -30,7 +34,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 TileShadowState.Active,
                 false);
 
-            yield return base.PlayClearAsync();
+            yield return base.PlayClearAsync(isExplosion);
         }
     }
 }

@@ -14,6 +14,21 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Presenter
 {
     public class Match3GameManager : MonoBehaviour
     {
+        public static Match3GameManager Instance { get; private set; }
+
+        private void Awake()
+        {
+            Instance = this;
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+        }
+
         [Header("Data")]
         [SerializeField] private Match3TileDatabaseSO tileDatabase;
 

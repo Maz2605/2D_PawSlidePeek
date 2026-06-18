@@ -525,7 +525,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2271483723925056283, guid: d4d3ad37f734dcd4f950452aab3bde06, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -72.82019
+      value: -72.82031
       objectReference: {fileID: 0}
     - target: {fileID: 2573384290027391003, guid: d4d3ad37f734dcd4f950452aab3bde06, type: 3}
       propertyPath: m_Pivot.x
@@ -956,7 +956,6 @@ Transform:
   m_Children:
   - {fileID: 862162857}
   - {fileID: 1005209131}
-  - {fileID: 1134302821}
   - {fileID: 218528910}
   m_Father: {fileID: 1718722690}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1944,7 +1943,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.7014974, y: 0.7014974, z: 1}
+  m_LocalScale: {x: 6.3851852, y: 6.3851852, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1940441513}
@@ -1998,7 +1997,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 69bfdffa0f8184fb09438e99875f71e8, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 7b83a66c6167441b3a1b7124915c50d6, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -2392,56 +2391,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1116370420}
   m_CullTransparentMesh: 1
---- !u!1 &1134302820
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1134302821}
-  - component: {fileID: 1134302822}
-  m_Layer: 0
-  m_Name: AudioController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1134302821
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1134302820}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 364354951}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1134302822
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1134302820}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6391f0d2bd4e4ce69103eb1c7e25c0a1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Core.Audio.AudioController
-  audioConfig: {fileID: 11400000, guid: 829e63a358754a542962f7a8e9027ba3, type: 2}
-  playMusicOnEnable: 0
-  dontDestroyOnLoad: 0
-  matchSfxCooldown: 0.06
-  bigMatchScoreThreshold: 50
-  comboScoreThreshold: 90
 --- !u!1 &1303709386
 GameObject:
   m_ObjectHideFlags: 0
@@ -2715,7 +2664,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0.01, y: -0.46, z: 0}
-  m_LocalScale: {x: 1.0666667, y: 1.0666667, z: 1}
+  m_LocalScale: {x: 1.8962963, y: 1.8962963, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1940441513}
@@ -3303,6 +3252,58 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1630885781}
   m_CullTransparentMesh: 1
+--- !u!1 &1636968734
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1636968736}
+  - component: {fileID: 1636968735}
+  m_Layer: 0
+  m_Name: '[Singleton] _PawSlidePopGame._Scripts.Core.Audio.AudioManager'
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1636968735
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1636968734}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c527da5f7bee47cfb2ba106d13050e74, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_PawSlidePopGame._Scripts.Core.Audio.AudioManager
+  uiAudioConfig: {fileID: 11400000, guid: 833ceea1341d0134794c409d90ee330b, type: 2}
+  musicSource: {fileID: 0}
+  sfxSourcePrefab: {fileID: 0}
+  initialSfxPoolSize: 15
+  maxPoolSize: 30
+  masterVolume: 1
+  musicVolume: 1
+  sfxVolume: 1
+--- !u!4 &1636968736
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1636968734}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1639912533
 GameObject:
   m_ObjectHideFlags: 0
@@ -6062,3 +6063,4 @@ SceneRoots:
   - {fileID: 1940441513}
   - {fileID: 1718722690}
   - {fileID: 1662056891}
+  - {fileID: 1636968736}

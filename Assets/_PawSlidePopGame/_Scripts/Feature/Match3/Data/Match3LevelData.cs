@@ -18,6 +18,21 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
     }
 
     [Serializable]
+    public struct LevelSpawnableTileConfig
+    {
+        public int tileId;
+        public int weight;
+        public bool enabled;
+
+        public LevelSpawnableTileConfig(int tileId, int weight, bool enabled)
+        {
+            this.tileId = tileId;
+            this.weight = weight;
+            this.enabled = enabled;
+        }
+    }
+
+    [Serializable]
     public class Match3LevelData
     {
         [Serializable]
@@ -46,6 +61,9 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Data
         public int[] cellArtLayout;
         public bool[] playableMask;
         public List<int> spawnableTileIds = new List<int>();
+        public List<LevelSpawnableTileConfig> spawnableTileConfigs = new List<LevelSpawnableTileConfig>();
+        public float targetSpawnBias = 1.25f;
+        public bool enableDynamicBalancing = true;
         public List<LevelTargetData> targets = new List<LevelTargetData>();
         public int[] starScoreThresholds = { 100, 250, 500, 1500 };
         public ChargedAbilityConfig chargedAbility = new ChargedAbilityConfig();

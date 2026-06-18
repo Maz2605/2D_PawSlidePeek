@@ -15,6 +15,7 @@ MonoBehaviour:
   boosterId: hammer
   displayName: Hammer
   icon: {fileID: 21300000, guid: ee18696bad3da4fb4ab6b1a61eef4d8a, type: 3}
+  usagePhase: 0
   boosterType: 1
   targetingMode: 1
   isUnlocked: 1
@@ -24,3 +25,6 @@ MonoBehaviour:
   createdTileId: 0
   initialCount: 3
   coinPrice: 250
+  preLevelEffectType: 0
+  extraMovesAmount: 0
+  startingTileId: 0

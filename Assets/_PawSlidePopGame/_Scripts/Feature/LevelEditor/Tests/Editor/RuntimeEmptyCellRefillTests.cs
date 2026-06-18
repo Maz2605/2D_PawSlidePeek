@@ -110,5 +110,61 @@ namespace _PawSlidePopGame._Scripts.Feature.LevelEditor.Tests.Editor
             Assert.That(cellWithOverlay.Overlay, Is.Not.Null);
             Assert.That(cellWithOverlay.Overlay.TileId, Is.EqualTo(301));
         }
+
+        [Test]
+        public void BoardRefill_UsesCustomSpawnWeights_AndDynamicBalancingSettings()
+        {
+            Match3TileDatabaseSO database = AssetDatabase.LoadAssetAtPath<Match3TileDatabaseSO>("Assets/_PawSlidePopGame/_Data/Tiles/Database.asset");
+            Match3LevelData levelData = new Match3LevelData
+            {
+                levelID = "Level_Custom_Weights_Test",
+                width = 6,
+                height = 6,
+                movesLimit = 20,
+                tileLayout = new int[36],
+                underlayLayout = new int[36],
+                overlayLayout = new int[36],
+                playableMask = new bool[36],
+                enableDynamicBalancing = false, // turn off dynamic balancing to see pure weight ratio
+                targetSpawnBias = 1.0f,
+                spawnableTileConfigs = new List<LevelSpawnableTileConfig>
+                {
+                    new LevelSpawnableTileConfig(101, 1000, true), // Tile 101 has extremely high weight
+                    new LevelSpawnableTileConfig(102, 1, true)     // Tile 102 has extremely low weight
+                }
+            };
+
+            for (int i = 0; i < 36; i++)
+            {
+                levelData.playableMask[i] = true;
+            }
+
+            BoardModel board = new BoardModel(levelData);
+            board.PopulateBoard(levelData.underlayLayout, levelData.tileLayout, levelData.overlayLayout, database);
+
+            // Refill the empty board
+            int spawned = BoardRefillService.Apply(board, levelData, database, new Random(42));
+            Assert.That(spawned, Is.EqualTo(36));
+
+            int count101 = 0;
+            int count102 = 0;
+
+            foreach (var cell in board.GetAllCells())
+            {
+                Assert.That(cell.Tile, Is.Not.Null);
+                if (cell.Tile.TileId == 101)
+                {
+                    count101++;
+                }
+                else if (cell.Tile.TileId == 102)
+                {
+                    count102++;
+                }
+            }
+
+            // Since weight is 1000 vs 1 and dynamic balancing is disabled, 101 should dominate up to the match-3 restriction limit
+            Assert.That(count101, Is.GreaterThan(18));
+            Assert.That(count101, Is.GreaterThan(count102));
+        }
     }
 }

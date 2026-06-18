@@ -8,6 +8,7 @@ using _PawSlidePopGame._Scripts.Feature.Match3.Model.Board;
 using _PawSlidePopGame._Scripts.Feature.Match3.Presentation;
 using _PawSlidePopGame._Scripts.Gameplay.Meta.EconomyManager;
 using _PawSlidePopGame._Scripts.Gameplay.Meta.Inventory;
+using _PawSlidePopGame._Scripts.Services.Analytics;
 using _PawSlidePopGame.Scripts.DesignPattern.ObserverPattern;
 using UnityEngine;
 
@@ -16,6 +17,8 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Boosters
     [DisallowMultipleComponent]
     public sealed class BoosterController : MonoBehaviour
     {
+        public static BoosterController Instance { get; private set; }
+
         [SerializeField] private List<BoosterDefinitionSO> boosterDefinitions = new List<BoosterDefinitionSO>();
 
         [SerializeField] private bool logDebugMessages = true;
@@ -32,7 +35,16 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Boosters
 
         private void Awake()
         {
+            Instance = this;
             BoosterInventory.Instance.RegisterDefinitions(boosterDefinitions);
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
         }
 
 
@@ -44,6 +56,13 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Boosters
 
         public bool TrySelectBooster(BoosterType boosterType)
         {
+            if (_activeBooster != null && _activeBooster.BoosterType == boosterType)
+            {
+                LogDebug($"Cancelled selection for {_activeBooster.BoosterType} because it was clicked again.");
+                CancelSelection();
+                return true;
+            }
+
             BoosterDefinitionSO definition = GetDefinition(boosterType);
             if (definition == null)
             {
@@ -173,6 +192,12 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Boosters
             BoardMoveExecutionResult result = execute != null ? execute.Invoke() : new BoardMoveExecutionResult();
             if (result.IsAccepted)
             {
+                result.BoosterDefinition = definition;
+                if (definition != null)
+                {
+                    result.BoosterType = definition.BoosterType;
+                }
+
                 EventManager<FeedbackEvent>.Post(
                     FeedbackEvent.BoosterUse,
                     new BoosterFeedbackPayload(definition != null ? definition.BoosterType : BoosterType.None));
@@ -183,6 +208,14 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Boosters
                 else if (paymentSource == BoosterPaymentSource.Coins)
                 {
                     EconomyManager.Instance.TrySpendCoins(definition.CoinPrice, "booster_used");
+                }
+
+                if (definition != null)
+                {
+                    string currentLevelId = _PawSlidePopGame._Scripts.Core.System.GameFlow.GameAppFlowManager.Instance != null
+                        ? _PawSlidePopGame._Scripts.Core.System.GameFlow.GameAppFlowManager.Instance.CurrentLevelId
+                        : string.Empty;
+                    FirebaseService.LogBoosterUsed(definition.BoosterId, "gameplay", currentLevelId);
                 }
 
                 UnityEngine.Debug.Log($"[BoosterController] Used {definition.BoosterType}. PaymentSource={paymentSource}, Coins={EconomyManager.Instance.Coins}, Count={BoosterInventory.Instance.GetCount(definition)}.");

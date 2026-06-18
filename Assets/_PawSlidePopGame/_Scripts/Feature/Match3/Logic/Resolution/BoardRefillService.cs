@@ -67,21 +67,41 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             AddNeighborRestriction(board.GetCell(x - 1, y), board.GetCell(x - 2, y), restrictedIds);
             AddNeighborRestriction(board.GetCell(x, y + 1), board.GetCell(x, y + 2), restrictedIds);
 
-            if (levelData != null && levelData.spawnableTileIds != null && levelData.spawnableTileIds.Count > 0)
+            if (levelData != null)
             {
-                List<int> filteredIds = new List<int>();
-                for (int i = 0; i < levelData.spawnableTileIds.Count; i++)
+                if (levelData.spawnableTileConfigs != null && levelData.spawnableTileConfigs.Count > 0)
                 {
-                    int candidateId = levelData.spawnableTileIds[i];
-                    if (IsValidNormalSpawnable(candidateId, tileDatabase) && !IsRestricted(candidateId, restrictedIds))
+                    List<int> filteredIds = new List<int>();
+                    for (int i = 0; i < levelData.spawnableTileConfigs.Count; i++)
                     {
-                        filteredIds.Add(candidateId);
+                        var config = levelData.spawnableTileConfigs[i];
+                        if (config.enabled && IsValidNormalSpawnable(config.tileId, tileDatabase) && !IsRestricted(config.tileId, restrictedIds))
+                        {
+                            filteredIds.Add(config.tileId);
+                        }
+                    }
+
+                    if (filteredIds.Count > 0)
+                    {
+                        return PickSpawnTileIdWithWeights(board, filteredIds, levelData, tileDatabase, random);
                     }
                 }
-
-                if (filteredIds.Count > 0)
+                else if (levelData.spawnableTileIds != null && levelData.spawnableTileIds.Count > 0)
                 {
-                    return PickSpawnTileIdWithWeights(board, filteredIds, levelData, tileDatabase, random);
+                    List<int> filteredIds = new List<int>();
+                    for (int i = 0; i < levelData.spawnableTileIds.Count; i++)
+                    {
+                        int candidateId = levelData.spawnableTileIds[i];
+                        if (IsValidNormalSpawnable(candidateId, tileDatabase) && !IsRestricted(candidateId, restrictedIds))
+                        {
+                            filteredIds.Add(candidateId);
+                        }
+                    }
+
+                    if (filteredIds.Count > 0)
+                    {
+                        return PickSpawnTileIdWithWeights(board, filteredIds, levelData, tileDatabase, random);
+                    }
                 }
             }
 
@@ -130,28 +150,55 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.Logic.Resolution
             for (int i = 0; i < candidateIds.Count; i++)
             {
                 int tileId = candidateIds[i];
-                BoardContentDefinitionSO definition = tileDatabase.GetContentDefinition(tileId);
-                double baseWeight = definition != null ? definition.SpawnWeight : 1.0;
+                
+                // 1. Get baseWeight from LevelSpawnableTileConfig if present, otherwise fall back to database
+                double baseWeight = 1.0;
+                bool foundConfig = false;
+                if (levelData != null && levelData.spawnableTileConfigs != null)
+                {
+                    for (int j = 0; j < levelData.spawnableTileConfigs.Count; j++)
+                    {
+                        if (levelData.spawnableTileConfigs[j].tileId == tileId)
+                        {
+                            baseWeight = levelData.spawnableTileConfigs[j].weight;
+                            foundConfig = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!foundConfig)
+                {
+                    BoardContentDefinitionSO definition = tileDatabase.GetContentDefinition(tileId);
+                    baseWeight = definition != null ? definition.SpawnWeight : 1.0;
+                }
+
                 if (baseWeight <= 0)
                 {
                     baseWeight = 1.0;
                 }
 
-                double count = boardCounts[tileId];
-                double proportion = totalTilesCount > 0 ? count / (double)totalTilesCount : 0.0;
-                double idealProportion = 1.0 / candidateIds.Count;
+                // 2. Calculate balance factor if enableDynamicBalancing is true
                 double balanceFactor = 1.0;
-
-                if (proportion > idealProportion)
+                if (levelData == null || levelData.enableDynamicBalancing)
                 {
-                    balanceFactor = Math.Max(0.2, 1.0 - (proportion - idealProportion) * 2.0);
-                }
-                else if (proportion < idealProportion)
-                {
-                    balanceFactor = Math.Min(1.8, 1.0 + (idealProportion - proportion) * 2.0);
+                    double count = boardCounts[tileId];
+                    double proportion = totalTilesCount > 0 ? count / (double)totalTilesCount : 0.0;
+                    double idealProportion = 1.0 / candidateIds.Count;
+
+                    if (proportion > idealProportion)
+                    {
+                        balanceFactor = Math.Max(0.2, 1.0 - (proportion - idealProportion) * 2.0);
+                    }
+                    else if (proportion < idealProportion)
+                    {
+                        balanceFactor = Math.Min(1.8, 1.0 + (idealProportion - proportion) * 2.0);
+                    }
                 }
 
-                double objectiveBias = targetTileIds.Contains(tileId) ? 1.25 : 1.0;
+                // 3. Apply custom targetSpawnBias instead of hardcoded 1.25f
+                float biasValue = levelData != null ? levelData.targetSpawnBias : 1.25f;
+                double objectiveBias = targetTileIds.Contains(tileId) ? biasValue : 1.0;
                 double finalWeight = baseWeight * balanceFactor * objectiveBias;
                 
                 weights[i] = finalWeight;

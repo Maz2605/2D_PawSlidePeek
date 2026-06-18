@@ -19,6 +19,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
         protected override Sprite OpenSprite => openSprite;
         protected override Sprite ClosedSprite => closedSprite;
 
+#if UNITY_EDITOR
         protected override void OnValidate()
         {
             base.OnValidate();
@@ -38,6 +39,7 @@ namespace _PawSlidePopGame._Scripts.Feature.Match3.View
                 closedEyesDuration = 0.02f;
             }
         }
+#endif
     }
 }
 
